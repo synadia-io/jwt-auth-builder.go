@@ -1,0 +1,90 @@
+package nats_auth
+
+import (
+	"github.com/nats-io/jwt/v2"
+	"github.com/nats-io/nkeys"
+)
+
+type AuthImpl struct {
+	provider  AuthProvider
+	operators []*OperatorData
+}
+
+func NewAuth(provider AuthProvider) (*AuthImpl, error) {
+	auth := &AuthImpl{provider: provider}
+	auth.provider = provider
+	operators, err := auth.provider.Load()
+	if err != nil {
+		return nil, err
+	}
+	auth.operators = operators
+	return auth, nil
+}
+
+type OperatorsImpl struct {
+	auth *AuthImpl
+}
+
+func (a *AuthImpl) Operators() Operators {
+	return &OperatorsImpl{auth: a}
+}
+
+func (a *OperatorsImpl) List() []Operator {
+	v := make([]Operator, len(a.auth.operators))
+	for i, o := range a.auth.operators {
+		v[i] = o
+	}
+	return v
+}
+
+func (a *OperatorsImpl) Get(name string) Operator {
+	for _, o := range a.auth.operators {
+		if o.EntityName == name || o.Subject() == name {
+			return o
+		}
+	}
+	return nil
+}
+
+func (a *OperatorsImpl) Add(name string) (Operator, error) {
+	var err error
+	data := &OperatorData{}
+	data.EntityName = name
+	data.Key, err = KeyFor(nkeys.PrefixByteOperator)
+	if err != nil {
+		return nil, err
+	}
+	data.Claim = jwt.NewOperatorClaims(data.Key.Public)
+	data.Claim.Name = name
+
+	a.auth.operators = append(a.auth.operators, data)
+	if err := data.update(); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (a *OperatorsImpl) Delete(name string) error {
+	idx := -1
+	for i, op := range a.auth.operators {
+		if op.EntityName == name || op.Subject() == name {
+			idx = i
+			break
+		}
+	}
+	if idx != -1 {
+		a.auth.operators[idx] = a.auth.operators[len(a.auth.operators)-1]
+		a.auth.operators = a.auth.operators[:len(a.auth.operators)-1]
+	}
+	return nil
+}
+
+func (a *AuthImpl) Commit() error {
+	return a.provider.Store(a.operators)
+}
+
+func (a *AuthImpl) Reload() error {
+	var err error
+	a.operators, err = a.provider.Load()
+	return err
+}
