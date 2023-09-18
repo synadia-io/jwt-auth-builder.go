@@ -1,4 +1,7 @@
-# JWT Auth Builder (Work in Progress
+# JWT Auth Builder (Work in Progress)
+
+IMPORTANT NOTICE: This is a work in progress - it is *NOT A SUPPORTED PRODUCT*. 
+You are free to try and experiment and provide feedback.
 
 The jwt-auth-builder library is an opinionated wrapper on the NATS JWT library.
 It provides an API for building entities (JWTs) that is self-documenting.
@@ -6,7 +9,7 @@ The configurations (JWTs) and secrets (nkeys) are persisted using an AuthProvide
 
 The AuthProvider is an interface for loading and storing configurations.
 
-The `NscAuth` provider, is a provided implementation that uses an
+The `NscAuth` provider, is a provided implementation that uses a
 [nsc](github.com/nats-io/nsc) data directory to load/store entities.
 Note that the `NscAuth` provider is not thread-safe, so it should only be used
 from a single thread and pointed to directories that the library manages.
