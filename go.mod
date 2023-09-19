@@ -1,4 +1,4 @@
-module github.com/ConnectEverything/jwt-auth-builder.go
+module github.com/synadia-io/jwt-auth-builder.go
 
 go 1.20
 
