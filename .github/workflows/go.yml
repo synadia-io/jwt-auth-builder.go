@@ -1,28 +1,42 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
-name: Go
-
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+name: CI
+on: [push, pull_request]
 
 jobs:
+  test:
+    strategy:
+      matrix:
+        go: [1.21.x]
 
-  build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.20'
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{matrix.go}}
 
-    - name: Build
-      run: go build -v ./...
+      - name: Install deps
+        shell: bash --noprofile --norc -x -eo pipefail {0}
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
 
-    - name: Test
-      run: go test -v ./...
+      - name: Lint
+        shell: bash --noprofile --norc -x -eo pipefail {0}
+        run: |
+          go build
+          if [ "$(go fmt ./... | wc -l)" -gt 0 ]; then
+            echo "gofmt failed; to fix, run: 'go fmt ./...'"
+            exit 1
+          fi
+          go vet ./...
+          $HOME/go/bin/staticcheck ./...
+
+      - name: Run tests
+        shell: bash --noprofile --norc -x -eo pipefail {0}
+        run: |
+          # go test -vet=off -v -run=TestNoRace --failfast -p=1 ./...
+          # coverage via cov.sh disabled while just testing the waters
+          # Also disable race since we are overwhelming the GHA runners.
+          go test -vet=off -v -p=1 --failfast ./...
