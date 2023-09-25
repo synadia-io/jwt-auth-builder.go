@@ -17,7 +17,7 @@ func Test_JSProvider(t *testing.T) {
 	require.NoError(t, err)
 
 	bucket := nuid.Next()
-	p, err := NewJetstreamProvider("nats://localhost:4222", bucket, string(key))
+	p, err := NewJetstreamProvider("nats://demo.nats.io:4222", bucket, string(key))
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
@@ -44,4 +44,6 @@ func Test_JSProvider(t *testing.T) {
 	require.NotNil(t, "A")
 	u = a.Users().Get("U")
 	require.NotNil(t, u)
+
+	require.NoError(t, p.(*Provider).Destroy())
 }

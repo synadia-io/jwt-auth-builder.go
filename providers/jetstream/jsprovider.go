@@ -361,3 +361,7 @@ func (p *Provider) deleteAccount(a *ab.AccountData) error {
 func (p *Provider) deleteUser(u *ab.UserData) error {
 	return p.kv.Delete(context.Background(), fmt.Sprintf("%s.%s", u.AccountData.Subject(), u.Subject()))
 }
+
+func (p *Provider) Destroy() error {
+	return p.js.DeleteKeyValue(context.Background(), p.bucket)
+}
