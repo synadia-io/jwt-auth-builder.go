@@ -1,12 +1,12 @@
 package jetstream
 
 import (
+	"testing"
+
 	"github.com/nats-io/nkeys"
 	"github.com/nats-io/nuid"
 	"github.com/stretchr/testify/require"
 	ab "github.com/synadia-io/jwt-auth-builder.go"
-
-	"testing"
 )
 
 func Test_JSProvider(t *testing.T) {

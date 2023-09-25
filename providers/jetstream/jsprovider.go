@@ -3,6 +3,7 @@ package jetstream
 import (
 	"context"
 	"fmt"
+
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -162,7 +163,7 @@ func (p *Provider) loadAccounts(od *ab.OperatorData) error {
 		if err != nil {
 			return err
 		}
-		for pk, _ := range a.Claim.SigningKeys {
+		for pk := range a.Claim.SigningKeys {
 			k, err := p.getKey(pk)
 			if err != nil {
 				return err
