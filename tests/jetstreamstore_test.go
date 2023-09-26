@@ -51,6 +51,7 @@ func (ts *KvStore) OperatorExists(name string) bool {
 func (ts *KvStore) GetOperator(name string) *jwt.OperatorClaims {
 	var v *nats_auth.OperatorData
 	operators, err := ts.provider.LoadOperators()
+	require.NoError(ts.t, err)
 	for _, o := range operators {
 		if o.Name() == name || o.Subject() == name {
 			v = o
