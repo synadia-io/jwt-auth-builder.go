@@ -1,15 +1,15 @@
-package nats_auth
+package tests
 
 import (
 	"github.com/nats-io/jwt/v2"
 	"github.com/stretchr/testify/require"
-	"testing"
+	"github.com/synadia-io/jwt-auth-builder.go"
 	"time"
 )
 
-func Test_UserBasics(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_UserBasics() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -22,8 +22,8 @@ func Test_UserBasics(t *testing.T) {
 
 	// Test that we can get the user back
 	require.NoError(t, auth.Commit())
-	require.True(t, ts.UserExists("O", "A", "U"))
-	key := ts.GetKey(t, u.Subject())
+	require.True(t, suite.Store.UserExists("O", "A", "U"))
+	key := suite.Store.GetKey(u.Subject())
 	require.NotNil(t, key)
 
 	require.NoError(t, auth.Reload())
@@ -34,7 +34,7 @@ func Test_UserBasics(t *testing.T) {
 	u = a.Users().Get("U")
 	require.NotNil(t, u)
 	require.Equal(t, id, u.Subject())
-	key = ts.GetKey(t, u.Subject())
+	key = suite.Store.GetKey(u.Subject())
 	require.NotNil(t, key)
 
 	users := a.Users().List()
@@ -48,13 +48,13 @@ func Test_UserBasics(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, users)
 
-	require.False(t, ts.UserExists("O", "A", "U"))
-	require.False(t, ts.KeyExists(t, id))
+	require.False(t, suite.Store.UserExists("O", "A", "U"))
+	require.False(t, suite.Store.KeyExists(id))
 }
 
-func Test_UserWithSigningKey(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_UserWithSigningKey() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -68,14 +68,14 @@ func Test_UserWithSigningKey(t *testing.T) {
 	u, err := a.Users().Add("U", k)
 	require.NoError(t, err)
 	require.NotNil(t, u)
-	ud := u.(*UserData)
+	ud := u.(*nats_auth.UserData)
 	require.Equal(t, k, ud.Claim.Issuer)
 	require.Equal(t, a.Subject(), ud.Claim.IssuerAccount)
 }
 
-func setupScopeUser(t *testing.T) (*TestStore, User) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func setupScopeUser(suite *ProviderSuite) nats_auth.User {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -93,24 +93,26 @@ func setupScopeUser(t *testing.T) (*TestStore, User) {
 	require.NoError(t, err)
 	require.NotNil(t, u)
 	require.True(t, u.IsScoped())
-	ud := u.(*UserData)
+	ud := u.(*nats_auth.UserData)
 	require.Equal(t, scope.Key(), ud.Claim.Issuer)
 	require.Equal(t, a.Subject(), ud.Claim.IssuerAccount)
 
-	return ts, u
+	return u
 }
 
-func Test_ScopedUserFailsSetMaxSubscriptions(t *testing.T) {
-	_, u := setupScopeUser(t)
+func (suite *ProviderSuite) Test_ScopedUserFailsSetMaxSubscriptions() {
+	t := suite.T()
+	u := setupScopeUser(suite)
 	n := u.MaxSubscriptions()
 	require.Equal(t, int64(0), n)
 	err := u.SetMaxSubscriptions(100)
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 }
 
-func Test_ScopedUserSetMaxSubscriptions(t *testing.T) {
-	_, auth, u := setupUser(t)
+func (suite *ProviderSuite) Test_ScopedUserSetMaxSubscriptions() {
+	t := suite.T()
+	auth, u := setupUser(suite)
 	n := u.MaxSubscriptions()
 	require.Equal(t, int64(-1), n)
 	err := u.SetMaxSubscriptions(100)
@@ -129,17 +131,19 @@ func Test_ScopedUserSetMaxSubscriptions(t *testing.T) {
 	require.Equal(t, int64(100), u.MaxSubscriptions())
 }
 
-func Test_ScopedUserFailsSetMaxPayload(t *testing.T) {
-	_, u := setupScopeUser(t)
+func (suite *ProviderSuite) Test_ScopedUserFailsSetMaxPayload() {
+	t := suite.T()
+	u := setupScopeUser(suite)
 	n := u.MaxPayload()
 	require.Equal(t, int64(0), n)
 	err := u.SetMaxPayload(100)
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 }
 
-func Test_ScopedUserSetMaxPayload(t *testing.T) {
-	_, auth, u := setupUser(t)
+func (suite *ProviderSuite) Test_ScopedUserSetMaxPayload() {
+	t := suite.T()
+	auth, u := setupUser(suite)
 	n := u.MaxSubscriptions()
 	require.Equal(t, int64(-1), n)
 	err := u.SetMaxPayload(100)
@@ -158,17 +162,19 @@ func Test_ScopedUserSetMaxPayload(t *testing.T) {
 	require.Equal(t, int64(100), u.MaxPayload())
 }
 
-func Test_ScopedUserFailsSetMaxData(t *testing.T) {
-	_, u := setupScopeUser(t)
+func (suite *ProviderSuite) Test_ScopedUserFailsSetMaxData() {
+	t := suite.T()
+	u := setupScopeUser(suite)
 	n := u.MaxData()
 	require.Equal(t, int64(0), n)
 	err := u.SetMaxData(100)
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 }
 
-func Test_ScopedUserSetMaxData(t *testing.T) {
-	_, auth, u := setupUser(t)
+func (suite *ProviderSuite) Test_ScopedUserSetMaxData() {
+	t := suite.T()
+	auth, u := setupUser(suite)
 	n := u.MaxSubscriptions()
 	require.Equal(t, int64(-1), n)
 	err := u.SetMaxData(100)
@@ -187,106 +193,114 @@ func Test_ScopedUserSetMaxData(t *testing.T) {
 	require.Equal(t, int64(100), u.MaxData())
 }
 
-func Test_ScopedUserFailsSetBearerToken(t *testing.T) {
-	_, u := setupScopeUser(t)
+func (suite *ProviderSuite) Test_ScopedUserFailsSetBearerToken() {
+	t := suite.T()
+	u := setupScopeUser(suite)
 	n := u.BearerToken()
 	require.Equal(t, false, n)
 	err := u.SetBearerToken(true)
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 }
 
-func Test_ScopedUserFailsSetLocale(t *testing.T) {
-	_, u := setupScopeUser(t)
+func (suite *ProviderSuite) Test_ScopedUserFailsSetLocale() {
+	t := suite.T()
+	u := setupScopeUser(suite)
 	n := u.Locale()
 	require.Equal(t, "", n)
 	err := u.SetLocale("")
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 }
 
-func Test_ScopedUserFailsPubPermissions(t *testing.T) {
-	_, u := setupScopeUser(t)
+func (suite *ProviderSuite) Test_ScopedUserFailsPubPermissions() {
+	t := suite.T()
+	u := setupScopeUser(suite)
 	n := u.PubPermissions().Allow()
 	require.Empty(t, n)
 
 	err := u.PubPermissions().SetAllow("foo")
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 
 	n = u.PubPermissions().Deny()
 	require.Empty(t, n)
 
 	err = u.PubPermissions().SetDeny("foo")
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 }
 
-func Test_ScopedUserFailsSubPermissions(t *testing.T) {
-	_, u := setupScopeUser(t)
+func (suite *ProviderSuite) Test_ScopedUserFailsSubPermissions() {
+	t := suite.T()
+	u := setupScopeUser(suite)
 	n := u.SubPermissions().Allow()
 	require.Empty(t, n)
 
 	err := u.SubPermissions().SetAllow("foo")
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 
 	n = u.SubPermissions().Deny()
 	require.Empty(t, n)
 
 	err = u.SubPermissions().SetDeny("foo")
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 }
 
-func Test_ScopedUserFailsRespondPermissions(t *testing.T) {
-	_, u := setupScopeUser(t)
+func (suite *ProviderSuite) Test_ScopedUserFailsRespondPermissions() {
+	t := suite.T()
+	u := setupScopeUser(suite)
 	perms := u.ResponsePermissions()
 	require.Equal(t, time.Duration(0), perms.Expires())
 	require.Equal(t, 0, perms.MaxMessages())
 
 	err := perms.SetExpires(time.Second)
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 
 	err = perms.SetMaxMessages(1)
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 }
 
-func Test_ScopedUserFailsConnectionTypes(t *testing.T) {
-	_, u := setupScopeUser(t)
+func (suite *ProviderSuite) Test_ScopedUserFailsConnectionTypes() {
+	t := suite.T()
+	u := setupScopeUser(suite)
 	types := u.ConnectionTypes()
 	require.Empty(t, types.Types())
 
 	err := types.Set("websocket")
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 }
 
-func Test_ScopedUserFailsConnectionSources(t *testing.T) {
-	_, u := setupScopeUser(t)
+func (suite *ProviderSuite) Test_ScopedUserFailsConnectionSources() {
+	t := suite.T()
+	u := setupScopeUser(suite)
 	types := u.ConnectionSources()
 	require.Empty(t, types.Sources())
 
 	err := types.Set("192.0.2.0/24")
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 }
 
-func Test_ScopedUserFailsConnectionTimes(t *testing.T) {
-	_, u := setupScopeUser(t)
+func (suite *ProviderSuite) Test_ScopedUserFailsConnectionTimes() {
+	t := suite.T()
+	u := setupScopeUser(suite)
 	times := u.ConnectionTimes()
 	require.Empty(t, times.List())
 
-	err := times.Set(TimeRange{Start: "00:00:00", End: "23:59:01"})
+	err := times.Set(nats_auth.TimeRange{Start: "00:00:00", End: "23:59:01"})
 	require.Error(t, err)
-	require.Equal(t, ErrUserIsScoped, err)
+	require.Equal(t, nats_auth.ErrUserIsScoped, err)
 }
 
-func setupUser(t *testing.T) (*TestStore, Auth, User) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func setupUser(suite *ProviderSuite) (nats_auth.Auth, nats_auth.User) {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -297,12 +311,12 @@ func setupUser(t *testing.T) (*TestStore, Auth, User) {
 	require.NoError(t, err)
 	require.NotNil(t, u)
 
-	return ts, auth, u
+	return auth, u
 }
 
-func Test_Creds(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_Creds() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -320,6 +334,6 @@ func Test_Creds(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, uc.ClaimsData.Expires > 0)
 
-	ud := u.(*UserData)
+	ud := u.(*nats_auth.UserData)
 	require.Equal(t, int64(0), ud.Claim.Expires)
 }
