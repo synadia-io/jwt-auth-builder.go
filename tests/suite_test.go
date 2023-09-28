@@ -47,7 +47,10 @@ func (suite *ProviderSuite) SetupTest() {
 	case KvProvider:
 		ts := NewKvStore(suite.T())
 		suite.Store = ts
-		k, err := kv.NewKvProvider("nats://demo.nats.io:4222", nuid.Next(), "")
+		k, err := kv.NewKvProvider(kv.NatsOptions("demo.nats.io:4222",
+			nil),
+			kv.Bucket(nuid.Next()),
+			kv.EncryptKey(""))
 		suite.Require().NoError(err)
 		suite.Provider = k
 		ts.provider = k

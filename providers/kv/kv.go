@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
+	"github.com/nats-io/jsm.go/natscontext"
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/nats-io/nkeys"
 	ab "github.com/synadia-io/jwt-auth-builder.go"
+	"strings"
 )
 
 // KvProvider is an AuthProvider that stores data in a JetStream KeyValue store
@@ -22,7 +23,6 @@ import (
 // if an optional encryption key (an nkey CurveKeys) is used, the keys will be encrypted
 // and require the same key to be decrypted.
 type KvProvider struct {
-	NatsURL    string
 	Bucket     string
 	Nc         *nats.Conn
 	Js         jetstream.JetStream
@@ -34,8 +34,91 @@ const (
 	OperatorPrefix = "O"
 )
 
-func NewKvProvider(natsURL string, bucket string, encrypt string) (*KvProvider, error) {
-	p := &KvProvider{NatsURL: natsURL, Bucket: bucket}
+type KvProviderOptions struct {
+	NatsContext string
+	NatsOptions []nats.Option
+	Bucket      string
+	EncryptKey  string
+}
+
+type KvProviderOption func(*KvProviderOptions) error
+
+func Bucket(bucket string) KvProviderOption {
+	return func(o *KvProviderOptions) error {
+		o.Bucket = bucket
+		return nil
+	}
+}
+
+func NatsOptions(url string, options ...nats.Option) KvProviderOption {
+	return func(o *KvProviderOptions) error {
+		var buf []nats.Option
+		for _, o := range options {
+			if o != nil {
+				buf = append(buf, o)
+			}
+		}
+		o.NatsOptions = buf
+		if url != "" {
+			o.NatsOptions = append(o.NatsOptions, func(options *nats.Options) error {
+				options.Url = strings.TrimSpace(url)
+				return nil
+			})
+		}
+		return nil
+	}
+}
+
+func NatsContext(context string) KvProviderOption {
+	return func(o *KvProviderOptions) error {
+		o.NatsContext = context
+		return nil
+	}
+}
+
+func EncryptKey(key string) KvProviderOption {
+	return func(o *KvProviderOptions) error {
+		o.EncryptKey = key
+		return nil
+	}
+}
+
+func NewKvProvider(opts ...KvProviderOption) (*KvProvider, error) {
+	var err error
+	config := &KvProviderOptions{}
+	for _, o := range opts {
+		if err := o(config); err != nil {
+			return nil, err
+		}
+	}
+	var nc *nats.Conn
+	name := config.NatsContext
+	if name != "" {
+		nc, err = natscontext.Connect(name, config.NatsOptions...)
+		if err != nil {
+			return nil, err
+		}
+	} else if len(config.NatsOptions) > 0 {
+		options := &nats.Options{}
+		for _, o := range config.NatsOptions {
+			if err := o(options); err != nil {
+				return nil, err
+			}
+		}
+		nc, err = options.Connect()
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return NewKvProviderWithConnection(nc, config.Bucket, config.EncryptKey)
+}
+
+func NewKvProviderWithConnection(nc *nats.Conn, bucket string, encrypt string) (*KvProvider, error) {
+	p := &KvProvider{Bucket: bucket}
+	p.Nc = nc
 	if encrypt != "" {
 		kp, err := nkeys.FromCurveSeed([]byte(encrypt))
 		if err != nil {
@@ -51,10 +134,6 @@ func NewKvProvider(natsURL string, bucket string, encrypt string) (*KvProvider, 
 
 func (p *KvProvider) init() error {
 	var err error
-	p.Nc, err = nats.Connect(p.NatsURL)
-	if err != nil {
-		return err
-	}
 	js, err := jetstream.New(p.Nc)
 	if err != nil {
 		p.Disconnect()
