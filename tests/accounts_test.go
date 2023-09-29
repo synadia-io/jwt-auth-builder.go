@@ -1,14 +1,14 @@
-package nats_auth
+package tests
 
 import (
 	"github.com/stretchr/testify/require"
-	"testing"
+	"github.com/synadia-io/jwt-auth-builder.go"
 	"time"
 )
 
-func Test_AccountsCrud(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_AccountsCrud() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -44,13 +44,13 @@ func Test_AccountsCrud(t *testing.T) {
 	require.Contains(t, accounts, b)
 
 	require.NoError(t, auth.Commit())
-	require.True(t, ts.AccountExists("O", "B"))
-	require.False(t, ts.AccountExists("O", "A"))
+	require.True(t, suite.Store.AccountExists("O", "B"))
+	require.False(t, suite.Store.AccountExists("O", "A"))
 }
 
-func Test_AccountsBasics(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_AccountsBasics() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -58,14 +58,14 @@ func Test_AccountsBasics(t *testing.T) {
 	a, err := o.Accounts().Add("A")
 	require.NoError(t, err)
 
-	ai := a.(*AccountData)
+	ai := a.(*nats_auth.AccountData)
 	require.Equal(t, ai.Claim.Subject, a.Subject())
 	require.Equal(t, o.Subject(), a.Issuer())
 }
 
-func setupTestWithOperatorAndAccount(t *testing.T) (Auth, Operator, Account) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func setupTestWithOperatorAndAccount(p *ProviderSuite) (nats_auth.Auth, nats_auth.Operator, nats_auth.Account) {
+	t := p.T()
+	auth, err := nats_auth.NewAuth(p.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -76,8 +76,9 @@ func setupTestWithOperatorAndAccount(t *testing.T) (Auth, Operator, Account) {
 	return auth, o, a
 }
 
-func Test_ScopedPermissionsMaxSubs(t *testing.T) {
-	auth, _, a := setupTestWithOperatorAndAccount(t)
+func (suite *ProviderSuite) Test_ScopedPermissionsMaxSubs() {
+	t := suite.T()
+	auth, _, a := setupTestWithOperatorAndAccount(suite)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
 	require.NoError(t, err)
 	require.NoError(t, s.SetMaxSubscriptions(10))
@@ -99,8 +100,9 @@ func Test_ScopedPermissionsMaxSubs(t *testing.T) {
 	require.Equal(t, int64(10), s.MaxSubscriptions())
 }
 
-func Test_ScopedPermissionsMaxPayload(t *testing.T) {
-	auth, _, a := setupTestWithOperatorAndAccount(t)
+func (suite *ProviderSuite) Test_ScopedPermissionsMaxPayload() {
+	t := suite.T()
+	auth, _, a := setupTestWithOperatorAndAccount(suite)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
 	require.NoError(t, err)
 	require.NoError(t, s.SetMaxPayload(101))
@@ -122,8 +124,9 @@ func Test_ScopedPermissionsMaxPayload(t *testing.T) {
 	require.Equal(t, int64(101), s.MaxPayload())
 }
 
-func Test_ScopedPermissionsMaxData(t *testing.T) {
-	auth, _, a := setupTestWithOperatorAndAccount(t)
+func (suite *ProviderSuite) Test_ScopedPermissionsMaxData() {
+	t := suite.T()
+	auth, _, a := setupTestWithOperatorAndAccount(suite)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
 	require.NoError(t, err)
 	require.NoError(t, s.SetMaxData(4123))
@@ -145,8 +148,9 @@ func Test_ScopedPermissionsMaxData(t *testing.T) {
 	require.Equal(t, int64(4123), s.MaxData())
 }
 
-func Test_ScopedPermissionsBearerToken(t *testing.T) {
-	auth, _, a := setupTestWithOperatorAndAccount(t)
+func (suite *ProviderSuite) Test_ScopedPermissionsBearerToken() {
+	t := suite.T()
+	auth, _, a := setupTestWithOperatorAndAccount(suite)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
 	require.NoError(t, err)
 	require.NoError(t, s.SetBearerToken(true))
@@ -168,8 +172,9 @@ func Test_ScopedPermissionsBearerToken(t *testing.T) {
 	require.True(t, s.BearerToken())
 }
 
-func Test_ScopedPermissionsConnectionTypes(t *testing.T) {
-	auth, _, a := setupTestWithOperatorAndAccount(t)
+func (suite *ProviderSuite) Test_ScopedPermissionsConnectionTypes() {
+	t := suite.T()
+	auth, _, a := setupTestWithOperatorAndAccount(suite)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
 	require.NoError(t, err)
 	types := s.ConnectionTypes()
@@ -193,8 +198,9 @@ func Test_ScopedPermissionsConnectionTypes(t *testing.T) {
 	require.Contains(t, types.Types(), "websocket")
 }
 
-func Test_ScopedPermissionsConnectionSources(t *testing.T) {
-	auth, _, a := setupTestWithOperatorAndAccount(t)
+func (suite *ProviderSuite) Test_ScopedPermissionsConnectionSources() {
+	t := suite.T()
+	auth, _, a := setupTestWithOperatorAndAccount(suite)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
 	require.NoError(t, err)
 	sources := s.ConnectionSources()
@@ -218,12 +224,13 @@ func Test_ScopedPermissionsConnectionSources(t *testing.T) {
 	require.Contains(t, sources.Sources(), "192.0.2.0/24")
 }
 
-func Test_ScopedPermissionsConnectionTimes(t *testing.T) {
-	auth, _, a := setupTestWithOperatorAndAccount(t)
+func (suite *ProviderSuite) Test_ScopedPermissionsConnectionTimes() {
+	t := suite.T()
+	auth, _, a := setupTestWithOperatorAndAccount(suite)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
 	require.NoError(t, err)
 	times := s.ConnectionTimes()
-	require.NoError(t, times.Set(TimeRange{Start: "08:00:00", End: "12:00:00"}))
+	require.NoError(t, times.Set(nats_auth.TimeRange{Start: "08:00:00", End: "12:00:00"}))
 	require.Len(t, times.List(), 1)
 	require.NoError(t, auth.Commit())
 
@@ -245,8 +252,9 @@ func Test_ScopedPermissionsConnectionTimes(t *testing.T) {
 	require.Equal(t, times.List()[0].End, "12:00:00")
 }
 
-func Test_ScopedPermissionsLocale(t *testing.T) {
-	auth, _, a := setupTestWithOperatorAndAccount(t)
+func (suite *ProviderSuite) Test_ScopedPermissionsLocale() {
+	t := suite.T()
+	auth, _, a := setupTestWithOperatorAndAccount(suite)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
 	require.NoError(t, err)
 	require.NoError(t, s.SetLocale("en_US"))
@@ -267,8 +275,9 @@ func Test_ScopedPermissionsLocale(t *testing.T) {
 	require.Equal(t, "en_US", s.Locale())
 }
 
-func Test_ScopedPermissionsSubject(t *testing.T) {
-	auth, _, a := setupTestWithOperatorAndAccount(t)
+func (suite *ProviderSuite) Test_ScopedPermissionsSubject() {
+	t := suite.T()
+	auth, _, a := setupTestWithOperatorAndAccount(suite)
 
 	admin, err := a.ScopedSigningKeys().AddScope("admin")
 	require.NoError(t, err)
@@ -305,9 +314,9 @@ func Test_ScopedPermissionsSubject(t *testing.T) {
 	require.Equal(t, time.Second, perm.Expires())
 }
 
-func Test_ScopeRotation(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_ScopeRotation() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -343,9 +352,9 @@ func Test_ScopeRotation(t *testing.T) {
 	require.Nil(t, scope2)
 }
 
-func Test_SigningKeyRotation(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_SigningKeyRotation() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)

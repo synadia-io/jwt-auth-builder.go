@@ -1,6 +1,6 @@
 module github.com/synadia-io/jwt-auth-builder.go
 
-go 1.20
+go 1.21
 
 require (
 	github.com/nats-io/jwt/v2 v2.5.2

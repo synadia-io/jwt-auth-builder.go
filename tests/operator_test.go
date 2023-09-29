@@ -1,14 +1,13 @@
-package nats_auth
+package tests
 
 import (
 	"github.com/stretchr/testify/require"
-	"testing"
+	"github.com/synadia-io/jwt-auth-builder.go"
 )
 
-func Test_OperatorBasics(t *testing.T) {
-	ts := NewTestStore(t)
-
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_OperatorBasics() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 
 	operators := auth.Operators()
@@ -25,48 +24,48 @@ func Test_OperatorBasics(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, operators.List(), 1)
 	require.Equal(t, "O", operators.List()[0].Name())
-	require.False(t, ts.OperatorExists("O"))
+	require.False(t, suite.Store.OperatorExists("O"))
 
 	require.NoError(t, auth.Commit())
 
-	oc := ts.GetOperator(t, "O")
+	oc := suite.Store.GetOperator("O")
 	require.NotNil(t, oc)
 	require.Equal(t, "O", oc.Name)
-	require.True(t, ts.OperatorExists("O"))
+	require.True(t, suite.Store.OperatorExists("O"))
 
-	key := ts.GetKey(t, oc.Subject)
+	key := suite.Store.GetKey(oc.Subject)
 	require.NotNil(t, key)
 	require.Equal(t, oc.Subject, key.Public)
 }
 
-func Test_OperatorValidation(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_OperatorValidation() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
 	require.Error(t, o.SetOperatorServiceURL("foo://localhost:8080"))
 }
 
-func Test_OperatorLoads(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_OperatorLoads() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
 	require.NotNil(t, o)
 	require.NoError(t, auth.Commit())
 
-	auth, err = NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+	auth, err = nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o = auth.Operators().Get("O")
 	require.NoError(t, err)
 	require.NotNil(t, o)
 }
 
-func Test_OperatorSigningKeys(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_OperatorSigningKeys() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -87,11 +86,11 @@ func Test_OperatorSigningKeys(t *testing.T) {
 	require.Contains(t, keys, sk3)
 	require.NoError(t, auth.Commit())
 
-	k := ts.GetKey(t, sk1)
+	k := suite.Store.GetKey(sk1)
 	require.NotNil(t, k)
-	k = ts.GetKey(t, sk2)
+	k = suite.Store.GetKey(sk2)
 	require.NotNil(t, k)
-	k = ts.GetKey(t, sk3)
+	k = suite.Store.GetKey(sk3)
 	require.NotNil(t, k)
 
 	sk1a, err := o.SigningKeys().Rotate(sk1)
@@ -112,9 +111,9 @@ func Test_OperatorSigningKeys(t *testing.T) {
 	require.Contains(t, keys, sk3)
 }
 
-func Test_OperatorAccountServerURL(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_OperatorAccountServerURL() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -122,13 +121,13 @@ func Test_OperatorAccountServerURL(t *testing.T) {
 	require.NoError(t, auth.Commit())
 	require.Equal(t, "http://localhost:8080", o.AccountServerURL())
 
-	oc := ts.GetOperator(t, "O")
+	oc := suite.Store.GetOperator("O")
 	require.Equal(t, "http://localhost:8080", oc.AccountServerURL)
 }
 
-func Test_OperatorServiceURL(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_OperatorServiceURL() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -136,13 +135,13 @@ func Test_OperatorServiceURL(t *testing.T) {
 	require.NoError(t, auth.Commit())
 	require.Equal(t, "nats://localhost:4222", o.OperatorServiceURLs()[0])
 
-	oc := ts.GetOperator(t, "O")
+	oc := suite.Store.GetOperator("O")
 	require.Equal(t, "nats://localhost:4222", oc.OperatorServiceURLs[0])
 }
 
-func Test_OperatorUsesMainKeyToSignAccount(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_OperatorUsesMainKeyToSignAccount() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -153,9 +152,9 @@ func Test_OperatorUsesMainKeyToSignAccount(t *testing.T) {
 	require.NoError(t, auth.Commit())
 }
 
-func Test_OperatorUsesSigningKeyToSignAccount(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_OperatorUsesSigningKeyToSignAccount() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -167,13 +166,13 @@ func Test_OperatorUsesSigningKeyToSignAccount(t *testing.T) {
 	require.NotNil(t, sk, a.Issuer())
 	require.NoError(t, auth.Commit())
 
-	ac := ts.GetAccount(t, "O", "A")
+	ac := suite.Store.GetAccount("O", "A")
 	require.Equal(t, sk, ac.ClaimsData.Issuer)
 }
 
-func Test_OperatorRotate(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_OperatorRotate() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -190,13 +189,13 @@ func Test_OperatorRotate(t *testing.T) {
 	require.Equal(t, sk2, a.Issuer())
 	require.NoError(t, auth.Commit())
 
-	require.False(t, ts.KeyExists(t, sk))
-	require.True(t, ts.KeyExists(t, sk2))
+	require.False(t, suite.Store.KeyExists(sk))
+	require.True(t, suite.Store.KeyExists(sk2))
 }
 
-func Test_OperatorSystemAccount(t *testing.T) {
-	ts := NewTestStore(t)
-	auth, err := NewAuth(NewNscAuth(ts.StoresDir(), ts.KeysDir()))
+func (suite *ProviderSuite) Test_OperatorSystemAccount() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
