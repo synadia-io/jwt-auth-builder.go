@@ -54,6 +54,9 @@ func (suite *ProviderSuite) SetupTest() {
 		suite.Require().NoError(err)
 		suite.Provider = k
 		ts.provider = k
+		suite.cleanup = func(t *testing.T) {
+			ts.Cleanup()
+		}
 	default:
 		suite.FailNow("unknown provider type")
 	}
