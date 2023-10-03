@@ -149,6 +149,12 @@ type Account interface {
 	Users() Users
 	// ScopedSigningKeys returns an interface for managing signing keys
 	ScopedSigningKeys() ScopedKeys
+	// Imports returns an interface for managing imports
+	Imports() Imports
+	// Exports returns an interface for managing exports
+	Exports() Exports
+	// Limits returns an interface for managing account limits
+	Limits() AccountLimits
 }
 
 // Users is an interface for managing users
@@ -188,6 +194,127 @@ type User interface {
 	//it returns Issuer
 	IssuerAccount() string
 	UserLimits
+}
+
+// AccountLimits is an interface for managing account limits. Normally AccountLimits
+// are managed by the Operator. When managed, any value you set here may be discarded
+// by the Operator.
+type AccountLimits interface {
+	NatsLimits
+	EditableNatsLimits
+	// MaxConnections is the maximum number of connections that can be created
+	// by the account
+	MaxConnections() int64
+	// SetMaxConnections sets the maximum number of connections that can be created
+	// by the account
+	SetMaxConnections(max int64) error
+	// MaxLeafNodeConnections is the maximum number of leaf node connections that can be created
+	// by the account
+	MaxLeafNodeConnections() int64
+	// SetMaxLeafNodeConnections sets the maximum number of leaf node connections that can be created
+	// by the account
+	SetMaxLeafNodeConnections(max int64) error
+	// MaxImports is the maximum number of imports that can be used by the account.
+	// Note that if some environments may not count environment specific imports to this limit.
+	MaxImports() int64
+	// SetMaxImports sets the maximum number of imports that can be used by the account.
+	SetMaxImports(max int64) error
+	// MaxExports is the maximum number of exports that can be created by the account.
+	MaxExports() int64
+	// SetMaxExports sets the maximum number of exports that can be created by the account.
+	SetMaxExports(max int64) error
+	// AllowWildcardExports returns true if the account can create wildcard exports
+	AllowWildcardExports() bool
+	// SetAllowWildcardExports sets whether the account can create wildcard exports
+	SetAllowWildcardExports(tf bool) error
+	// DisallowBearerTokens returns true if the server should reject bearer tokens for the account.
+	DisallowBearerTokens() bool
+	// SetDisallowBearerTokens sets whether the server should reject bearer tokens for the account.
+	SetDisallowBearerTokens(tf bool) error
+	// JetStream returns an interface for managing JetStream limits for the account
+	JetStream() JetStreamTieredLimits
+}
+
+// JetStreamTieredLimits is an interface for managing JetStreamLimits
+// tiers are expressed as a replication factor. With factor 0 being
+// the default tier, which is applied to non-specified tiers. Use
+// of the global tier is discouraged.
+type JetStreamTieredLimits interface {
+	// Get returns the JetStreamLimits for the specified tier or nil
+	// if the tier doesn't exist. Tier 0 is the default tier, and always
+	// exists, but may be unlimited.
+	Get(tier int8) (JetStreamLimits, error)
+	// Add creates a default JetStreamLimits for the specified tier, and
+	// returns the JetStreamLimits interface for editing the limits.
+	// Note that you cannot Add tier 0, as it is the default tier and it
+	// always exists.
+	Add(tier int8) (JetStreamLimits, error)
+	// Delete removes the specified tier. If tier is 0, it will disable JetStream.
+	Delete(tier int8) (bool, error)
+	// IsJetStreamEnabled returns true if JetStream is enabled for the account
+	IsJetStreamEnabled() bool
+}
+
+// JetStreamLimits is an interface for managing JetStream limits
+type JetStreamLimits interface {
+	// MaxMemoryStorage returns the maximum amount of memory that
+	// memory streams can allocate across all streams in the account.
+	MaxMemoryStorage() (int64, error)
+	// SetMaxMemoryStorage sets the maximum amount of memory that
+	// can be allocated for all streams in the account
+	SetMaxMemoryStorage(max int64) error
+	// MaxDiskStorage returns the maximum amount of disk storage
+	// that disk streams can allocate across all streams in the account.
+	MaxDiskStorage() (int64, error)
+	// SetMaxDiskStorage sets the maximum amount of disk storage
+	// that can be allocated for all streams in the account
+	SetMaxDiskStorage(max int64) error
+	// MaxMemoryStreamSize returns the maximum size of a memory stream
+	MaxMemoryStreamSize() (int64, error)
+	// SetMaxMemoryStreamSize sets the maximum size of a memory stream
+	SetMaxMemoryStreamSize(max int64) error
+	// MaxDiskStreamSize returns the maximum size of a disk stream
+	MaxDiskStreamSize() (int64, error)
+	// SetMaxDiskStreamSize sets the maximum size of a disk stream
+	SetMaxDiskStreamSize(max int64) error
+	// MaxStreamSizeRequired when true requires all stream allocations
+	// to specify their maximum size.
+	MaxStreamSizeRequired() (bool, error)
+	// SetMaxStreamSizeRequired sets whether all stream allocations
+	// require setting a maximum size
+	SetMaxStreamSizeRequired(tf bool) error
+	// MaxStreams is the maximum number of streams that can be created
+	// by the account
+	MaxStreams() (int64, error)
+	// SetMaxStreams sets the maximum number of streams that can be created
+	// by the account
+	SetMaxStreams(max int64) error
+	// MaxConsumers is the maximum number of consumers that can be created
+	// by the account
+	MaxConsumers() (int64, error)
+	// SetMaxConsumers sets the maximum number of consumers that can be created
+	// by the account
+	SetMaxConsumers(max int64) error
+	// MaxAckPending is the maximum number of messages that can be pending
+	// for a consumer by default
+	MaxAckPending() (int64, error)
+	// SetMaxAckPending sets the maximum number of messages that can be pending
+	// for a consumer by default
+	SetMaxAckPending(max int64) error
+	// IsUnlimited returns true if the limits are unlimited
+	IsUnlimited() (bool, error)
+	// SetUnlimited Sets all options to be Unlimited (-1)
+	SetUnlimited() error
+	// Delete removes the JetStreamLimit. If the tier is 0, it will disable JetStream.
+	// Note that after using this function, any update to the limit will fail as the
+	// limit reference is invalid.
+	Delete() error
+}
+
+type Imports interface {
+}
+
+type Exports interface {
 }
 
 // SigningKeys is an interface for managing signing keys
@@ -296,8 +423,7 @@ type ConnectionSources interface {
 	Set(values string) error
 }
 
-// EditableUserLimits is an interface for editing the user limits
-type EditableUserLimits interface {
+type EditableNatsLimits interface {
 	// SetMaxSubscriptions sets the maximum number of subscriptions that the client can have.
 	// Set to -1 for unlimited.
 	SetMaxSubscriptions(max int64) error
@@ -307,6 +433,20 @@ type EditableUserLimits interface {
 	// SetMaxData sets the maximum data size that the client can send bytes
 	// Set to -1 for unlimited.
 	SetMaxData(max int64) error
+}
+
+type NatsLimits interface {
+	// MaxSubscriptions returns the maximum number of subscriptions that the client can have
+	MaxSubscriptions() int64
+	// MaxPayload returns the maximum payload size that the client can publish in bytes
+	MaxPayload() int64
+	// MaxData returns the maximum amount of data that the client can send in bytes
+	MaxData() int64
+}
+
+// EditableUserLimits is an interface for editing the user limits
+type EditableUserLimits interface {
+	EditableNatsLimits
 	// SetBearerToken sets whether the client can use bearer tokens. A bearer token
 	// is a JWT that doesn't require the client to sign the nonce when connecting. Thus,
 	// the private key for the client is not required.
@@ -318,12 +458,7 @@ type EditableUserLimits interface {
 // UserLimits is an interface for managing the user limits
 type UserLimits interface {
 	EditableUserLimits
-	// MaxSubscriptions returns the maximum number of subscriptions that the client can have
-	MaxSubscriptions() int64
-	// MaxPayload returns the maximum payload size that the client can publish in bytes
-	MaxPayload() int64
-	// MaxData returns the maximum amount of data that the client can send in bytes
-	MaxData() int64
+	NatsLimits
 	// BearerToken returns true if the client can use bearer tokens
 	BearerToken() bool
 	// Locale returns the locale for the client.

@@ -381,3 +381,173 @@ func (suite *ProviderSuite) Test_SigningKeyRotation() {
 
 	require.Equal(t, key, u.Issuer())
 }
+
+func (suite *ProviderSuite) Test_AccountLimits() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
+	require.NoError(t, err)
+	o, err := auth.Operators().Add("O")
+	require.NoError(t, err)
+	a, err := o.Accounts().Add("A")
+	require.NoError(t, err)
+
+	require.Equal(t, int64(-1), a.Limits().MaxData())
+	require.Equal(t, int64(-1), a.Limits().MaxSubscriptions())
+	require.Equal(t, int64(-1), a.Limits().MaxPayload())
+	require.Equal(t, int64(-1), a.Limits().MaxConnections())
+	require.Equal(t, int64(-1), a.Limits().MaxLeafNodeConnections())
+	require.Equal(t, int64(-1), a.Limits().MaxImports())
+	require.Equal(t, int64(-1), a.Limits().MaxExports())
+	require.True(t, a.Limits().AllowWildcardExports())
+	require.False(t, a.Limits().DisallowBearerTokens())
+
+	require.NoError(t, a.Limits().SetMaxData(100))
+	require.NoError(t, a.Limits().SetMaxSubscriptions(1_000))
+	require.NoError(t, a.Limits().SetMaxPayload(1_0000))
+	require.NoError(t, a.Limits().SetMaxConnections(3))
+	require.NoError(t, a.Limits().SetMaxLeafNodeConnections(30))
+	require.NoError(t, a.Limits().SetMaxImports(300))
+	require.NoError(t, a.Limits().SetMaxExports(3_000))
+	require.NoError(t, a.Limits().SetAllowWildcardExports(false))
+	require.NoError(t, a.Limits().SetDisallowBearerTokens(true))
+	require.NoError(t, auth.Commit())
+	require.NoError(t, auth.Reload())
+
+	require.Equal(t, int64(100), a.Limits().MaxData())
+	require.Equal(t, int64(1_000), a.Limits().MaxSubscriptions())
+	require.Equal(t, int64(10_000), a.Limits().MaxPayload())
+	require.Equal(t, int64(3), a.Limits().MaxConnections())
+	require.Equal(t, int64(30), a.Limits().MaxLeafNodeConnections())
+	require.Equal(t, int64(300), a.Limits().MaxImports())
+	require.Equal(t, int64(3_000), a.Limits().MaxExports())
+	require.False(t, a.Limits().AllowWildcardExports())
+	require.True(t, a.Limits().DisallowBearerTokens())
+}
+
+func (suite *ProviderSuite) testTier(auth nats_auth.Auth, account nats_auth.Account, tier int8) {
+	t := suite.T()
+	var err error
+
+	js := account.Limits().JetStream()
+	require.False(t, js.IsJetStreamEnabled())
+	lim, err := js.Get(tier)
+	require.NoError(t, err)
+	if tier == 0 {
+		require.NotNil(t, lim)
+	} else {
+		require.Nil(t, lim)
+		lim, err = js.Add(tier)
+		require.NoError(t, err)
+	}
+	ok, err := lim.IsUnlimited()
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	num, err := lim.MaxMemoryStorage()
+	require.NoError(t, err)
+	require.Equal(t, int64(0), num)
+
+	num, err = lim.MaxDiskStorage()
+	require.NoError(t, err)
+	require.Equal(t, int64(0), num)
+
+	num, err = lim.MaxMemoryStreamSize()
+	require.NoError(t, err)
+	require.Equal(t, int64(0), num)
+
+	num, err = lim.MaxDiskStreamSize()
+	require.NoError(t, err)
+	require.Equal(t, int64(0), num)
+
+	tf, err := lim.MaxStreamSizeRequired()
+	require.NoError(t, err)
+	require.False(t, tf)
+
+	num, err = lim.MaxStreams()
+	require.NoError(t, err)
+	require.Equal(t, int64(0), num)
+
+	num, err = lim.MaxConsumers()
+	require.NoError(t, err)
+	require.Equal(t, int64(0), num)
+
+	num, err = lim.MaxAckPending()
+	require.NoError(t, err)
+	require.Equal(t, int64(0), num)
+
+	require.NoError(t, lim.SetMaxDiskStorage(1000))
+	require.NoError(t, lim.SetMaxMemoryStorage(2000))
+	require.NoError(t, lim.SetMaxMemoryStreamSize(4000))
+	require.NoError(t, lim.SetMaxDiskStreamSize(8000))
+	require.NoError(t, lim.SetMaxStreamSizeRequired(true))
+	require.NoError(t, lim.SetMaxStreams(5))
+	require.NoError(t, lim.SetMaxConsumers(50))
+	require.NoError(t, lim.SetMaxAckPending(22))
+
+	tf, err = lim.IsUnlimited()
+	require.NoError(t, err)
+	require.False(t, tf)
+
+	require.NoError(t, auth.Commit())
+	require.NoError(t, auth.Reload())
+
+	lim, err = js.Get(tier)
+	require.NoError(t, err)
+	require.NotNil(t, lim)
+
+	tf, err = lim.IsUnlimited()
+	require.NoError(t, err)
+	require.False(t, tf)
+
+	num, err = lim.MaxDiskStorage()
+	require.NoError(t, err)
+	require.Equal(t, int64(1000), num)
+
+	num, err = lim.MaxMemoryStorage()
+	require.NoError(t, err)
+	require.Equal(t, int64(2000), num)
+
+	num, err = lim.MaxMemoryStreamSize()
+	require.NoError(t, err)
+	require.Equal(t, int64(4000), num)
+
+	num, err = lim.MaxDiskStreamSize()
+	require.NoError(t, err)
+	require.Equal(t, int64(8000), num)
+
+	tf, err = lim.MaxStreamSizeRequired()
+	require.NoError(t, err)
+	require.True(t, tf)
+
+	num, err = lim.MaxStreams()
+	require.NoError(t, err)
+	require.Equal(t, int64(5), num)
+
+	num, err = lim.MaxConsumers()
+	require.NoError(t, err)
+	require.Equal(t, int64(50), num)
+
+	num, err = lim.MaxAckPending()
+	require.NoError(t, err)
+	require.Equal(t, int64(22), num)
+
+	require.NoError(t, lim.SetUnlimited())
+	tf, err = lim.IsUnlimited()
+	require.NoError(t, err)
+	require.True(t, tf)
+
+}
+
+func (suite *ProviderSuite) Test_AccountJetStreamLimits() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
+	require.NoError(t, err)
+	o, err := auth.Operators().Add("O")
+	require.NoError(t, err)
+	a, err := o.Accounts().Add("A")
+	require.NoError(t, err)
+	suite.testTier(auth, a, 0)
+	b, err := o.Accounts().Add("B")
+	require.NoError(t, err)
+	suite.testTier(auth, b, 1)
+}

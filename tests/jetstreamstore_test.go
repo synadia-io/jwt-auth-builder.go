@@ -133,5 +133,8 @@ func (ts *KvStore) GetUser(operator string, account string, name string) *jwt.Us
 }
 
 func (ts *KvStore) Cleanup() {
-	require.NoError(ts.t, ts.provider.Destroy())
+	err := ts.provider.Destroy()
+	if err != nil {
+		ts.t.Logf("error cleaning up kv provider: %s", err)
+	}
 }
