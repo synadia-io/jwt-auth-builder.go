@@ -4,12 +4,12 @@ import (
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 	"github.com/stretchr/testify/require"
-	"github.com/synadia-io/jwt-auth-builder.go"
+	authb "github.com/synadia-io/jwt-auth-builder.go"
 )
 
 func (suite *ProviderSuite) Test_OperatorBasics() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 
 	operators := auth.Operators()
@@ -41,7 +41,7 @@ func (suite *ProviderSuite) Test_OperatorBasics() {
 
 func (suite *ProviderSuite) Test_OperatorValidation() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -50,14 +50,14 @@ func (suite *ProviderSuite) Test_OperatorValidation() {
 
 func (suite *ProviderSuite) Test_OperatorLoads() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
 	require.NotNil(t, o)
 	require.NoError(t, auth.Commit())
 
-	auth, err = nats_auth.NewAuth(suite.Provider)
+	auth, err = authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o = auth.Operators().Get("O")
 	require.NoError(t, err)
@@ -66,7 +66,7 @@ func (suite *ProviderSuite) Test_OperatorLoads() {
 
 func (suite *ProviderSuite) Test_OperatorSigningKeys() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -114,7 +114,7 @@ func (suite *ProviderSuite) Test_OperatorSigningKeys() {
 
 func (suite *ProviderSuite) Test_OperatorAccountServerURL() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -128,7 +128,7 @@ func (suite *ProviderSuite) Test_OperatorAccountServerURL() {
 
 func (suite *ProviderSuite) Test_OperatorServiceURL() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -142,7 +142,7 @@ func (suite *ProviderSuite) Test_OperatorServiceURL() {
 
 func (suite *ProviderSuite) Test_OperatorUsesMainKeyToSignAccount() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -155,7 +155,7 @@ func (suite *ProviderSuite) Test_OperatorUsesMainKeyToSignAccount() {
 
 func (suite *ProviderSuite) Test_OperatorUsesSigningKeyToSignAccount() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -173,7 +173,7 @@ func (suite *ProviderSuite) Test_OperatorUsesSigningKeyToSignAccount() {
 
 func (suite *ProviderSuite) Test_OperatorRotate() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -196,7 +196,7 @@ func (suite *ProviderSuite) Test_OperatorRotate() {
 
 func (suite *ProviderSuite) Test_OperatorSystemAccount() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -214,15 +214,15 @@ func (suite *ProviderSuite) Test_OperatorSystemAccount() {
 
 func (suite *ProviderSuite) Test_OperatorImport() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 
-	kp, err := nats_auth.KeyFor(nkeys.PrefixByteOperator)
+	kp, err := authb.KeyFor(nkeys.PrefixByteOperator)
 	require.NoError(t, err)
 
 	oc := jwt.NewOperatorClaims(kp.Public)
 	oc.Name = "O"
-	skp, err := nats_auth.KeyFor(nkeys.PrefixByteOperator)
+	skp, err := authb.KeyFor(nkeys.PrefixByteOperator)
 	require.NoError(t, err)
 	oc.SigningKeys.Add(skp.Public)
 

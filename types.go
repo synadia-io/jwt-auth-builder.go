@@ -1,4 +1,4 @@
-package nats_auth
+package authb
 
 import (
 	"github.com/nats-io/jwt/v2"

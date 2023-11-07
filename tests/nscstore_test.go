@@ -40,11 +40,11 @@ func (ts *NscStore) KeyExists(k string) bool {
 	return err == nil
 }
 
-func (ts *NscStore) GetKey(k string) *nats_auth.Key {
+func (ts *NscStore) GetKey(k string) *authb.Key {
 	fp := filepath.Join(ts.KeysDir(), store.KeysDir, k[:1], k[1:3], fmt.Sprintf("%s%s", k, store.NKeyExtension))
 	d, err := os.ReadFile(fp)
 	require.NoError(ts.t, err)
-	key, err := nats_auth.KeyFrom(string(d))
+	key, err := authb.KeyFrom(string(d))
 	require.NoError(ts.t, err)
 	return key
 }
