@@ -1,4 +1,4 @@
-package nats_auth
+package authb
 
 type accountLimits struct {
 	data *AccountData

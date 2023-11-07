@@ -2,13 +2,13 @@ package tests
 
 import (
 	"github.com/stretchr/testify/require"
-	"github.com/synadia-io/jwt-auth-builder.go"
+	authb "github.com/synadia-io/jwt-auth-builder.go"
 	"time"
 )
 
 func (suite *ProviderSuite) Test_AccountsCrud() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -50,7 +50,7 @@ func (suite *ProviderSuite) Test_AccountsCrud() {
 
 func (suite *ProviderSuite) Test_AccountsBasics() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -58,14 +58,14 @@ func (suite *ProviderSuite) Test_AccountsBasics() {
 	a, err := o.Accounts().Add("A")
 	require.NoError(t, err)
 
-	ai := a.(*nats_auth.AccountData)
+	ai := a.(*authb.AccountData)
 	require.Equal(t, ai.Claim.Subject, a.Subject())
 	require.Equal(t, o.Subject(), a.Issuer())
 }
 
-func setupTestWithOperatorAndAccount(p *ProviderSuite) (nats_auth.Auth, nats_auth.Operator, nats_auth.Account) {
+func setupTestWithOperatorAndAccount(p *ProviderSuite) (authb.Auth, authb.Operator, authb.Account) {
 	t := p.T()
-	auth, err := nats_auth.NewAuth(p.Provider)
+	auth, err := authb.NewAuth(p.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -230,7 +230,7 @@ func (suite *ProviderSuite) Test_ScopedPermissionsConnectionTimes() {
 	s, err := a.ScopedSigningKeys().AddScope("admin")
 	require.NoError(t, err)
 	times := s.ConnectionTimes()
-	require.NoError(t, times.Set(nats_auth.TimeRange{Start: "08:00:00", End: "12:00:00"}))
+	require.NoError(t, times.Set(authb.TimeRange{Start: "08:00:00", End: "12:00:00"}))
 	require.Len(t, times.List(), 1)
 	require.NoError(t, auth.Commit())
 
@@ -316,7 +316,7 @@ func (suite *ProviderSuite) Test_ScopedPermissionsSubject() {
 
 func (suite *ProviderSuite) Test_ScopeRotation() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -354,7 +354,7 @@ func (suite *ProviderSuite) Test_ScopeRotation() {
 
 func (suite *ProviderSuite) Test_SigningKeyRotation() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -384,7 +384,7 @@ func (suite *ProviderSuite) Test_SigningKeyRotation() {
 
 func (suite *ProviderSuite) Test_AccountLimits() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -424,7 +424,7 @@ func (suite *ProviderSuite) Test_AccountLimits() {
 	require.True(t, a.Limits().DisallowBearerTokens())
 }
 
-func (suite *ProviderSuite) testTier(auth nats_auth.Auth, account nats_auth.Account, tier int8) {
+func (suite *ProviderSuite) testTier(auth authb.Auth, account authb.Account, tier int8) {
 	t := suite.T()
 	var err error
 
@@ -540,7 +540,7 @@ func (suite *ProviderSuite) testTier(auth nats_auth.Auth, account nats_auth.Acco
 
 func (suite *ProviderSuite) Test_AccountJetStreamLimits() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)

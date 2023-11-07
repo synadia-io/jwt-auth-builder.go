@@ -3,13 +3,13 @@ package tests
 import (
 	"github.com/nats-io/jwt/v2"
 	"github.com/stretchr/testify/require"
-	"github.com/synadia-io/jwt-auth-builder.go"
+	authb "github.com/synadia-io/jwt-auth-builder.go"
 	"time"
 )
 
 func (suite *ProviderSuite) Test_UserBasics() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -54,7 +54,7 @@ func (suite *ProviderSuite) Test_UserBasics() {
 
 func (suite *ProviderSuite) Test_UserWithSigningKey() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -68,14 +68,14 @@ func (suite *ProviderSuite) Test_UserWithSigningKey() {
 	u, err := a.Users().Add("U", k)
 	require.NoError(t, err)
 	require.NotNil(t, u)
-	ud := u.(*nats_auth.UserData)
+	ud := u.(*authb.UserData)
 	require.Equal(t, k, ud.Claim.Issuer)
 	require.Equal(t, a.Subject(), ud.Claim.IssuerAccount)
 }
 
-func setupScopeUser(suite *ProviderSuite) nats_auth.User {
+func setupScopeUser(suite *ProviderSuite) authb.User {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -93,7 +93,7 @@ func setupScopeUser(suite *ProviderSuite) nats_auth.User {
 	require.NoError(t, err)
 	require.NotNil(t, u)
 	require.True(t, u.IsScoped())
-	ud := u.(*nats_auth.UserData)
+	ud := u.(*authb.UserData)
 	require.Equal(t, scope.Key(), ud.Claim.Issuer)
 	require.Equal(t, a.Subject(), ud.Claim.IssuerAccount)
 
@@ -107,7 +107,7 @@ func (suite *ProviderSuite) Test_ScopedUserFailsSetMaxSubscriptions() {
 	require.Equal(t, int64(0), n)
 	err := u.SetMaxSubscriptions(100)
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 }
 
 func (suite *ProviderSuite) Test_ScopedUserSetMaxSubscriptions() {
@@ -138,7 +138,7 @@ func (suite *ProviderSuite) Test_ScopedUserFailsSetMaxPayload() {
 	require.Equal(t, int64(0), n)
 	err := u.SetMaxPayload(100)
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 }
 
 func (suite *ProviderSuite) Test_ScopedUserSetMaxPayload() {
@@ -169,7 +169,7 @@ func (suite *ProviderSuite) Test_ScopedUserFailsSetMaxData() {
 	require.Equal(t, int64(0), n)
 	err := u.SetMaxData(100)
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 }
 
 func (suite *ProviderSuite) Test_ScopedUserSetMaxData() {
@@ -200,7 +200,7 @@ func (suite *ProviderSuite) Test_ScopedUserFailsSetBearerToken() {
 	require.Equal(t, false, n)
 	err := u.SetBearerToken(true)
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 }
 
 func (suite *ProviderSuite) Test_ScopedUserFailsSetLocale() {
@@ -210,7 +210,7 @@ func (suite *ProviderSuite) Test_ScopedUserFailsSetLocale() {
 	require.Equal(t, "", n)
 	err := u.SetLocale("")
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 }
 
 func (suite *ProviderSuite) Test_ScopedUserFailsPubPermissions() {
@@ -221,14 +221,14 @@ func (suite *ProviderSuite) Test_ScopedUserFailsPubPermissions() {
 
 	err := u.PubPermissions().SetAllow("foo")
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 
 	n = u.PubPermissions().Deny()
 	require.Empty(t, n)
 
 	err = u.PubPermissions().SetDeny("foo")
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 }
 
 func (suite *ProviderSuite) Test_ScopedUserFailsSubPermissions() {
@@ -239,14 +239,14 @@ func (suite *ProviderSuite) Test_ScopedUserFailsSubPermissions() {
 
 	err := u.SubPermissions().SetAllow("foo")
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 
 	n = u.SubPermissions().Deny()
 	require.Empty(t, n)
 
 	err = u.SubPermissions().SetDeny("foo")
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 }
 
 func (suite *ProviderSuite) Test_ScopedUserFailsRespondPermissions() {
@@ -258,11 +258,11 @@ func (suite *ProviderSuite) Test_ScopedUserFailsRespondPermissions() {
 
 	err := perms.SetExpires(time.Second)
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 
 	err = perms.SetMaxMessages(1)
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 }
 
 func (suite *ProviderSuite) Test_ScopedUserFailsConnectionTypes() {
@@ -273,7 +273,7 @@ func (suite *ProviderSuite) Test_ScopedUserFailsConnectionTypes() {
 
 	err := types.Set("websocket")
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 }
 
 func (suite *ProviderSuite) Test_ScopedUserFailsConnectionSources() {
@@ -284,7 +284,7 @@ func (suite *ProviderSuite) Test_ScopedUserFailsConnectionSources() {
 
 	err := types.Set("192.0.2.0/24")
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 }
 
 func (suite *ProviderSuite) Test_ScopedUserFailsConnectionTimes() {
@@ -293,14 +293,14 @@ func (suite *ProviderSuite) Test_ScopedUserFailsConnectionTimes() {
 	times := u.ConnectionTimes()
 	require.Empty(t, times.List())
 
-	err := times.Set(nats_auth.TimeRange{Start: "00:00:00", End: "23:59:01"})
+	err := times.Set(authb.TimeRange{Start: "00:00:00", End: "23:59:01"})
 	require.Error(t, err)
-	require.Equal(t, nats_auth.ErrUserIsScoped, err)
+	require.Equal(t, authb.ErrUserIsScoped, err)
 }
 
-func setupUser(suite *ProviderSuite) (nats_auth.Auth, nats_auth.User) {
+func setupUser(suite *ProviderSuite) (authb.Auth, authb.User) {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -316,7 +316,7 @@ func setupUser(suite *ProviderSuite) (nats_auth.Auth, nats_auth.User) {
 
 func (suite *ProviderSuite) Test_Creds() {
 	t := suite.T()
-	auth, err := nats_auth.NewAuth(suite.Provider)
+	auth, err := authb.NewAuth(suite.Provider)
 	require.NoError(t, err)
 	o, err := auth.Operators().Add("O")
 	require.NoError(t, err)
@@ -334,6 +334,6 @@ func (suite *ProviderSuite) Test_Creds() {
 	require.NoError(t, err)
 	require.True(t, uc.ClaimsData.Expires > 0)
 
-	ud := u.(*nats_auth.UserData)
+	ud := u.(*authb.UserData)
 	require.Equal(t, int64(0), ud.Claim.Expires)
 }

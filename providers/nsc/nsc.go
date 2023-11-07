@@ -36,8 +36,8 @@ func (a *NscProvider) MaybeMakeDir(path string) error {
 	return err
 }
 
-func (a *NscProvider) Load() ([]*nats_auth.OperatorData, error) {
-	var operators []*nats_auth.OperatorData
+func (a *NscProvider) Load() ([]*authb.OperatorData, error) {
+	var operators []*authb.OperatorData
 	if err := a.MaybeMakeDir(a.storesDir); err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (a *NscProvider) loadStore(name string) (store.IStore, error) {
 	return nil, err
 }
 
-func (a *NscProvider) loadOperator(si store.IStore) (*nats_auth.OperatorData, error) {
+func (a *NscProvider) loadOperator(si store.IStore) (*authb.OperatorData, error) {
 	token, err := si.ReadRawOperatorClaim()
 	if err != nil {
 		return nil, err
@@ -83,20 +83,20 @@ func (a *NscProvider) loadOperator(si store.IStore) (*nats_auth.OperatorData, er
 	if err != nil {
 		return nil, err
 	}
-	od := &nats_auth.OperatorData{BaseData: nats_auth.BaseData{EntityName: si.GetName(), Loaded: oc.IssuedAt}, Claim: oc}
+	od := &authb.OperatorData{BaseData: authb.BaseData{EntityName: si.GetName(), Loaded: oc.IssuedAt}, Claim: oc}
 	ks := store.NewKeyStore(od.EntityName)
 	kp, err := ks.GetKeyPair(oc.Issuer)
 	if err != nil {
 		return nil, err
 	}
 	if kp != nil {
-		od.Key, _ = nats_auth.KeyFromNkey(kp, nkeys.PrefixByteOperator)
+		od.Key, _ = authb.KeyFromNkey(kp, nkeys.PrefixByteOperator)
 	}
 	if len(oc.SigningKeys) > 0 {
 		for _, sk := range oc.SigningKeys {
 			skp, _ := ks.GetKeyPair(sk)
 			if skp != nil {
-				k, _ := nats_auth.KeyFromNkey(skp, nkeys.PrefixByteOperator)
+				k, _ := authb.KeyFromNkey(skp, nkeys.PrefixByteOperator)
 				if k != nil {
 					od.OperatorSigningKeys = append(od.OperatorSigningKeys, k)
 				}
@@ -113,8 +113,8 @@ func (a *NscProvider) loadOperator(si store.IStore) (*nats_auth.OperatorData, er
 	return od, err
 }
 
-func (a *NscProvider) loadAccounts(si store.IStore, ks store.KeyStore) ([]*nats_auth.AccountData, error) {
-	var datas []*nats_auth.AccountData
+func (a *NscProvider) loadAccounts(si store.IStore, ks store.KeyStore) ([]*authb.AccountData, error) {
+	var datas []*authb.AccountData
 	accountNames, err := si.ListSubContainers(store.Accounts)
 	if err != nil {
 		return nil, err
@@ -129,8 +129,8 @@ func (a *NscProvider) loadAccounts(si store.IStore, ks store.KeyStore) ([]*nats_
 	return datas, nil
 }
 
-func (a *NscProvider) loadAccount(si store.IStore, ks store.KeyStore, name string) (*nats_auth.AccountData, error) {
-	ad := &nats_auth.AccountData{BaseData: nats_auth.BaseData{EntityName: name}}
+func (a *NscProvider) loadAccount(si store.IStore, ks store.KeyStore, name string) (*authb.AccountData, error) {
+	ad := &authb.AccountData{BaseData: authb.BaseData{EntityName: name}}
 	token, err := si.ReadRawAccountClaim(name)
 	if err != nil {
 		return nil, err
@@ -143,13 +143,13 @@ func (a *NscProvider) loadAccount(si store.IStore, ks store.KeyStore, name strin
 	ad.Loaded = ad.Claim.IssuedAt
 	k, _ := ks.GetKeyPair(ad.Claim.Subject)
 	if k != nil {
-		ad.Key, _ = nats_auth.KeyFromNkey(k, nkeys.PrefixByteAccount)
+		ad.Key, _ = authb.KeyFromNkey(k, nkeys.PrefixByteAccount)
 	}
 	keys := ad.Claim.SigningKeys.Keys()
 	for _, k := range keys {
 		skp, _ := ks.GetKeyPair(k)
 		if skp != nil {
-			sk, _ := nats_auth.KeyFromNkey(skp, nkeys.PrefixByteOperator)
+			sk, _ := authb.KeyFromNkey(skp, nkeys.PrefixByteOperator)
 			if sk != nil {
 				ad.AccountSigningKeys = append(ad.AccountSigningKeys, sk)
 			}
@@ -168,8 +168,8 @@ func (a *NscProvider) loadAccount(si store.IStore, ks store.KeyStore, name strin
 	return ad, err
 }
 
-func (a *NscProvider) loadUsers(si store.IStore, ks store.KeyStore, account string) ([]*nats_auth.UserData, error) {
-	var datas []*nats_auth.UserData
+func (a *NscProvider) loadUsers(si store.IStore, ks store.KeyStore, account string) ([]*authb.UserData, error) {
+	var datas []*authb.UserData
 	names, err := si.ListEntries(store.Accounts, account, store.Users)
 	if err != nil {
 		return nil, err
@@ -184,9 +184,9 @@ func (a *NscProvider) loadUsers(si store.IStore, ks store.KeyStore, account stri
 	return datas, nil
 }
 
-func (a *NscProvider) loadUser(si store.IStore, ks store.KeyStore, account string, name string) (*nats_auth.UserData, error) {
+func (a *NscProvider) loadUser(si store.IStore, ks store.KeyStore, account string, name string) (*authb.UserData, error) {
 	var err error
-	ud := &nats_auth.UserData{BaseData: nats_auth.BaseData{EntityName: name}}
+	ud := &authb.UserData{BaseData: authb.BaseData{EntityName: name}}
 	token, err := si.ReadRawUserClaim(account, name)
 	if err != nil {
 		return nil, err
@@ -201,14 +201,14 @@ func (a *NscProvider) loadUser(si store.IStore, ks store.KeyStore, account strin
 	if err != nil {
 		return nil, err
 	}
-	ud.Key, err = nats_auth.KeyFromNkey(kp, nkeys.PrefixByteUser)
+	ud.Key, err = authb.KeyFromNkey(kp, nkeys.PrefixByteUser)
 	if err != nil {
 		return nil, err
 	}
 	return ud, nil
 }
 
-func (a *NscProvider) Store(operators []*nats_auth.OperatorData) error {
+func (a *NscProvider) Store(operators []*authb.OperatorData) error {
 	for _, o := range operators {
 		var err error
 		ks := store.NewKeyStore(o.EntityName)

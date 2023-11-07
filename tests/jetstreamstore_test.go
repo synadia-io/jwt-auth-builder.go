@@ -30,7 +30,7 @@ func (ts *KvStore) KeyExists(k string) bool {
 	return v != nil
 }
 
-func (ts *KvStore) GetKey(k string) *nats_auth.Key {
+func (ts *KvStore) GetKey(k string) *authb.Key {
 	v, err := ts.provider.GetKey(k)
 	require.NoError(ts.t, err)
 	return v
@@ -49,7 +49,7 @@ func (ts *KvStore) OperatorExists(name string) bool {
 }
 
 func (ts *KvStore) GetOperator(name string) *jwt.OperatorClaims {
-	var v *nats_auth.OperatorData
+	var v *authb.OperatorData
 	operators, err := ts.provider.LoadOperators()
 	require.NoError(ts.t, err)
 	for _, o := range operators {
