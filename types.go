@@ -97,6 +97,8 @@ type Operators interface {
 	Get(name string) Operator
 	// Delete an Operator by name or matching the specified ID
 	Delete(name string) error
+	// Import an Operator from JWT bytes and keys
+	Import(jwt []byte, keys []string) (Operator, error)
 }
 
 // Operator is an interface for editing the operator

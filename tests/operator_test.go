@@ -1,6 +1,8 @@
 package tests
 
 import (
+	"github.com/nats-io/jwt/v2"
+	"github.com/nats-io/nkeys"
 	"github.com/stretchr/testify/require"
 	"github.com/synadia-io/jwt-auth-builder.go"
 )
@@ -11,7 +13,6 @@ func (suite *ProviderSuite) Test_OperatorBasics() {
 	require.NoError(t, err)
 
 	operators := auth.Operators()
-	require.NoError(t, err)
 	require.Empty(t, operators.List())
 
 	o := auth.Operators().Get("O")
@@ -209,4 +210,35 @@ func (suite *ProviderSuite) Test_OperatorSystemAccount() {
 	require.NoError(t, o.SetSystemAccount(nil))
 	require.Nil(t, o.SystemAccount())
 	require.NoError(t, o.Accounts().Delete("SYS"))
+}
+
+func (suite *ProviderSuite) Test_OperatorImport() {
+	t := suite.T()
+	auth, err := nats_auth.NewAuth(suite.Provider)
+	require.NoError(t, err)
+
+	kp, err := nats_auth.KeyFor(nkeys.PrefixByteOperator)
+	require.NoError(t, err)
+
+	oc := jwt.NewOperatorClaims(kp.Public)
+	oc.Name = "O"
+	skp, err := nats_auth.KeyFor(nkeys.PrefixByteOperator)
+	require.NoError(t, err)
+	oc.SigningKeys.Add(skp.Public)
+
+	token, err := oc.Encode(kp.Pair)
+	require.NoError(t, err)
+
+	o, err := auth.Operators().Import(
+		[]byte(token),
+		[]string{string(kp.Seed), string(skp.Seed)})
+	require.NoError(t, err)
+	require.NotNil(t, o)
+
+	require.NoError(t, auth.Commit())
+	require.NoError(t, auth.Reload())
+	o = auth.Operators().Get("O")
+	require.NotNil(t, o)
+	require.Equal(t, kp.Public, o.Subject())
+	require.Equal(t, skp.Public, o.SigningKeys().List()[0])
 }
