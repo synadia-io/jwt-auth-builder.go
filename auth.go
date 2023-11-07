@@ -1,6 +1,7 @@
 package nats_auth
 
 import (
+	"fmt"
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 )
@@ -77,6 +78,51 @@ func (a *OperatorsImpl) Delete(name string) error {
 		a.auth.operators = a.auth.operators[:len(a.auth.operators)-1]
 	}
 	return nil
+}
+
+func (a *OperatorsImpl) Import(token []byte, keys []string) (Operator, error) {
+	claim, err := jwt.DecodeOperatorClaims(string(token))
+	if err != nil {
+		return nil, err
+	}
+
+	// we require all the keys? - new NGS will not allow you to
+	// edit configs via CLI, so this is not a problem?
+	m := make(map[string]*Key, len(keys))
+	for i, k := range keys {
+		key, err := KeyFrom(k, nkeys.PrefixByteOperator, nkeys.PrefixByteSeed)
+		if err != nil {
+			return nil, fmt.Errorf("invalid seed at %d: %w", i, err)
+		}
+		if key.Public != claim.Subject && !claim.SigningKeys.Contains(key.Public) {
+			return nil, fmt.Errorf("invalid seed %s: is not referenced by the operator", k)
+		}
+		m[key.Public] = key
+	}
+	if len(keys) != len(claim.SigningKeys)+1 {
+		return nil, fmt.Errorf("not all keys are provided: %d", len(keys))
+	}
+
+	var ok bool
+	data := &OperatorData{}
+	data.Claim = claim
+	data.EntityName = claim.Name
+	data.Key, ok = m[claim.Subject]
+	if !ok {
+		return nil, fmt.Errorf("%s was not provided", claim.Subject)
+	}
+	for _, k := range claim.SigningKeys {
+		key, ok := m[k]
+		if !ok {
+			return nil, fmt.Errorf("%s was not provided", k)
+		}
+		data.OperatorSigningKeys = append(data.OperatorSigningKeys, key)
+	}
+	a.auth.operators = append(a.auth.operators, data)
+	if err := data.update(); err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 func (a *AuthImpl) Commit() error {
