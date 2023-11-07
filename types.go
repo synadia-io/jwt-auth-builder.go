@@ -125,6 +125,12 @@ type Operator interface {
 	SetSystemAccount(account Account) error
 	// MemResolver generates a mem resolver server configuration
 	MemResolver() ([]byte, error)
+	// SetExpiry sets the expiry for the operator in Unix Time Seconds.
+	// 0 never expires.
+	SetExpiry(exp int64) error
+	// Expiry returns the expiry for the operator in Unix Time Seconds.
+	// 0 never expires
+	Expiry() int64
 }
 
 // Accounts is an interface for managing accounts
@@ -157,6 +163,12 @@ type Account interface {
 	Exports() Exports
 	// Limits returns an interface for managing account limits
 	Limits() AccountLimits
+	// SetExpiry sets the expiry for the account in Unix Time Seconds.
+	// 0 never expires.
+	SetExpiry(exp int64) error
+	// Expiry returns the expiry for the account in Unix Time Seconds.
+	// 0 never expires
+	Expiry() int64
 }
 
 // Users is an interface for managing users

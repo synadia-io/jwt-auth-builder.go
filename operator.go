@@ -1,12 +1,11 @@
 package authb
 
 import (
+	"encoding/json"
+	"errors"
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 	"github.com/nats-io/nsc/v2/cmd"
-
-	"encoding/json"
-	"errors"
 )
 
 func (o *OperatorData) String() string {
@@ -42,6 +41,15 @@ func (o *OperatorData) AccountServerURL() string {
 func (o *OperatorData) SetOperatorServiceURL(url ...string) error {
 	o.Claim.OperatorServiceURLs = url
 	return o.update()
+}
+
+func (o *OperatorData) SetExpiry(exp int64) error {
+	o.Claim.Expires = exp
+	return o.update()
+}
+
+func (o *OperatorData) Expiry() int64 {
+	return o.Claim.Expires
 }
 
 func (o *OperatorData) OperatorServiceURLs() []string {

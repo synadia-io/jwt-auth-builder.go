@@ -48,6 +48,15 @@ func (a *AccountData) update() error {
 	return a.issue(key)
 }
 
+func (a *AccountData) SetExpiry(exp int64) error {
+	a.Claim.Expires = exp
+	return a.update()
+}
+
+func (a *AccountData) Expiry() int64 {
+	return a.Claim.Expires
+}
+
 func (a *AccountData) Users() Users {
 	return &UsersImpl{accountData: a}
 }
