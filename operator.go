@@ -3,6 +3,7 @@ package authb
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 	"github.com/nats-io/nsc/v2/cmd"
@@ -39,7 +40,12 @@ func (o *OperatorData) AccountServerURL() string {
 }
 
 func (o *OperatorData) SetOperatorServiceURL(url ...string) error {
-	o.Claim.OperatorServiceURLs = url
+	if len(url) == 1 && url[0] == "" {
+		o.Claim.OperatorServiceURLs = nil
+	} else {
+		o.Claim.OperatorServiceURLs = url
+	}
+
 	return o.update()
 }
 
