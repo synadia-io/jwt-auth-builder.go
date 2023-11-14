@@ -48,6 +48,8 @@ func (u *UserData) update() error {
 	}
 	u.Claim = claim
 	u.Token = token
+	u.Loaded = claim.IssuedAt
+	u.Modified = true
 	return nil
 }
 

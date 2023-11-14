@@ -19,13 +19,13 @@ func (os *operatorSigningKeys) add() (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
+	os.data.Claim.SigningKeys.Add(key.Public)
 	err = os.data.update()
 	if err != nil {
 		return nil, err
 	}
 	os.data.AddedKeys = append(os.data.AddedKeys, key)
 	os.data.OperatorSigningKeys = append(os.data.OperatorSigningKeys, key)
-	os.data.Claim.SigningKeys = append(os.data.Claim.SigningKeys, key.Public)
 	return key, nil
 }
 

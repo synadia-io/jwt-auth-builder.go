@@ -551,3 +551,44 @@ func (suite *ProviderSuite) Test_AccountJetStreamLimits() {
 	require.NoError(t, err)
 	suite.testTier(auth, b, 1)
 }
+
+func (suite *ProviderSuite) Test_AccountSkUpdate() {
+	t := suite.T()
+	auth, err := authb.NewAuth(suite.Provider)
+	require.NoError(t, err)
+
+	operators := auth.Operators()
+	require.Empty(t, operators.List())
+
+	o, err := operators.Add("O")
+	require.NoError(t, err)
+	require.NotNil(t, o)
+
+	a, err := o.Accounts().Add("A")
+	require.NoError(t, err)
+	require.NotNil(t, a)
+
+	require.NoError(t, auth.Commit())
+	require.NoError(t, auth.Reload())
+
+	o = operators.Get("O")
+	require.NotNil(t, o)
+
+	a = o.Accounts().Get("A")
+	require.NotNil(t, a)
+
+	k, err := a.ScopedSigningKeys().Add()
+	require.NoError(t, err)
+	require.NotEmpty(t, k)
+
+	require.NoError(t, auth.Commit())
+	require.NoError(t, auth.Reload())
+
+	o = operators.Get("O")
+	require.NotNil(t, o)
+	a = o.Accounts().Get("A")
+	require.NotNil(t, a)
+	scope, ok := a.ScopedSigningKeys().GetScope(k)
+	require.Nil(t, scope)
+	require.True(t, ok)
+}
