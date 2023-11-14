@@ -23,7 +23,7 @@ func (a *UsersImpl) Add(name string, key string) (User, error) {
 		return nil, err
 	}
 	d := &UserData{
-		BaseData:    BaseData{EntityName: name, Key: uk},
+		BaseData:    BaseData{EntityName: name, Key: uk, Modified: true},
 		AccountData: a.accountData,
 		Claim:       jwt.NewUserClaims(uk.Public),
 		RejectEdits: scoped,

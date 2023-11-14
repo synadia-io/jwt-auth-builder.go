@@ -225,6 +225,7 @@ func (p *KvProvider) LoadOperators() ([]*ab.OperatorData, error) {
 			return nil, err
 		}
 		o.Claim = oc
+		o.Modified = false
 		o.Loaded = o.Claim.IssuedAt
 		o.EntityName = o.Claim.Name
 		o.Key, err = p.GetKey(o.Claim.Subject)
@@ -260,6 +261,7 @@ func (p *KvProvider) LoadAccounts(od *ab.OperatorData) error {
 		if err != nil {
 			return err
 		}
+		a.Modified = false
 		a.Claim = ac
 		a.Loaded = a.Claim.IssuedAt
 		a.EntityName = a.Claim.Name
@@ -297,6 +299,7 @@ func (p *KvProvider) LoadUsers(ad *ab.AccountData) error {
 			return err
 		}
 		u.Claim = uc
+		u.Modified = false
 		u.Loaded = u.Claim.IssuedAt
 		u.EntityName = u.Claim.Name
 		u.Key, err = p.GetKey(u.Claim.Subject)
@@ -400,7 +403,7 @@ func (p *KvProvider) Store(operators []*ab.OperatorData) error {
 }
 
 func (p *KvProvider) StoreOperator(o *ab.OperatorData) error {
-	if o.Loaded > 0 && o.Loaded > o.Claim.IssuedAt {
+	if !o.Modified {
 		return nil
 	}
 	_, err := p.Kv.Put(context.Background(), fmt.Sprintf("%s.%s", OperatorPrefix, o.Subject()), []byte(o.Token))
@@ -416,11 +419,12 @@ func (p *KvProvider) StoreOperator(o *ab.OperatorData) error {
 		}
 	}
 	o.Loaded = o.Claim.IssuedAt
+	o.Modified = false
 	return nil
 }
 
 func (p *KvProvider) StoreAccount(a *ab.AccountData) error {
-	if a.Loaded > 0 && a.Loaded > a.Claim.IssuedAt {
+	if !a.Modified {
 		return nil
 	}
 	_, err := p.Kv.Put(context.Background(),
@@ -438,11 +442,12 @@ func (p *KvProvider) StoreAccount(a *ab.AccountData) error {
 		}
 	}
 	a.Loaded = a.Claim.IssuedAt
+	a.Modified = false
 	return nil
 }
 
 func (p *KvProvider) StoreUser(u *ab.UserData) error {
-	if u.Loaded > 0 && u.Loaded > u.Claim.IssuedAt {
+	if !u.Modified {
 		return nil
 	}
 	_, err := p.Kv.Put(context.Background(),
@@ -452,6 +457,7 @@ func (p *KvProvider) StoreUser(u *ab.UserData) error {
 		return err
 	}
 	u.Loaded = u.Claim.IssuedAt
+	u.Modified = false
 	return nil
 }
 

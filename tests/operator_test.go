@@ -39,6 +39,41 @@ func (suite *ProviderSuite) Test_OperatorBasics() {
 	require.Equal(t, oc.Subject, key.Public)
 }
 
+func (suite *ProviderSuite) Test_SkUpdate() {
+	t := suite.T()
+	auth, err := authb.NewAuth(suite.Provider)
+	require.NoError(t, err)
+
+	operators := auth.Operators()
+	require.Empty(t, operators.List())
+
+	o := auth.Operators().Get("O")
+	require.NoError(t, err)
+	require.Nil(t, o)
+	o, err = operators.Add("O")
+	require.NoError(t, err)
+	require.NotNil(t, o)
+
+	require.NoError(t, auth.Commit())
+	require.NoError(t, auth.Reload())
+
+	o = operators.Get("O")
+	require.NotNil(t, o)
+
+	k, err := o.SigningKeys().Add()
+	require.NoError(t, err)
+	require.NotEmpty(t, k)
+
+	require.NoError(t, auth.Commit())
+	require.NoError(t, auth.Reload())
+
+	o = operators.Get("O")
+	require.NotNil(t, o)
+	keys := o.SigningKeys().List()
+	require.Len(t, keys, 1)
+	require.Contains(t, keys, k)
+}
+
 func (suite *ProviderSuite) Test_OperatorValidation() {
 	t := suite.T()
 	auth, err := authb.NewAuth(suite.Provider)

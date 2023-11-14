@@ -149,7 +149,7 @@ func (a *NscProvider) loadAccount(si store.IStore, ks store.KeyStore, name strin
 	for _, k := range keys {
 		skp, _ := ks.GetKeyPair(k)
 		if skp != nil {
-			sk, _ := authb.KeyFromNkey(skp, nkeys.PrefixByteOperator)
+			sk, _ := authb.KeyFromNkey(skp, nkeys.PrefixByteAccount)
 			if sk != nil {
 				ad.AccountSigningKeys = append(ad.AccountSigningKeys, sk)
 			}
@@ -229,7 +229,7 @@ func (a *NscProvider) Store(operators []*authb.OperatorData) error {
 			return err
 		}
 		// if the operator changed configuration save it
-		if o.Claim.IssuedAt > o.Loaded {
+		if o.Modified {
 			if err := s.StoreRaw([]byte(o.Token)); err != nil {
 				return err
 			}
@@ -252,22 +252,24 @@ func (a *NscProvider) Store(operators []*authb.OperatorData) error {
 		o.DeletedKeys = nil
 
 		for _, account := range o.AccountDatas {
-			if account.Claim.IssuedAt > account.Loaded {
+			if account.Modified {
+				//if account.Claim.IssuedAt > account.Loaded || account.Modified {
 				if err := s.StoreRaw([]byte(account.Token)); err != nil {
 					return err
 				}
 				// check that signing keys were not modified
 				account.Loaded = account.Claim.IssuedAt
+			}
 
-				for _, u := range account.UserDatas {
-					if u.Claim.IssuedAt > u.Loaded {
-						if err := s.StoreRaw([]byte(u.Token)); err != nil {
-							return err
-						}
-						u.Loaded = u.Claim.IssuedAt
+			for _, u := range account.UserDatas {
+				if u.Modified {
+					if err := s.StoreRaw([]byte(u.Token)); err != nil {
+						return err
 					}
+					u.Loaded = u.Claim.IssuedAt
 				}
 			}
+
 			for _, u := range account.DeletedUsers {
 				if err := s.Delete(store.Accounts, account.EntityName, store.Users, store.JwtName(u.EntityName)); err != nil {
 					return err

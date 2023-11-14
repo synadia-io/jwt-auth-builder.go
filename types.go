@@ -30,9 +30,11 @@ type BaseData struct {
 	// Loaded matches the issue time of a loaded JWT (UTC in seconds). When
 	// the entity is new, it should be 0. The AuthProvider
 	// stores claims that have been modified and have
-	// an issue time greater than this value. On Store(),
+	// an issue time greater than this value or have been Modified. On Store(),
 	// it should be set to the tokens issue time.
 	Loaded int64
+	// Modified is true if the entity has been modified since it was loaded
+	Modified bool
 	// EntityName is the name for the entity - in some cases NSC
 	// will display simple name which differs from the actual name
 	// of the entity stored in the JWT.

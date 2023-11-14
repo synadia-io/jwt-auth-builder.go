@@ -25,6 +25,7 @@ func (a *AccountData) issue(key *Key) error {
 	}
 	a.Claim = claim
 	a.Token = token
+	a.Modified = true
 	return nil
 }
 

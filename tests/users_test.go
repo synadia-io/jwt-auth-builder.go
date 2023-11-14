@@ -337,3 +337,37 @@ func (suite *ProviderSuite) Test_Creds() {
 	ud := u.(*authb.UserData)
 	require.Equal(t, int64(0), ud.Claim.Expires)
 }
+
+func (suite *ProviderSuite) Test_UsersAddedSave() {
+	t := suite.T()
+	auth, err := authb.NewAuth(suite.Provider)
+	require.NoError(t, err)
+	o, err := auth.Operators().Add("O")
+	require.NoError(t, err)
+	require.NotNil(t, o)
+	a, err := o.Accounts().Add("A")
+	require.NoError(t, err)
+	require.NotNil(t, a)
+
+	require.NoError(t, auth.Commit())
+	require.NoError(t, auth.Reload())
+
+	o = auth.Operators().Get("O")
+	require.NotNil(t, o)
+	a = o.Accounts().Get("A")
+	require.NotNil(t, a)
+
+	u, err := a.Users().Add("U", "")
+	require.NoError(t, err)
+	require.NotNil(t, u)
+
+	require.NoError(t, auth.Commit())
+	require.NoError(t, auth.Reload())
+
+	o = auth.Operators().Get("O")
+	require.NotNil(t, o)
+	a = o.Accounts().Get("A")
+	require.NotNil(t, a)
+	u = a.Users().Get("U")
+	require.NotNil(t, u)
+}

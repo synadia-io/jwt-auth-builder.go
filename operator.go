@@ -148,6 +148,7 @@ func (o *OperatorData) update() error {
 	}
 	o.Claim = claims
 	o.Token = token
+	o.Modified = true
 
 	return nil
 }
