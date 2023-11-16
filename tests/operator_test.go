@@ -212,6 +212,25 @@ func (suite *ProviderSuite) Test_OperatorSystemAccount() {
 	require.NoError(t, o.Accounts().Delete("SYS"))
 }
 
+func (suite *ProviderSuite) Test_MemResolver() {
+	t := suite.T()
+	auth, err := authb.NewAuth(suite.Provider)
+	require.NoError(t, err)
+
+	_, err = auth.Operators().Add("O")
+	require.NoError(t, err)
+
+	require.NoError(t, auth.Commit())
+
+	auth, err = authb.NewAuth(suite.Provider)
+	require.NoError(t, err)
+
+	o := auth.Operators().Get("O")
+
+	_, err = o.MemResolver()
+	require.NoError(t, err)
+}
+
 func (suite *ProviderSuite) Test_OperatorImport() {
 	t := suite.T()
 	auth, err := authb.NewAuth(suite.Provider)

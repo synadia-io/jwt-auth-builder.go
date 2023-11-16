@@ -83,7 +83,7 @@ func (a *NscProvider) loadOperator(si store.IStore) (*authb.OperatorData, error)
 	if err != nil {
 		return nil, err
 	}
-	od := &authb.OperatorData{BaseData: authb.BaseData{EntityName: si.GetName(), Loaded: oc.IssuedAt}, Claim: oc}
+	od := &authb.OperatorData{BaseData: authb.BaseData{EntityName: si.GetName(), Loaded: oc.IssuedAt, Token: string(token)}, Claim: oc}
 	ks := store.NewKeyStore(od.EntityName)
 	kp, err := ks.GetKeyPair(oc.Issuer)
 	if err != nil {
