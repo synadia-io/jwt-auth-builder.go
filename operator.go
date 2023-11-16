@@ -3,10 +3,8 @@ package authb
 import (
 	"encoding/json"
 	"errors"
-
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
-	"github.com/nats-io/nsc/v2/cmd"
 )
 
 func (o *OperatorData) String() string {
@@ -153,22 +151,22 @@ func (o *OperatorData) update() error {
 	return nil
 }
 
-func (o *OperatorData) MemResolver() ([]byte, error) {
-	builder := cmd.NewMemResolverConfigBuilder()
-	if err := builder.Add([]byte(o.Token)); err != nil {
-		return nil, err
-	}
-	sys := o.SystemAccount()
-	if sys != nil {
-		if err := builder.SetSystemAccount(sys.Subject()); err != nil {
-			return nil, err
-		}
-	}
-	for _, a := range o.Accounts().List() {
-		ad := a.(*AccountData)
-		if err := builder.Add([]byte(ad.Token)); err != nil {
-			return nil, err
-		}
-	}
-	return builder.Generate()
-}
+//func (o *OperatorData) MemResolver() ([]byte, error) {
+//	builder := cmd.NewMemResolverConfigBuilder()
+//	if err := builder.Add([]byte(o.Token)); err != nil {
+//		return nil, err
+//	}
+//	sys := o.SystemAccount()
+//	if sys != nil {
+//		if err := builder.SetSystemAccount(sys.Subject()); err != nil {
+//			return nil, err
+//		}
+//	}
+//	for _, a := range o.Accounts().List() {
+//		ad := a.(*AccountData)
+//		if err := builder.Add([]byte(ad.Token)); err != nil {
+//			return nil, err
+//		}
+//	}
+//	return builder.Generate()
+//}
