@@ -1,8 +1,9 @@
 package authb
 
 import (
-	"github.com/nats-io/jwt/v2"
 	"time"
+
+	"github.com/nats-io/jwt/v2"
 )
 
 // Auth is the interface for managing the auth store. Auth is created
@@ -125,8 +126,8 @@ type Operator interface {
 	SystemAccount() Account
 	// SetSystemAccount sets the system account
 	SetSystemAccount(account Account) error
-	//// MemResolver generates a mem resolver server configuration
-	//MemResolver() ([]byte, error)
+	// MemResolver generates a mem resolver server configuration
+	MemResolver() ([]byte, error)
 	// SetExpiry sets the expiry for the operator in Unix Time Seconds.
 	// 0 never expires.
 	SetExpiry(exp int64) error
