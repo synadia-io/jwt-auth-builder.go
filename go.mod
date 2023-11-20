@@ -1,13 +1,13 @@
 module github.com/synadia-io/jwt-auth-builder.go
 
-go 1.21
+go 1.20
 
 require (
 	github.com/nats-io/jsm.go v0.1.0
 	github.com/nats-io/jwt/v2 v2.5.3
 	github.com/nats-io/nats.go v1.31.0
 	github.com/nats-io/nkeys v0.4.6
-	github.com/nats-io/nsc/v2 v2.8.5
+	github.com/nats-io/nsc/v2 v2.8.6-0.20231117160437-b49262c20be8
 	github.com/nats-io/nuid v1.0.1
 	github.com/stretchr/testify v1.7.1
 )
