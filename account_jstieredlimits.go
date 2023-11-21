@@ -51,7 +51,7 @@ func (a *accountJsTieredLimits) Delete(tier int8) (bool, error) {
 }
 
 func (a *accountJsTieredLimits) IsJetStreamEnabled() bool {
-	return a.data.Claim.Limits.JetStreamLimits.IsUnlimited()
+	return a.data.Claim.Limits.IsJSEnabled()
 }
 
 func (a *accountJsTieredLimits) getLimit(tier int8) (JetStreamLimits, error) {
