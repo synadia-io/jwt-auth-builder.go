@@ -592,3 +592,41 @@ func (suite *ProviderSuite) Test_AccountSkUpdate() {
 	require.Nil(t, scope)
 	require.True(t, ok)
 }
+
+func (suite *ProviderSuite) Test_AccountSigningKeys() {
+	t := suite.T()
+	auth, err := authb.NewAuth(suite.Provider)
+	require.NoError(t, err)
+
+	operators := auth.Operators()
+	require.Empty(t, operators.List())
+
+	o, err := operators.Add("O")
+	require.NoError(t, err)
+	require.NotNil(t, o)
+
+	a, err := o.Accounts().Add("A")
+	require.NoError(t, err)
+	require.NotNil(t, a)
+
+	var keys []string
+	k, err := a.ScopedSigningKeys().Add()
+	require.NoError(t, err)
+	require.NotEmpty(t, k)
+	keys = append(keys, k)
+
+	sl, err := a.ScopedSigningKeys().AddScope("admin")
+	require.NoError(t, err)
+	require.NotNil(t, sl)
+	keys = append(keys, sl.Key())
+	keys2 := a.ScopedSigningKeys().List()
+	for _, k := range keys {
+		require.Contains(t, keys2, k)
+	}
+
+	roles := a.ScopedSigningKeys().ListRoles()
+	t.Log(roles)
+	require.NotNil(t, roles)
+	require.Len(t, roles, 1)
+	require.Contains(t, roles, "admin")
+}

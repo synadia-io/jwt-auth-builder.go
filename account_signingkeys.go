@@ -9,6 +9,12 @@ type accountSigningKeys struct {
 	data *AccountData
 }
 
+func (as *accountSigningKeys) List() []string {
+	v := make([]string, len(as.data.Claim.SigningKeys))
+	copy(v, as.data.Claim.SigningKeys.Keys())
+	return v
+}
+
 func (as *accountSigningKeys) Add() (string, error) {
 	k, err := KeyFor(nkeys.PrefixByteAccount)
 	if err != nil {
@@ -22,6 +28,20 @@ func (as *accountSigningKeys) Add() (string, error) {
 	as.data.AccountSigningKeys = append(as.data.AccountSigningKeys, k)
 	as.data.Operator.AddedKeys = append(as.data.Operator.AddedKeys, k)
 	return k.Public, nil
+}
+
+func (as *accountSigningKeys) ListRoles() []string {
+	var roles []string
+	for _, k := range as.data.Claim.SigningKeys.Keys() {
+		scope, ok := as.data.Claim.SigningKeys.GetScope(k)
+		if ok && scope != nil {
+			us, uok := scope.(*jwt.UserScope)
+			if uok {
+				roles = append(roles, us.Role)
+			}
+		}
+	}
+	return roles
 }
 
 func (as *accountSigningKeys) AddScope(role string) (ScopeLimits, error) {
@@ -53,8 +73,8 @@ func (as *accountSigningKeys) GetScope(key string) (ScopeLimits, bool) {
 func (as *accountSigningKeys) GetScopeByRole(role string) ScopeLimits {
 	for _, v := range as.data.Claim.SigningKeys {
 		if v != nil {
-			scope := v.(*jwt.UserScope)
-			if scope.Role == role {
+			scope, ok := v.(*jwt.UserScope)
+			if ok && scope.Role == role {
 				return toScopeLimits(as.data, scope)
 			}
 		}
