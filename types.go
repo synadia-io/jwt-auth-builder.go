@@ -531,4 +531,8 @@ type ScopedKeys interface {
 	// GetScopeByRole returns the first scope that matches the specified role.
 	// Note that the search must be an exact match
 	GetScopeByRole(string) ScopeLimits
+	// List returns a list of signing keys
+	List() []string
+	// ListRoles returns the names of roles associated with the account
+	ListRoles() []string
 }
