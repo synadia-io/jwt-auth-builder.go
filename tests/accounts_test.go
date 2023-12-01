@@ -1,9 +1,10 @@
 package tests
 
 import (
+	"time"
+
 	"github.com/stretchr/testify/require"
 	authb "github.com/synadia-io/jwt-auth-builder.go"
-	"time"
 )
 
 func (suite *ProviderSuite) Test_AccountsCrud() {
@@ -61,6 +62,30 @@ func (suite *ProviderSuite) Test_AccountsBasics() {
 	ai := a.(*authb.AccountData)
 	require.Equal(t, ai.Claim.Subject, a.Subject())
 	require.Equal(t, o.Subject(), a.Issuer())
+}
+
+func (suite *ProviderSuite) Test_AccountLimitsSetter() {
+	t := suite.T()
+	auth, err := authb.NewAuth(suite.Provider)
+	require.NoError(t, err)
+	o, err := auth.Operators().Add("O")
+	require.NoError(t, err)
+
+	a, err := o.Accounts().Add("A")
+	require.NoError(t, err)
+
+	require.NoError(t, a.Limits().SetMaxExports(10))
+	require.Equal(t, a.Limits().MaxExports(), int64(10))
+	require.Equal(t, a.Limits().MaxImports(), int64(-1))
+
+	al := a.Limits().OperatorLimits()
+	require.Equal(t, al.Exports, int64(10))
+
+	al.Exports = 20
+	al.Imports = 10
+	require.NoError(t, a.Limits().SetOperatorLimits(al))
+	require.Equal(t, a.Limits().MaxExports(), int64(20))
+	require.Equal(t, a.Limits().MaxImports(), int64(10))
 }
 
 func setupTestWithOperatorAndAccount(p *ProviderSuite) (authb.Auth, authb.Operator, authb.Account) {

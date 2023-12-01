@@ -79,7 +79,7 @@ type AccountData struct {
 	Claim *jwt.AccountClaims
 	// UserData is the list of account users
 	UserDatas []*UserData
-	//// DeletedUsers is a list of users that will be deleted on the next commit
+	// DeletedUsers is a list of users that will be deleted on the next commit
 	DeletedUsers []*UserData
 }
 
@@ -208,7 +208,7 @@ type User interface {
 	// ID of the account owning the user
 	Issuer() string
 	// IssuerAccount returns the ID of the account owning the user. Note that if not set,
-	//it returns Issuer
+	// it returns Issuer
 	IssuerAccount() string
 	UserLimits
 }
@@ -250,6 +250,10 @@ type AccountLimits interface {
 	SetDisallowBearerTokens(tf bool) error
 	// JetStream returns an interface for managing JetStream limits for the account
 	JetStream() JetStreamTieredLimits
+	// OperatorLimits retrieves the full operator limits structure
+	OperatorLimits() jwt.OperatorLimits
+	// SetOperatorLimits replaces the entire limit with the provided limits
+	SetOperatorLimits(limits jwt.OperatorLimits) error
 }
 
 // JetStreamTieredLimits is an interface for managing JetStreamLimits

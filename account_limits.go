@@ -1,7 +1,20 @@
 package authb
 
+import (
+	"github.com/nats-io/jwt/v2"
+)
+
 type accountLimits struct {
 	data *AccountData
+}
+
+func (a *accountLimits) OperatorLimits() jwt.OperatorLimits {
+	return a.data.Claim.Limits
+}
+
+func (a *accountLimits) SetOperatorLimits(limits jwt.OperatorLimits) error {
+	a.data.Claim.Limits = limits
+	return a.data.update()
 }
 
 func (a *accountLimits) MaxSubscriptions() int64 {
