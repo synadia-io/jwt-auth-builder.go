@@ -192,6 +192,8 @@ type Users interface {
 
 // User is an interface for editing a User
 type User interface {
+	// Name returns the name for the user
+	Name() string
 	// IsScoped returns true if the user is a scoped user - that is signed
 	// with a signing key that has associated user permissions or ScopeLimits.
 	// If a user is scoped, you cannot edit its limits or permissions, as
