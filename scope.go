@@ -9,6 +9,7 @@ import (
 type UserPermissions struct {
 	rejectEdits bool
 	accountData *AccountData
+	userData    *UserData
 	scope       *jwt.UserScope
 	limits      *jwt.UserPermissionLimits
 }
@@ -18,8 +19,14 @@ var ErrUserIsScoped = errors.New("user is scoped")
 func (u *UserPermissions) update() error {
 	if u.scope != nil {
 		u.accountData.Claim.SigningKeys[u.scope.Key] = u.scope
+		if err := u.accountData.update(); err != nil {
+			return err
+		}
 	}
-	return u.accountData.update()
+	if u.userData != nil {
+		return u.userData.update()
+	}
+	return nil
 }
 
 type ConnectionTypesImpl struct {
