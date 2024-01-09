@@ -371,3 +371,59 @@ func (suite *ProviderSuite) Test_UsersAddedSave() {
 	u = a.Users().Get("U")
 	require.NotNil(t, u)
 }
+
+func (suite *ProviderSuite) Test_UsersAddedPermsSave() {
+	auth, err := authb.NewAuth(suite.Provider)
+	suite.NoError(err)
+	o, err := auth.Operators().Add("O")
+	suite.NoError(err)
+	suite.NotNil(o)
+	a, err := o.Accounts().Add("A")
+	suite.NoError(err)
+	suite.NotNil(a)
+
+	suite.NoError(auth.Commit())
+	suite.NoError(auth.Reload())
+
+	o = auth.Operators().Get("O")
+	suite.NotNil(o)
+	a = o.Accounts().Get("A")
+	suite.NotNil(a)
+
+	u, err := a.Users().Add("U", "")
+	suite.NoError(err)
+	suite.NotNil(u)
+	suite.NoError(u.PubPermissions().SetAllow("foo", "bar"))
+	suite.NoError(u.SubPermissions().SetAllow("_inbox.me"))
+
+	suite.Contains(u.SubPermissions().Allow(), "_inbox.me")
+	suite.Contains(u.PubPermissions().Allow(), "foo")
+	suite.Contains(u.PubPermissions().Allow(), "bar")
+
+	suite.NoError(auth.Commit())
+	suite.NoError(auth.Reload())
+
+	o = auth.Operators().Get("O")
+	suite.NotNil(o)
+	a = o.Accounts().Get("A")
+	suite.NotNil(a)
+	u = a.Users().Get("U")
+	suite.NotNil(u)
+
+	suite.Contains(u.SubPermissions().Allow(), "_inbox.me")
+	suite.Contains(u.PubPermissions().Allow(), "foo")
+	suite.Contains(u.PubPermissions().Allow(), "bar")
+
+	creds, err := u.Creds(time.Hour * 24 * 365)
+	suite.NoError(err)
+
+	token, err := jwt.ParseDecoratedJWT(creds)
+	suite.NoError(err)
+
+	uc, err := jwt.DecodeUserClaims(token)
+	suite.NoError(err)
+	suite.Contains(uc.Permissions.Pub.Allow, "foo")
+	suite.Contains(uc.Permissions.Pub.Allow, "bar")
+	suite.Contains(uc.Permissions.Sub.Allow, "_inbox.me")
+
+}

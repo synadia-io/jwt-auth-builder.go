@@ -98,6 +98,7 @@ func (u *UserData) ConnectionTypes() ConnectionTypes {
 	v.rejectEdits = u.RejectEdits
 	v.limits = &u.Claim.UserPermissionLimits
 	v.accountData = u.AccountData
+	v.userData = u
 	return v
 }
 func (u *UserData) PubPermissions() Permissions {
@@ -106,6 +107,7 @@ func (u *UserData) PubPermissions() Permissions {
 	v.pub = true
 	v.limits = &u.Claim.UserPermissionLimits
 	v.accountData = u.AccountData
+	v.userData = u
 	return v
 }
 func (u *UserData) SubPermissions() Permissions {
@@ -113,6 +115,7 @@ func (u *UserData) SubPermissions() Permissions {
 	v.rejectEdits = u.RejectEdits
 	v.limits = &u.Claim.UserPermissionLimits
 	v.accountData = u.AccountData
+	v.userData = u
 	return v
 }
 func (u *UserData) ResponsePermissions() ResponsePermissions {
@@ -120,6 +123,7 @@ func (u *UserData) ResponsePermissions() ResponsePermissions {
 	v.rejectEdits = u.RejectEdits
 	v.limits = &u.Claim.UserPermissionLimits
 	v.accountData = u.AccountData
+	v.userData = u
 	return v
 }
 
@@ -128,6 +132,7 @@ func (u *UserData) ConnectionSources() ConnectionSources {
 	v.rejectEdits = u.RejectEdits
 	v.limits = &u.Claim.UserPermissionLimits
 	v.accountData = u.AccountData
+	v.userData = u
 	return v
 }
 
@@ -135,6 +140,7 @@ func (u *UserData) ConnectionTimes() ConnectionTimes {
 	v := &ConnectionTimesImpl{}
 	v.rejectEdits = u.RejectEdits
 	v.accountData = u.AccountData
+	v.userData = u
 	v.limits = &u.Claim.UserPermissionLimits
 	return v
 }
