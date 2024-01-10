@@ -134,6 +134,8 @@ type Operator interface {
 	// Expiry returns the expiry for the operator in Unix Time Seconds.
 	// 0 never expires
 	Expiry() int64
+	// JWT returns the encoded token
+	JWT() string
 }
 
 // Accounts is an interface for managing accounts
@@ -172,6 +174,8 @@ type Account interface {
 	// Expiry returns the expiry for the account in Unix Time Seconds.
 	// 0 never expires
 	Expiry() int64
+	// JWT returns the encoded token
+	JWT() string
 }
 
 // Users is an interface for managing users
@@ -212,6 +216,8 @@ type User interface {
 	// IssuerAccount returns the ID of the account owning the user. Note that if not set,
 	// it returns Issuer
 	IssuerAccount() string
+	// JWT returns the encoded token
+	JWT() string
 
 	UserLimits
 }

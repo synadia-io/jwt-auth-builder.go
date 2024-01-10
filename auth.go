@@ -2,6 +2,7 @@ package authb
 
 import (
 	"fmt"
+
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 )
@@ -133,4 +134,8 @@ func (a *AuthImpl) Reload() error {
 	var err error
 	a.operators, err = a.provider.Load()
 	return err
+}
+
+func (b *BaseData) JWT() string {
+	return b.Token
 }
