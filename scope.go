@@ -2,8 +2,9 @@ package authb
 
 import (
 	"errors"
-	"github.com/nats-io/jwt/v2"
 	"time"
+
+	"github.com/nats-io/jwt/v2"
 )
 
 type UserPermissions struct {
@@ -15,6 +16,19 @@ type UserPermissions struct {
 }
 
 var ErrUserIsScoped = errors.New("user is scoped")
+
+func (u *UserPermissions) SetUserPermissionLimits(limits jwt.UserPermissionLimits) error {
+	if u.rejectEdits {
+		return ErrUserIsScoped
+	}
+
+	u.limits = &limits
+	return u.update()
+}
+
+func (u *UserPermissions) UserPermissionLimits() jwt.UserPermissionLimits {
+	return *u.limits
+}
 
 func (u *UserPermissions) update() error {
 	if u.scope != nil {

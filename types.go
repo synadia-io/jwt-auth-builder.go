@@ -212,6 +212,7 @@ type User interface {
 	// IssuerAccount returns the ID of the account owning the user. Note that if not set,
 	// it returns Issuer
 	IssuerAccount() string
+
 	UserLimits
 }
 
@@ -252,10 +253,6 @@ type AccountLimits interface {
 	SetDisallowBearerTokens(tf bool) error
 	// JetStream returns an interface for managing JetStream limits for the account
 	JetStream() JetStreamTieredLimits
-	// OperatorLimits retrieves the full operator limits structure
-	OperatorLimits() jwt.OperatorLimits
-	// SetOperatorLimits replaces the entire limit with the provided limits
-	SetOperatorLimits(limits jwt.OperatorLimits) error
 }
 
 // JetStreamTieredLimits is an interface for managing JetStreamLimits
@@ -490,7 +487,7 @@ type UserLimits interface {
 	ConnectionTypes() ConnectionTypes
 	// ConnectionSources returns an interface for managing connection sources
 	ConnectionSources() ConnectionSources
-	// ConnectionTimes returns an interface for manaing connection times
+	// ConnectionTimes returns an interface for maintaining connection times
 	ConnectionTimes() ConnectionTimes
 	// PubPermissions returns an interface for managing NATS subjects that the client can publish.
 	PubPermissions() Permissions
