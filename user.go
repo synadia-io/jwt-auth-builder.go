@@ -1,8 +1,9 @@
 package authb
 
 import (
-	"github.com/nats-io/jwt/v2"
 	"time"
+
+	"github.com/nats-io/jwt/v2"
 )
 
 func (u *UserData) Subject() string {
@@ -154,6 +155,19 @@ func (u *UserData) SetLocale(locale string) error {
 	}
 	u.Claim.Limits.Locale = locale
 	return u.update()
+}
+
+func (u *UserData) SetUserPermissionLimits(limits jwt.UserPermissionLimits) error {
+	if u.RejectEdits {
+		return ErrUserIsScoped
+	}
+
+	u.Claim.User.UserPermissionLimits = limits
+	return u.update()
+}
+
+func (u *UserData) UserPermissionLimits() jwt.UserPermissionLimits {
+	return u.Claim.User.UserPermissionLimits
 }
 
 func (u *UserData) Creds(expiry time.Duration) ([]byte, error) {

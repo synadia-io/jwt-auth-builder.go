@@ -3,6 +3,7 @@ package tests
 import (
 	"time"
 
+	"github.com/nats-io/jwt/v2"
 	"github.com/stretchr/testify/require"
 	authb "github.com/synadia-io/jwt-auth-builder.go"
 )
@@ -78,14 +79,89 @@ func (suite *ProviderSuite) Test_AccountLimitsSetter() {
 	require.Equal(t, a.Limits().MaxExports(), int64(10))
 	require.Equal(t, a.Limits().MaxImports(), int64(-1))
 
-	al := a.Limits().OperatorLimits()
+	type operatorLimitsManager interface {
+		OperatorLimits() jwt.OperatorLimits
+		SetOperatorLimits(limits jwt.OperatorLimits) error
+	}
+
+	al := a.Limits().(operatorLimitsManager).OperatorLimits()
 	require.Equal(t, al.Exports, int64(10))
 
 	al.Exports = 20
 	al.Imports = 10
-	require.NoError(t, a.Limits().SetOperatorLimits(al))
+	require.NoError(t, a.Limits().(operatorLimitsManager).SetOperatorLimits(al))
 	require.Equal(t, a.Limits().MaxExports(), int64(20))
 	require.Equal(t, a.Limits().MaxImports(), int64(10))
+}
+
+func (suite *ProviderSuite) Test_UserPermissionLimitsSetter() {
+	t := suite.T()
+	auth, err := authb.NewAuth(suite.Provider)
+	require.NoError(t, err)
+	o, err := auth.Operators().Add("O")
+	require.NoError(t, err)
+
+	a, err := o.Accounts().Add("A")
+	require.NoError(t, err)
+
+	user, err := a.Users().Add("BOB", "")
+	require.NoError(t, err)
+
+	require.Equal(t, user.MaxSubscriptions(), int64(-1))
+	require.Empty(t, user.PubPermissions().Allow())
+
+	type userLimitsManager interface {
+		UserPermissionLimits() jwt.UserPermissionLimits
+		SetUserPermissionLimits(limits jwt.UserPermissionLimits) error
+	}
+
+	limits := jwt.UserPermissionLimits{}
+	limits.Permissions.Pub.Allow = []string{"test.>"}
+	limits.NatsLimits.Subs = 1000
+
+	err = user.(userLimitsManager).SetUserPermissionLimits(limits)
+	require.NoError(t, err)
+
+	require.Equal(t, user.MaxSubscriptions(), int64(1000))
+	require.Equal(t, user.PubPermissions().Allow(), []string{"test.>"})
+}
+
+func (suite *ProviderSuite) Test_ScopedUserPermissionLimitsSetter() {
+	t := suite.T()
+	auth, err := authb.NewAuth(suite.Provider)
+	require.NoError(t, err)
+	o, err := auth.Operators().Add("O")
+	require.NoError(t, err)
+
+	a, err := o.Accounts().Add("A")
+	require.NoError(t, err)
+
+	scope, err := a.ScopedSigningKeys().AddScope("test")
+	require.NoError(t, err)
+
+	user, err := a.Users().Add("BOB", scope.Key())
+	require.NoError(t, err)
+
+	require.Equal(t, scope.MaxSubscriptions(), int64(-1))
+	require.Empty(t, scope.PubPermissions().Allow())
+
+	limits := jwt.UserPermissionLimits{}
+	limits.Permissions.Pub.Allow = []string{"test.>"}
+	limits.NatsLimits.Subs = 1000
+
+	type userLimitsManager interface {
+		UserPermissionLimits() jwt.UserPermissionLimits
+		SetUserPermissionLimits(limits jwt.UserPermissionLimits) error
+	}
+
+	err = user.(userLimitsManager).SetUserPermissionLimits(limits)
+	require.Errorf(t, err, "user is scoped")
+
+	err = scope.(userLimitsManager).SetUserPermissionLimits(limits)
+	require.NoError(t, err)
+
+	require.Equal(t, scope.MaxSubscriptions(), int64(1000))
+	require.Equal(t, scope.PubPermissions().Allow(), []string{"test.>"})
 }
 
 func setupTestWithOperatorAndAccount(p *ProviderSuite) (authb.Auth, authb.Operator, authb.Account) {
