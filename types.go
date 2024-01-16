@@ -45,6 +45,8 @@ type BaseData struct {
 	// Token is the JWT for the entity, always kept up-to-date
 	// by the APIs
 	Token string
+
+	readOnly bool
 }
 
 type OperatorData struct {

@@ -3,6 +3,7 @@ package authb
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
@@ -130,6 +131,10 @@ func (o *OperatorData) List() []Account {
 }
 
 func (o *OperatorData) update() error {
+	if o.BaseData.readOnly {
+		return fmt.Errorf("account is read-only")
+	}
+
 	var err error
 	var vr jwt.ValidationResults
 	o.Claim.Validate(&vr)

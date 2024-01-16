@@ -2,9 +2,27 @@ package authb
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/nats-io/jwt/v2"
 )
+
+func NewAccountFromJWT(token string) (Account, error) {
+	ac, err := jwt.DecodeAccountClaims(token)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AccountData{
+		Claim: ac,
+		BaseData: BaseData{
+			Loaded:     ac.IssuedAt,
+			EntityName: ac.Name,
+			Token:      token,
+			readOnly:   true,
+		},
+	}, nil
+}
 
 func (a *AccountData) Name() string {
 	return a.EntityName
@@ -43,6 +61,10 @@ func (a *AccountData) Issuer() string {
 }
 
 func (a *AccountData) update() error {
+	if a.BaseData.readOnly {
+		return fmt.Errorf("account is read-only")
+	}
+
 	key := a.Operator.Key
 	if len(a.Operator.OperatorSigningKeys) > 0 {
 		key = a.Operator.OperatorSigningKeys[0]

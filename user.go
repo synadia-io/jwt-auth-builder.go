@@ -1,6 +1,7 @@
 package authb
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/nats-io/jwt/v2"
@@ -34,6 +35,10 @@ func (u *UserData) issue(key *Key) error {
 }
 
 func (u *UserData) update() error {
+	if u.BaseData.readOnly {
+		return fmt.Errorf("account is read-only")
+	}
+
 	issuer := u.Claim.Issuer
 	k, _, err := u.AccountData.getKey(issuer)
 	if err != nil {

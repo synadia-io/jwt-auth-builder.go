@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/nats-io/jwt/v2"
@@ -63,6 +64,12 @@ func (suite *ProviderSuite) Test_AccountsBasics() {
 	ai := a.(*authb.AccountData)
 	require.Equal(t, ai.Claim.Subject, a.Subject())
 	require.Equal(t, o.Subject(), a.Issuer())
+
+	acct, err := authb.NewAccountFromJWT(a.JWT())
+	require.NoError(t, err)
+	require.Equal(t, acct.Subject(), a.Subject())
+	err = acct.SetExpiry(time.Now().Unix())
+	require.Equal(t, err, fmt.Errorf("account is read-only"))
 }
 
 func (suite *ProviderSuite) Test_AccountLimitsSetter() {
