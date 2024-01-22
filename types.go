@@ -340,9 +340,83 @@ type JetStreamLimits interface {
 }
 
 type Imports interface {
+	GetServiceImports() []*ServiceImport
+	AddServiceImport(i ServiceImport) error
+	SetServiceImports(imports []*ServiceImport) error
+
+	GetStreamImports() []*StreamImport
+	AddStreamImport(i StreamImport) error
+	SetStreamImports(imports []*StreamImport) error
 }
 
 type Exports interface {
+	// NewService creates and adds a new public service with the specified name and subject
+	NewService(name string, subject string) (ServiceExport, error)
+	// FindServiceBySubject returns the ServiceExport matching the subject
+	FindServiceBySubject(subject string) ServiceExport
+	// FindServiceByName returns the ServiceExport matching the name
+	FindServiceByName(name string) ServiceExport
+	// Services returns a list of ServiceExport in the account
+	Services() []ServiceExport
+	// AddService adds a copy of the specified service to the account
+	AddService(e ServiceExport) error
+	// SetServices removes all services, and copies the specified services
+	SetServices(services ...ServiceExport) error
+
+	//GetStreamExportBySubject(subject string) StreamExport
+	//GetStreamExports() []StreamExport
+	//AddStreamExport(e StreamExport) error
+	//SetStreamExports(exports []StreamExport) error
+}
+
+type Revocation interface {
+	Key() *Key
+	From() time.Time
+}
+
+type _base interface {
+	Name() string
+	SetName(n string) error
+	Subject() string
+	SetSubject(s string) error
+}
+
+type _export interface {
+	_base
+	TokenRequired() bool
+	SetTokenRequired(tf bool) error
+	//Revocations() []Revocation
+	//SetRevocations(revocations []Revocation) error
+	//AddRevocation(r *Revocation) error
+	//RemoveRevocation(k *Key)
+	//ClearRevocations() error
+	//IsRevoked(k *Key, from time.Duration) bool
+	//RevokeAll(from time.Duration) error
+}
+
+type ServiceExport interface {
+	_export
+}
+
+type StreamExport interface {
+	_export
+}
+
+type _import interface {
+	_base
+	Account() *Key
+	SetAccount(k *Key) error
+	Token() string
+	SetToken(t string) error
+	LocalSubject() string
+}
+
+type ServiceImport interface {
+	_import
+}
+
+type StreamImport interface {
+	_import
 }
 
 // SigningKeys is an interface for managing signing keys

@@ -65,6 +65,12 @@ func (a *AccountData) update() error {
 		return fmt.Errorf("account is read-only")
 	}
 
+	var vr jwt.ValidationResults
+	a.Claim.Validate(&vr)
+	if vr.IsBlocking(true) {
+		return vr.Errors()[0]
+	}
+	// FIXME: the account possibly needs a way to select the key...
 	key := a.Operator.Key
 	if len(a.Operator.OperatorSigningKeys) > 0 {
 		key = a.Operator.OperatorSigningKeys[0]
@@ -102,7 +108,7 @@ func (a *AccountData) Limits() AccountLimits {
 }
 
 func (a *AccountData) Exports() Exports {
-	panic("not implemented")
+	return a
 }
 
 func (a *AccountData) Imports() Imports {

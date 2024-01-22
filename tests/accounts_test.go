@@ -738,3 +738,125 @@ func (suite *ProviderSuite) Test_AccountSigningKeys() {
 	require.Len(t, roles, 1)
 	require.Contains(t, roles, "admin")
 }
+
+func (s *ProviderSuite) Test_ServiceRequiresName() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	operators := auth.Operators()
+	s.Empty(operators.List())
+
+	o, err := operators.Add("O")
+	s.NoError(err)
+	s.NotNil(o)
+
+	a, err := o.Accounts().Add("A")
+	s.NoError(err)
+	s.NotNil(a)
+
+	_, err = a.Exports().NewService("", "q.foo.>")
+	s.Error(err)
+}
+
+func (s *ProviderSuite) Test_ServiceRequiresSubject() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	operators := auth.Operators()
+	s.Empty(operators.List())
+
+	o, err := operators.Add("O")
+	s.NoError(err)
+	s.NotNil(o)
+
+	a, err := o.Accounts().Add("A")
+	s.NoError(err)
+	s.NotNil(a)
+
+	_, err = a.Exports().NewService("name", "")
+	s.Error(err)
+}
+
+func (s *ProviderSuite) Test_AddService() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	operators := auth.Operators()
+	s.Empty(operators.List())
+
+	o, err := operators.Add("O")
+	s.NoError(err)
+	s.NotNil(o)
+
+	a, err := o.Accounts().Add("A")
+	s.NoError(err)
+	s.NotNil(a)
+
+	service, err := authb.NewService("q", "q.*")
+	s.NoError(err)
+
+	err = a.Exports().AddService(service)
+	s.NoError(err)
+
+	service = a.Exports().FindServiceBySubject("q.*")
+	s.NotNil(service)
+	s.Equal("q", service.Name())
+	s.Equal("q.*", service.Subject())
+}
+
+func (s *ProviderSuite) Test_ServiceCrud() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	operators := auth.Operators()
+	s.Empty(operators.List())
+
+	o, err := operators.Add("O")
+	s.NoError(err)
+	s.NotNil(o)
+
+	a, err := o.Accounts().Add("A")
+	s.NoError(err)
+	s.NotNil(a)
+	s.Len(a.Exports().Services(), 0)
+
+	service, err := a.Exports().NewService("foos", "q.foo.>")
+	s.NoError(err)
+	s.NotNil(service)
+	s.Equal("foos", service.Name())
+	s.Equal("q.foo.>", service.Subject())
+	s.NoError(service.SetTokenRequired(true))
+	s.Equal(true, service.TokenRequired())
+
+	s.NoError(auth.Commit())
+	s.NoError(auth.Reload())
+
+	o = operators.Get("O")
+	s.NotNil(o)
+	a = o.Accounts().Get("A")
+	s.NotNil(a)
+
+	services := a.Exports().Services()
+	s.Len(services, 1)
+	s.Equal("foos", services[0].Name())
+	s.Equal("q.foo.>", services[0].Subject())
+	s.Equal(true, services[0].TokenRequired())
+
+	service = a.Exports().FindServiceByName("foos")
+	s.NotNil(service)
+
+	service = a.Exports().FindServiceBySubject("q.foo.>")
+	s.NotNil(service)
+
+	s.NoError(service.SetName("bar"))
+	s.NoError(service.SetTokenRequired(false))
+	s.NoError(service.SetSubject("bar.*"))
+	s.NoError(auth.Commit())
+	s.NoError(auth.Reload())
+
+	services = a.Exports().Services()
+	s.Len(services, 1)
+	s.Equal("bar", services[0].Name())
+	s.Equal("bar.*", services[0].Subject())
+	s.Equal(false, services[0].TokenRequired())
+}
