@@ -73,18 +73,6 @@ func (b *revocations) Add(key string, before time.Time) error {
 	return b.data.update()
 }
 
-func (b *revocations) deleteRevocation(r RevocationEntry) (bool, error) {
-	rr, err := b.toRevocation(r)
-	if err != nil {
-		return false, err
-	}
-	ok, err := b.delete(rr.publicKey)
-	if ok {
-		err = b.data.update()
-	}
-	return ok, err
-}
-
 func (b *revocations) delete(key string) (bool, error) {
 	pk, err := b.checkKey(key)
 	if err != nil {

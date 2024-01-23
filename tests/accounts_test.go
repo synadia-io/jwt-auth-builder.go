@@ -746,7 +746,7 @@ func (s *ProviderSuite) Test_ServiceRequiresName() {
 	a := s.MaybeCreate(auth, "O", "A")
 	s.NotNil(a)
 
-	_, err = a.Exports().NewService("", "q.foo.>")
+	_, err = a.Exports().AddService("", "q.foo.>")
 	s.Error(err)
 }
 
@@ -765,7 +765,7 @@ func (s *ProviderSuite) Test_ServiceRequiresSubject() {
 	s.NoError(err)
 	s.NotNil(a)
 
-	_, err = a.Exports().NewService("name", "")
+	_, err = a.Exports().AddService("name", "")
 	s.Error(err)
 }
 
@@ -787,10 +787,10 @@ func (s *ProviderSuite) Test_AddService() {
 	service, err := authb.NewService("q", "q.*")
 	s.NoError(err)
 
-	err = a.Exports().AddService(service)
+	err = a.Exports().AddServiceWithConfig(service)
 	s.NoError(err)
 
-	service = a.Exports().FindServiceBySubject("q.*")
+	service = a.Exports().GetService("q.*")
 	s.NotNil(service)
 	s.Equal("q", service.Name())
 	s.Equal("q.*", service.Subject())
@@ -803,7 +803,7 @@ func (s *ProviderSuite) Test_ServiceCrud() {
 	a := s.MaybeCreate(auth, "O", "A")
 	s.Len(a.Exports().Services(), 0)
 
-	service, err := a.Exports().NewService("foos", "q.foo.>")
+	service, err := a.Exports().AddService("foos", "q.foo.>")
 	s.NoError(err)
 	s.NotNil(service)
 	s.Equal("foos", service.Name())
@@ -823,10 +823,12 @@ func (s *ProviderSuite) Test_ServiceCrud() {
 	s.Equal("q.foo.>", services[0].Subject())
 	s.Equal(true, services[0].TokenRequired())
 
-	service = a.Exports().FindServiceByName("foos")
+	s.Nil(a.Exports().GetServiceByName("foo"))
+
+	service = a.Exports().GetServiceByName("foos")
 	s.NotNil(service)
 
-	service = a.Exports().FindServiceBySubject("q.foo.>")
+	service = a.Exports().GetService("q.foo.>")
 	s.NotNil(service)
 
 	s.NoError(service.SetName("bar"))
@@ -842,6 +844,85 @@ func (s *ProviderSuite) Test_ServiceCrud() {
 	s.Equal(false, services[0].TokenRequired())
 }
 
+func (s *ProviderSuite) Test_StreamCrud() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	a := s.MaybeCreate(auth, "O", "A")
+	s.Len(a.Exports().Streams(), 0)
+
+	stream, err := a.Exports().AddStream("foos", "q.foo.>")
+	s.NoError(err)
+	s.NotNil(stream)
+	s.Equal("foos", stream.Name())
+	s.Equal("q.foo.>", stream.Subject())
+	s.NoError(stream.SetTokenRequired(true))
+	s.Equal(true, stream.TokenRequired())
+
+	s.NoError(auth.Commit())
+	s.NoError(auth.Reload())
+
+	a = s.GetAccount(auth, "O", "A")
+	s.NotNil(a)
+
+	streams := a.Exports().Streams()
+	s.Len(streams, 1)
+	s.Equal("foos", streams[0].Name())
+	s.Equal("q.foo.>", streams[0].Subject())
+	s.Equal(true, streams[0].TokenRequired())
+
+	s.Nil(a.Exports().GetStreamByName("foo"))
+
+	stream = a.Exports().GetStreamByName("foos")
+	s.NotNil(stream)
+
+	stream = a.Exports().GetStream("q.foo.>")
+	s.NotNil(stream)
+
+	s.NoError(stream.SetName("bar"))
+	s.NoError(stream.SetTokenRequired(false))
+	s.NoError(stream.SetSubject("bar.*"))
+	s.NoError(auth.Commit())
+	s.NoError(auth.Reload())
+
+	streams = a.Exports().Streams()
+	s.Len(streams, 1)
+	s.Equal("bar", streams[0].Name())
+	s.Equal("bar.*", streams[0].Subject())
+	s.Equal(false, streams[0].TokenRequired())
+}
+
+func (s *ProviderSuite) Test_SetStream() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	a := s.MaybeCreate(auth, "O", "A")
+	s.Len(a.Exports().Streams(), 0)
+
+	_, err = a.Exports().AddService("a", "q.a.>")
+	s.NoError(err)
+
+	_, err = a.Exports().AddStream("a", "a.>")
+	s.NoError(err)
+
+	// empty set clears
+	err = a.Exports().SetStreams(nil)
+	s.NoError(err)
+	s.Len(a.Exports().Streams(), 0)
+	s.Len(a.Exports().Services(), 1)
+
+	service1, err := authb.NewService("q", "q")
+	s.NoError(err)
+	service2, err := authb.NewService("qq", "qq")
+	s.NoError(err)
+
+	err = a.Exports().SetServices(service1, service2)
+	s.NoError(err)
+	s.Nil(a.Exports().GetService("q.a.>"))
+	services := a.Exports().Services()
+	s.Len(services, 2)
+}
+
 func (s *ProviderSuite) Test_ServiceRevocationCrud() {
 	auth, err := authb.NewAuth(s.Provider)
 	s.NoError(err)
@@ -850,7 +931,7 @@ func (s *ProviderSuite) Test_ServiceRevocationCrud() {
 	s.NotNil(a)
 	s.Len(a.Exports().Services(), 0)
 
-	service, err := a.Exports().NewService("foos", "q.foo.>")
+	service, err := a.Exports().AddService("foos", "q.foo.>")
 	s.NoError(err)
 	s.NotNil(service)
 	s.Equal("foos", service.Name())
@@ -876,7 +957,7 @@ func (s *ProviderSuite) Test_ServiceRevocationCrud() {
 	// reload the configuration, find the service
 	a = s.GetAccount(auth, "O", "A")
 	s.NotNil(a)
-	service = a.Exports().FindServiceByName("foos")
+	service = a.Exports().GetServiceByName("foos")
 	s.NotNil(service)
 
 	revocations := service.Revocations()
