@@ -179,6 +179,8 @@ type Account interface {
 	Expiry() int64
 	// JWT returns the encoded token
 	JWT() string
+	// Revocations manage user revocations
+	Revocations() Revocations
 }
 
 // Users is an interface for managing users
@@ -370,12 +372,12 @@ type Exports interface {
 	//SetStreamExports(exports []StreamExport) error
 }
 
-type Revocation interface {
+type RevocationEntry interface {
 	PublicKey() string
-	From() time.Time
+	Before() time.Time
 }
 
-func NewRevocation(opts ...RevocationOption) (Revocation, error) {
+func NewRevocationEntry(opts ...RevocationOption) (RevocationEntry, error) {
 	r := &revocation{}
 	for _, opt := range opts {
 		if err := opt(r); err != nil {
@@ -394,13 +396,13 @@ func (t *revocation) PublicKey() string {
 	return t.publicKey
 }
 
-func (t *revocation) From() time.Time {
+func (t *revocation) Before() time.Time {
 	return t.before
 }
 
 type RevocationOption func(*revocation) error
 
-func RevokePublicKey(k *Key) RevocationOption {
+func Revoke(k *Key) RevocationOption {
 	return func(t *revocation) error {
 		if k == nil {
 			return fmt.Errorf("key cannot be nil")
@@ -410,14 +412,14 @@ func RevokePublicKey(k *Key) RevocationOption {
 	}
 }
 
-func RevokeAll() RevocationOption {
+func All() RevocationOption {
 	return func(t *revocation) error {
 		t.publicKey = jwt.All
 		return nil
 	}
 }
 
-func RevokeIfIssuedBy(date time.Time) RevocationOption {
+func Before(date time.Time) RevocationOption {
 	return func(t *revocation) error {
 		t.before = date
 		return nil
@@ -425,17 +427,17 @@ func RevokeIfIssuedBy(date time.Time) RevocationOption {
 }
 
 type Revocations interface {
-	// Add a revocation to the list of revoked entities
-	Add(r Revocation) error
-	// Clear the specified revocation, returns false if the revocation was not found
-	Clear(r Revocation) (bool, error)
-	// Compact removes revocations that are handled by a more recent revocation or a
-	// wildcard revocation
-	Compact() ([]Revocation, error)
+	// Add revoke the specified nkey for credentials issued on the specified date or earlier
+	//  The special `*` key targets all entities
+	Add(key string, before time.Time) error
+	// Delete deletes the specified nkey from the revocation list
+	Delete(key string) (bool, error)
+	// Compact removes revocations that are handled by a more recent wildcard revocation
+	Compact() ([]RevocationEntry, error)
 	// List returns a copy of current Revocations
-	List() []Revocation
+	List() []RevocationEntry
 	// SetRevocations replaces the current revocation list with the provided one
-	SetRevocations(revocations []Revocation) error
+	SetRevocations(revocations []RevocationEntry) error
 	// HasRevocation returns true if the public key or "*" is in the revocation list
 	HasRevocation(key string) (bool, error)
 }

@@ -711,12 +711,7 @@ func (suite *ProviderSuite) Test_AccountSigningKeys() {
 	operators := auth.Operators()
 	require.Empty(t, operators.List())
 
-	o, err := operators.Add("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
-
-	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
+	a := suite.MaybeCreate(auth, "O", "A")
 	require.NotNil(t, a)
 
 	var keys []string
@@ -748,12 +743,7 @@ func (s *ProviderSuite) Test_ServiceRequiresName() {
 	operators := auth.Operators()
 	s.Empty(operators.List())
 
-	o, err := operators.Add("O")
-	s.NoError(err)
-	s.NotNil(o)
-
-	a, err := o.Accounts().Add("A")
-	s.NoError(err)
+	a := s.MaybeCreate(auth, "O", "A")
 	s.NotNil(a)
 
 	_, err = a.Exports().NewService("", "q.foo.>")
@@ -810,16 +800,7 @@ func (s *ProviderSuite) Test_ServiceCrud() {
 	auth, err := authb.NewAuth(s.Provider)
 	s.NoError(err)
 
-	operators := auth.Operators()
-	s.Empty(operators.List())
-
-	o, err := operators.Add("O")
-	s.NoError(err)
-	s.NotNil(o)
-
-	a, err := o.Accounts().Add("A")
-	s.NoError(err)
-	s.NotNil(a)
+	a := s.MaybeCreate(auth, "O", "A")
 	s.Len(a.Exports().Services(), 0)
 
 	service, err := a.Exports().NewService("foos", "q.foo.>")
@@ -833,9 +814,7 @@ func (s *ProviderSuite) Test_ServiceCrud() {
 	s.NoError(auth.Commit())
 	s.NoError(auth.Reload())
 
-	o = operators.Get("O")
-	s.NotNil(o)
-	a = o.Accounts().Get("A")
+	a = s.GetAccount(auth, "O", "A")
 	s.NotNil(a)
 
 	services := a.Exports().Services()
@@ -867,15 +846,7 @@ func (s *ProviderSuite) Test_ServiceRevocationCrud() {
 	auth, err := authb.NewAuth(s.Provider)
 	s.NoError(err)
 
-	operators := auth.Operators()
-	s.Empty(operators.List())
-
-	o, err := operators.Add("O")
-	s.NoError(err)
-	s.NotNil(o)
-
-	a, err := o.Accounts().Add("A")
-	s.NoError(err)
+	a := s.MaybeCreate(auth, "O", "A")
 	s.NotNil(a)
 	s.Len(a.Exports().Services(), 0)
 
@@ -887,27 +858,23 @@ func (s *ProviderSuite) Test_ServiceRevocationCrud() {
 
 	// Let's create a revocation for an account
 	k, _ := authb.KeyFor(nkeys.PrefixByteAccount)
-	r, err := authb.NewRevocation(authb.RevokePublicKey(k))
-	s.NoError(err)
 
 	// Since the export is public this fails
-	err = service.Revocations().Add(r)
+	err = service.Revocations().Add(k.Public, time.Now())
 	s.Error(err)
 	s.True(errors.Is(err, authb.ErrRevocationPublicExportsNotAllowed))
 
 	// Require a token, and revocation is now added
 	err = service.SetTokenRequired(true)
 	s.NoError(err)
-	err = service.Revocations().Add(r)
+	err = service.Revocations().Add(k.Public, time.Now())
 	s.NoError(err)
 
 	s.NoError(auth.Commit())
 	s.NoError(auth.Reload())
 
 	// reload the configuration, find the service
-	o = operators.Get("O")
-	s.NotNil(o)
-	a = o.Accounts().Get("A")
+	a = s.GetAccount(auth, "O", "A")
 	s.NotNil(a)
 	service = a.Exports().FindServiceByName("foos")
 	s.NotNil(service)
@@ -936,18 +903,13 @@ func (s *ProviderSuite) Test_ServiceRevocationCrud() {
 	s.Len(entries, 1)
 	s.Equal(k.Public, entries[0].PublicKey())
 
-	// create a revocation for all
-	all, err := authb.NewRevocation(authb.RevokeAll())
-	s.NoError(err)
-	s.NotNil(all)
-
 	// try to remove it - it doesn't exist
-	ok, err := revocations.Clear(all)
+	ok, err := revocations.Delete("*")
 	s.NoError(err)
 	s.False(ok)
 
 	// add it
-	s.NoError(revocations.Add(all))
+	s.NoError(revocations.Add("*", time.Now()))
 	entries = revocations.List()
 	s.Len(entries, 2)
 
@@ -957,8 +919,8 @@ func (s *ProviderSuite) Test_ServiceRevocationCrud() {
 	s.True(tf)
 
 	// verify the list contains them
-	var wildcard authb.Revocation
-	var account authb.Revocation
+	var wildcard authb.RevocationEntry
+	var account authb.RevocationEntry
 	for _, e := range entries {
 		if e.PublicKey() == "*" {
 			wildcard = e
@@ -969,16 +931,17 @@ func (s *ProviderSuite) Test_ServiceRevocationCrud() {
 	s.NotNil(wildcard)
 	s.NotNil(account)
 
-	tf, err = revocations.Clear(account)
+	tf, err = revocations.Delete(k.Public)
 	s.NoError(err)
 	s.True(tf)
 
 	entries = revocations.List()
 	s.Len(entries, 1)
 	tf, _ = revocations.HasRevocation(k.Public)
+	s.False(tf)
 
 	// add them both
-	s.NoError(revocations.SetRevocations([]authb.Revocation{account, wildcard}))
+	s.NoError(revocations.SetRevocations([]authb.RevocationEntry{account, wildcard}))
 	entries = revocations.List()
 	s.Len(entries, 2)
 
@@ -987,14 +950,11 @@ func (s *ProviderSuite) Test_ServiceRevocationCrud() {
 	entries = revocations.List()
 	s.Len(entries, 0)
 
-	yesterday, err := authb.NewRevocation(authb.RevokePublicKey(k), authb.RevokeIfIssuedBy(time.Now().Add(time.Hour*-24)))
-	s.NoError(err)
-	s.NoError(revocations.Add(yesterday))
+	// yesterday
+	s.NoError(revocations.Add(k.Public, time.Now().Add(time.Hour*-24)))
 
-	// add a wildcard without a date (meaning today)
-	wildcard, err = authb.NewRevocation(authb.RevokeAll())
-	s.NoError(err)
-	s.NoError(revocations.Add(wildcard))
+	// add a wildcard as of now (includes and rejects the previous revocation
+	s.NoError(revocations.Add("*", time.Now()))
 	entries = revocations.List()
 	s.Len(entries, 2)
 
@@ -1003,5 +963,84 @@ func (s *ProviderSuite) Test_ServiceRevocationCrud() {
 	s.NoError(err)
 	s.Len(removed, 1)
 	s.Equal(k.Public, removed[0].PublicKey())
+}
 
+func (s *ProviderSuite) Test_AccountRevocationEmpty() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	a := s.MaybeCreate(auth, "O", "A")
+	s.NotNil(a)
+	r := a.Revocations()
+	s.NotNil(r)
+	s.Len(r.List(), 0)
+}
+
+func (s *ProviderSuite) Test_AccountRevokesRejectNonUserKey() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	a := s.MaybeCreate(auth, "O", "A")
+	s.NotNil(a)
+	revocations := a.Revocations()
+	s.NotNil(revocations)
+	s.Len(revocations.List(), 0)
+
+	err = revocations.Add(s.AccountKey().Public, time.Now())
+	s.Error(err)
+}
+
+func (s *ProviderSuite) Test_AccountRevokeUser() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	a := s.MaybeCreate(auth, "O", "A")
+	s.NotNil(a)
+	revocations := a.Revocations()
+	s.NotNil(revocations)
+	s.Len(revocations.List(), 0)
+
+	uk := s.UserKey().Public
+	err = revocations.Add(uk, time.Now())
+	s.NoError(err)
+
+	revokes := revocations.List()
+	s.Len(revokes, 1)
+	s.Equal(uk, revokes[0].PublicKey())
+
+	s.NoError(auth.Commit())
+	s.NoError(auth.Reload())
+
+	a = s.GetAccount(auth, "O", "A")
+	s.NotNil(a)
+	s.True(a.Revocations().HasRevocation(uk))
+
+	ok, err := a.Revocations().Delete(uk)
+	s.NoError(err)
+	s.True(ok)
+
+	s.NoError(auth.Commit())
+	s.NoError(auth.Reload())
+
+	a = s.GetAccount(auth, "O", "A")
+	s.NotNil(a)
+	s.False(a.Revocations().HasRevocation(uk))
+}
+
+func (s *ProviderSuite) Test_AccountRevokeWildcard() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	a := s.MaybeCreate(auth, "O", "A")
+	s.NotNil(a)
+	revocations := a.Revocations()
+	s.NotNil(revocations)
+	s.Len(revocations.List(), 0)
+
+	err = revocations.Add("*", time.Now())
+	s.NoError(err)
+
+	revokes := revocations.List()
+	s.Len(revokes, 1)
+	s.Equal("*", revokes[0].PublicKey())
 }

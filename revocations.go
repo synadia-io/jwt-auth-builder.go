@@ -20,7 +20,7 @@ type revocations struct {
 	data revocationTarget
 }
 
-func (b *revocations) toRevocation(r Revocation) (*revocation, error) {
+func (b *revocations) toRevocation(r RevocationEntry) (*revocation, error) {
 	if r == nil {
 		return nil, errors.New("revocation cannot be nil")
 	}
@@ -34,63 +34,85 @@ func (b *revocations) toRevocation(r Revocation) (*revocation, error) {
 	return rr, nil
 }
 
-func (b *revocations) add(r Revocation) error {
+func (b *revocations) checkKey(key string) (string, error) {
+	if key == "*" {
+		return "*", nil
+	}
+	pk, err := KeyFrom(key, b.data.getRevocationPrefix())
+	if err != nil {
+		return "", err
+	}
+	return pk.Public, nil
+}
+
+func (b *revocations) add(r RevocationEntry) error {
 	rr, err := b.toRevocation(r)
 	if err != nil {
 		return err
 	}
-	if rr.before.IsZero() {
-		rr.before = time.Now()
-	}
+	return b.addRevocation(rr.publicKey, rr.before)
+}
 
-	if err = b.checkKey(rr.publicKey); err != nil {
+func (b *revocations) addRevocation(key string, before time.Time) error {
+	k, err := b.checkKey(key)
+	if err != nil {
 		return err
 	}
+	if before.IsZero() {
+		before = time.Now()
+	}
 
-	b.data.getRevocations().Revoke(rr.publicKey, rr.before)
+	b.data.getRevocations().Revoke(k, before)
 	return nil
 }
 
-func (b *revocations) checkKey(key string) error {
-	if key == "*" {
-		return nil
-	}
-	if _, err := KeyFrom(key, b.data.getRevocationPrefix()); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (b *revocations) Add(r Revocation) error {
-	if err := b.add(r); err != nil {
+func (b *revocations) Add(key string, before time.Time) error {
+	if err := b.addRevocation(key, before); err != nil {
 		return err
 	}
 	return b.data.update()
 }
 
-func (b *revocations) Clear(r Revocation) (bool, error) {
+func (b *revocations) deleteRevocation(r RevocationEntry) (bool, error) {
 	rr, err := b.toRevocation(r)
 	if err != nil {
 		return false, err
 	}
-	_, ok := b.data.getRevocations()[rr.publicKey]
+	ok, err := b.delete(rr.publicKey)
+	if ok {
+		err = b.data.update()
+	}
+	return ok, err
+}
+
+func (b *revocations) delete(key string) (bool, error) {
+	pk, err := b.checkKey(key)
+	if err != nil {
+		return false, err
+	}
+	_, ok := b.data.getRevocations()[pk]
 	if !ok {
 		// not found
 		return false, nil
 	}
-	delete(b.data.getRevocations(), rr.publicKey)
-	if err = b.data.update(); err != nil {
-		return false, err
-	}
+	delete(b.data.getRevocations(), pk)
 	return true, nil
 }
 
-func (b *revocations) Compact() ([]Revocation, error) {
+func (b *revocations) Delete(key string) (bool, error) {
+	ok, err := b.delete(key)
+	if ok {
+		err = b.data.update()
+	}
+	return ok, err
+}
+
+func (b *revocations) Compact() ([]RevocationEntry, error) {
 	found := b.data.getRevocations().MaybeCompact()
 	if found == nil {
 		return nil, nil
 	}
-	var buf []Revocation
+	var buf []RevocationEntry
 	for _, e := range found {
 		buf = append(buf, &revocation{publicKey: e.PublicKey, before: time.Unix(e.TimeStamp, 0)})
 	}
@@ -100,16 +122,16 @@ func (b *revocations) Compact() ([]Revocation, error) {
 	return buf, nil
 }
 
-func (b *revocations) List() []Revocation {
-	var buf []Revocation
+func (b *revocations) List() []RevocationEntry {
+	var buf []RevocationEntry
 	for k, e := range b.data.getRevocations() {
 		buf = append(buf, &revocation{publicKey: k, before: time.Unix(e, 0)})
 	}
 	return buf
 }
 
-func (b *revocations) SetRevocations(revocations []Revocation) error {
-	for k, _ := range b.data.getRevocations() {
+func (b *revocations) SetRevocations(revocations []RevocationEntry) error {
+	for k := range b.data.getRevocations() {
 		delete(b.data.getRevocations(), k)
 	}
 	for _, r := range revocations {
@@ -121,9 +143,10 @@ func (b *revocations) SetRevocations(revocations []Revocation) error {
 }
 
 func (b *revocations) HasRevocation(key string) (bool, error) {
-	if err := b.checkKey(key); err != nil {
+	k, err := b.checkKey(key)
+	if err != nil {
 		return false, err
 	}
-	_, ok := b.data.getRevocations()[key]
+	_, ok := b.data.getRevocations()[k]
 	return ok, nil
 }
