@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/nats-io/jwt/v2"
+	"github.com/nats-io/nkeys"
 )
 
 func NewAccountFromJWT(token string) (Account, error) {
@@ -76,6 +77,21 @@ func (a *AccountData) update() error {
 		key = a.Operator.OperatorSigningKeys[0]
 	}
 	return a.issue(key)
+}
+
+func (a *AccountData) getRevocations() jwt.RevocationList {
+	if a.Claim.Revocations == nil {
+		a.Claim.Revocations = jwt.RevocationList{}
+	}
+	return a.Claim.Revocations
+}
+
+func (a *AccountData) getRevocationPrefix() nkeys.PrefixByte {
+	return nkeys.PrefixByteUser
+}
+
+func (a *AccountData) Revocations() Revocations {
+	return &revocations{data: a}
 }
 
 func (a *AccountData) SetExpiry(exp int64) error {

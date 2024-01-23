@@ -1,6 +1,7 @@
 package authb
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/nats-io/jwt/v2"
@@ -370,8 +371,73 @@ type Exports interface {
 }
 
 type Revocation interface {
-	Key() *Key
+	PublicKey() string
 	From() time.Time
+}
+
+func NewRevocation(opts ...RevocationOption) (Revocation, error) {
+	r := &revocation{}
+	for _, opt := range opts {
+		if err := opt(r); err != nil {
+			return nil, err
+		}
+	}
+	return r, nil
+}
+
+type revocation struct {
+	publicKey string
+	before    time.Time
+}
+
+func (t *revocation) PublicKey() string {
+	return t.publicKey
+}
+
+func (t *revocation) From() time.Time {
+	return t.before
+}
+
+type RevocationOption func(*revocation) error
+
+func RevokePublicKey(k *Key) RevocationOption {
+	return func(t *revocation) error {
+		if k == nil {
+			return fmt.Errorf("key cannot be nil")
+		}
+		t.publicKey = k.Public
+		return nil
+	}
+}
+
+func RevokeAll() RevocationOption {
+	return func(t *revocation) error {
+		t.publicKey = jwt.All
+		return nil
+	}
+}
+
+func RevokeIfIssuedBy(date time.Time) RevocationOption {
+	return func(t *revocation) error {
+		t.before = date
+		return nil
+	}
+}
+
+type Revocations interface {
+	// Add a revocation to the list of revoked entities
+	Add(r Revocation) error
+	// Clear the specified revocation, returns false if the revocation was not found
+	Clear(r Revocation) (bool, error)
+	// Compact removes revocations that are handled by a more recent revocation or a
+	// wildcard revocation
+	Compact() ([]Revocation, error)
+	// List returns a copy of current Revocations
+	List() []Revocation
+	// SetRevocations replaces the current revocation list with the provided one
+	SetRevocations(revocations []Revocation) error
+	// HasRevocation returns true if the public key or "*" is in the revocation list
+	HasRevocation(key string) (bool, error)
 }
 
 type _base interface {
@@ -385,13 +451,7 @@ type _export interface {
 	_base
 	TokenRequired() bool
 	SetTokenRequired(tf bool) error
-	//Revocations() []Revocation
-	//SetRevocations(revocations []Revocation) error
-	//AddRevocation(r *Revocation) error
-	//RemoveRevocation(k *Key)
-	//ClearRevocations() error
-	//IsRevoked(k *Key, from time.Duration) bool
-	//RevokeAll(from time.Duration) error
+	Revocations() Revocations
 }
 
 type ServiceExport interface {

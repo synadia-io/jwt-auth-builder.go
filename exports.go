@@ -2,7 +2,9 @@ package authb
 
 import (
 	"errors"
+
 	"github.com/nats-io/jwt/v2"
+	"github.com/nats-io/nkeys"
 )
 
 func (a *AccountData) getServices() []ServiceExport {
@@ -109,6 +111,9 @@ func (b *baseExport) update() error {
 		// this is an unbounded export
 		return nil
 	}
+	if !b.export.TokenReq && len(b.export.Revocations) > 0 {
+		return ErrRevocationPublicExportsNotAllowed
+	}
 	if err := b.data.update(); err != nil {
 		return err
 	}
@@ -149,6 +154,21 @@ func (b *baseExport) TokenRequired() bool {
 func (b *baseExport) SetTokenRequired(tf bool) error {
 	b.export.TokenReq = tf
 	return b.update()
+}
+
+func (b *baseExport) getRevocations() jwt.RevocationList {
+	if b.export.Revocations == nil {
+		b.export.Revocations = jwt.RevocationList{}
+	}
+	return b.export.Revocations
+}
+
+func (b *baseExport) getRevocationPrefix() nkeys.PrefixByte {
+	return nkeys.PrefixByteAccount
+}
+
+func (b *baseExport) Revocations() Revocations {
+	return &revocations{data: b}
 }
 
 type ServiceExportImpl struct {

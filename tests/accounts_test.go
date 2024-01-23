@@ -1,10 +1,12 @@
 package tests
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/nats-io/jwt/v2"
+	"github.com/nats-io/nkeys"
 	"github.com/stretchr/testify/require"
 	authb "github.com/synadia-io/jwt-auth-builder.go"
 )
@@ -859,4 +861,147 @@ func (s *ProviderSuite) Test_ServiceCrud() {
 	s.Equal("bar", services[0].Name())
 	s.Equal("bar.*", services[0].Subject())
 	s.Equal(false, services[0].TokenRequired())
+}
+
+func (s *ProviderSuite) Test_ServiceRevocationCrud() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	operators := auth.Operators()
+	s.Empty(operators.List())
+
+	o, err := operators.Add("O")
+	s.NoError(err)
+	s.NotNil(o)
+
+	a, err := o.Accounts().Add("A")
+	s.NoError(err)
+	s.NotNil(a)
+	s.Len(a.Exports().Services(), 0)
+
+	service, err := a.Exports().NewService("foos", "q.foo.>")
+	s.NoError(err)
+	s.NotNil(service)
+	s.Equal("foos", service.Name())
+	s.Equal("q.foo.>", service.Subject())
+
+	// Let's create a revocation for an account
+	k, _ := authb.KeyFor(nkeys.PrefixByteAccount)
+	r, err := authb.NewRevocation(authb.RevokePublicKey(k))
+	s.NoError(err)
+
+	// Since the export is public this fails
+	err = service.Revocations().Add(r)
+	s.Error(err)
+	s.True(errors.Is(err, authb.ErrRevocationPublicExportsNotAllowed))
+
+	// Require a token, and revocation is now added
+	err = service.SetTokenRequired(true)
+	s.NoError(err)
+	err = service.Revocations().Add(r)
+	s.NoError(err)
+
+	s.NoError(auth.Commit())
+	s.NoError(auth.Reload())
+
+	// reload the configuration, find the service
+	o = operators.Get("O")
+	s.NotNil(o)
+	a = o.Accounts().Get("A")
+	s.NotNil(a)
+	service = a.Exports().FindServiceByName("foos")
+	s.NotNil(service)
+
+	revocations := service.Revocations()
+
+	// check the revocation is there
+	s.Len(revocations.List(), 1)
+	tf, err := revocations.HasRevocation("*")
+	s.Nil(err)
+	s.False(tf)
+
+	// try a key that is not supported
+	uk, _ := authb.KeyFor(nkeys.PrefixByteUser)
+	tf, err = revocations.HasRevocation(uk.Public)
+	s.Error(err)
+	s.False(tf)
+
+	// find the key we want
+	tf, err = revocations.HasRevocation(k.Public)
+	s.NoError(err)
+	s.True(tf)
+
+	// test listing
+	entries := revocations.List()
+	s.Len(entries, 1)
+	s.Equal(k.Public, entries[0].PublicKey())
+
+	// create a revocation for all
+	all, err := authb.NewRevocation(authb.RevokeAll())
+	s.NoError(err)
+	s.NotNil(all)
+
+	// try to remove it - it doesn't exist
+	ok, err := revocations.Clear(all)
+	s.NoError(err)
+	s.False(ok)
+
+	// add it
+	s.NoError(revocations.Add(all))
+	entries = revocations.List()
+	s.Len(entries, 2)
+
+	tf, _ = revocations.HasRevocation(k.Public)
+	s.True(tf)
+	tf, _ = revocations.HasRevocation("*")
+	s.True(tf)
+
+	// verify the list contains them
+	var wildcard authb.Revocation
+	var account authb.Revocation
+	for _, e := range entries {
+		if e.PublicKey() == "*" {
+			wildcard = e
+		} else {
+			account = e
+		}
+	}
+	s.NotNil(wildcard)
+	s.NotNil(account)
+
+	tf, err = revocations.Clear(account)
+	s.NoError(err)
+	s.True(tf)
+
+	entries = revocations.List()
+	s.Len(entries, 1)
+	tf, _ = revocations.HasRevocation(k.Public)
+
+	// add them both
+	s.NoError(revocations.SetRevocations([]authb.Revocation{account, wildcard}))
+	entries = revocations.List()
+	s.Len(entries, 2)
+
+	// clear
+	s.NoError(revocations.SetRevocations(nil))
+	entries = revocations.List()
+	s.Len(entries, 0)
+
+	yesterday, err := authb.NewRevocation(authb.RevokePublicKey(k), authb.RevokeIfIssuedBy(time.Now().Add(time.Hour*-24)))
+	s.NoError(err)
+	s.NoError(revocations.Add(yesterday))
+
+	// add a wildcard without a date (meaning today)
+	wildcard, err = authb.NewRevocation(authb.RevokeAll())
+	s.NoError(err)
+	s.NoError(revocations.Add(wildcard))
+	entries = revocations.List()
+	s.Len(entries, 2)
+
+	// wildcard includes yesterday
+	removed, err := revocations.Compact()
+	s.NoError(err)
+	s.Len(removed, 1)
+	s.Equal(k.Public, removed[0].PublicKey())
+
 }
