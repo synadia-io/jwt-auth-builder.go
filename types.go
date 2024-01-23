@@ -440,30 +440,30 @@ type Revocations interface {
 	HasRevocation(key string) (bool, error)
 }
 
-type _base interface {
+type nameSubject interface {
 	Name() string
 	SetName(n string) error
 	Subject() string
 	SetSubject(s string) error
 }
 
-type _export interface {
-	_base
+type baseExport interface {
+	nameSubject
 	TokenRequired() bool
 	SetTokenRequired(tf bool) error
 	Revocations() Revocations
 }
 
 type ServiceExport interface {
-	_export
+	baseExport
 }
 
 type StreamExport interface {
-	_export
+	baseExport
 }
 
-type _import interface {
-	_base
+type baseImport interface {
+	nameSubject
 	Account() *Key
 	SetAccount(k *Key) error
 	Token() string
@@ -472,11 +472,11 @@ type _import interface {
 }
 
 type ServiceImport interface {
-	_import
+	baseImport
 }
 
 type StreamImport interface {
-	_import
+	baseImport
 }
 
 // SigningKeys is an interface for managing signing keys

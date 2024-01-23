@@ -94,19 +94,19 @@ func (a *AccountData) SetServices(exports ...ServiceExport) error {
 		}
 	}
 	for _, e := range exports {
-		ee := *e.(*baseExport).export
+		ee := *e.(*baseExportImpl).export
 		buf = append(buf, &ee)
 	}
 	a.Claim.Exports = buf
 	return a.update()
 }
 
-type baseExport struct {
+type baseExportImpl struct {
 	data   *AccountData
 	export *jwt.Export
 }
 
-func (b *baseExport) update() error {
+func (b *baseExportImpl) update() error {
 	if b.data == nil {
 		// this is an unbounded export
 		return nil
@@ -130,49 +130,49 @@ func (b *baseExport) update() error {
 	return nil
 }
 
-func (b *baseExport) Name() string {
+func (b *baseExportImpl) Name() string {
 	return b.export.Name
 }
 
-func (b *baseExport) SetName(n string) error {
+func (b *baseExportImpl) SetName(n string) error {
 	b.export.Name = n
 	return b.update()
 }
 
-func (b *baseExport) Subject() string {
+func (b *baseExportImpl) Subject() string {
 	return string(b.export.Subject)
 }
 
-func (b *baseExport) SetSubject(subject string) error {
+func (b *baseExportImpl) SetSubject(subject string) error {
 	b.export.Subject = jwt.Subject(subject)
 	return b.update()
 }
 
-func (b *baseExport) TokenRequired() bool {
+func (b *baseExportImpl) TokenRequired() bool {
 	return b.export.TokenReq
 }
-func (b *baseExport) SetTokenRequired(tf bool) error {
+func (b *baseExportImpl) SetTokenRequired(tf bool) error {
 	b.export.TokenReq = tf
 	return b.update()
 }
 
-func (b *baseExport) getRevocations() jwt.RevocationList {
+func (b *baseExportImpl) getRevocations() jwt.RevocationList {
 	if b.export.Revocations == nil {
 		b.export.Revocations = jwt.RevocationList{}
 	}
 	return b.export.Revocations
 }
 
-func (b *baseExport) getRevocationPrefix() nkeys.PrefixByte {
+func (b *baseExportImpl) getRevocationPrefix() nkeys.PrefixByte {
 	return nkeys.PrefixByteAccount
 }
 
-func (b *baseExport) Revocations() Revocations {
+func (b *baseExportImpl) Revocations() Revocations {
 	return &revocations{data: b}
 }
 
 type ServiceExportImpl struct {
-	baseExport
+	baseExportImpl
 }
 
 func NewService(name string, subject string) (ServiceExport, error) {
@@ -184,7 +184,7 @@ func NewService(name string, subject string) (ServiceExport, error) {
 	}
 
 	return &ServiceExportImpl{
-		baseExport{
+		baseExportImpl{
 			data:   nil,
 			export: &jwt.Export{Name: name, Subject: jwt.Subject(subject), Type: jwt.Service},
 		},
