@@ -10,11 +10,11 @@ type services struct {
 	*AccountData
 }
 
-func (a *services) GetService(subject string) ServiceExport {
+func (a *services) Get(subject string) ServiceExport {
 	return a.getService(subject)
 }
 
-func (a *services) GetServiceByName(name string) ServiceExport {
+func (a *services) GetByName(name string) ServiceExport {
 	for _, e := range a.Claim.Exports {
 		if e.IsService() && e.Name == name {
 			se := &ServiceExportImpl{}
@@ -26,11 +26,11 @@ func (a *services) GetServiceByName(name string) ServiceExport {
 	return nil
 }
 
-func (a *services) ListServices() []ServiceExport {
+func (a *services) List() []ServiceExport {
 	return a.getServices()
 }
 
-func (a *services) AddServiceWithConfig(e ServiceExport) error {
+func (a *services) AddWithConfig(e ServiceExport) error {
 	if e == nil {
 		return errors.New("invalid service export")
 	}
@@ -44,7 +44,7 @@ func (a *services) AddServiceWithConfig(e ServiceExport) error {
 	return a.update()
 }
 
-func (a *services) AddService(name string, subject string) (ServiceExport, error) {
+func (a *services) Add(name string, subject string) (ServiceExport, error) {
 	err := a.newExport(name, subject, jwt.Service)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (a *services) AddService(name string, subject string) (ServiceExport, error
 	return x, nil
 }
 
-func (a *services) SetServices(exports ...ServiceExport) error {
+func (a *services) Set(exports ...ServiceExport) error {
 	var buf []*jwt.Export
 	// save existing streams
 	for _, e := range a.Claim.Exports {

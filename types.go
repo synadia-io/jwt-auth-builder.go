@@ -352,37 +352,37 @@ type Imports interface {
 }
 
 type Services interface {
-	// AddService creates and adds a new public service with the specified name and subject
-	AddService(name string, subject string) (ServiceExport, error)
-	// AddServiceWithConfig adds a copy of the specified configuration to the account
+	// Add creates and adds a new public service with the specified name and subject
+	Add(name string, subject string) (ServiceExport, error)
+	// AddWithConfig adds a copy of the specified configuration to the account
 	// note that adding a service with a duplicate subject is an error
-	AddServiceWithConfig(e ServiceExport) error
-	// GetService returns the ServiceExport matching the subject or nil if not found
-	GetService(subject string) ServiceExport
-	// GetServiceByName returns the ServiceExport matching the specified name,
+	AddWithConfig(e ServiceExport) error
+	// Get returns the ServiceExport matching the subject or nil if not found
+	Get(subject string) ServiceExport
+	// GetByName returns the ServiceExport matching the specified name,
 	// note that the first service is returned
-	GetServiceByName(name string) ServiceExport
-	// ListServices returns a list of ServiceExport in the account
-	ListServices() []ServiceExport
-	// SetServices removes all services, and copies the specified services
-	SetServices(services ...ServiceExport) error
+	GetByName(name string) ServiceExport
+	// List returns a list of ServiceExport in the account
+	List() []ServiceExport
+	// Set replaces all services with the specified ones
+	Set(exports ...ServiceExport) error
 }
 
 type Streams interface {
-	// AddStream creates and add a new public stream with the specified name and subject
-	AddStream(name string, subject string) (StreamExport, error)
-	// AddStreamWithConfig adds a copy of the specified configuration to the account
+	// Add creates and add a new public stream with the specified name and subject
+	Add(name string, subject string) (StreamExport, error)
+	// AddWithConfig adds a copy of the specified configuration to the account
 	// note that adding a stream with a duplicate subject is an error
-	AddStreamWithConfig(e StreamExport) error
-	// GetStream returns the StreamExport matching the subject or nil if not found
-	GetStream(subject string) StreamExport
-	// GetStreamByName returns the StreamExport matching the specified name,
+	AddWithConfig(e StreamExport) error
+	// Get returns the StreamExport matching the subject or nil if not found
+	Get(subject string) StreamExport
+	// GetByName returns the StreamExport matching the specified name,
 	// note that the first stream is returned
-	GetStreamByName(name string) StreamExport
-	// ListStreams returns a list of StreamExport in the account
-	ListStreams() []StreamExport
-	// SetStreams removes all streams, and copies the specified streams
-	SetStreams(services ...StreamExport) error
+	GetByName(name string) StreamExport
+	// List returns a list of StreamExport in the account
+	List() []StreamExport
+	// Set replaces all streams with the specified ones
+	Set(exports ...StreamExport) error
 }
 
 type Exports interface {

@@ -10,11 +10,11 @@ type streams struct {
 	*AccountData
 }
 
-func (s *streams) GetStream(subject string) StreamExport {
+func (s *streams) Get(subject string) StreamExport {
 	return s.getStream(subject)
 }
 
-func (s *streams) AddStreamWithConfig(e StreamExport) error {
+func (s *streams) AddWithConfig(e StreamExport) error {
 	if e == nil {
 		return errors.New("invalid stream export")
 	}
@@ -28,7 +28,7 @@ func (s *streams) AddStreamWithConfig(e StreamExport) error {
 	return s.update()
 }
 
-func (s *streams) AddStream(name string, subject string) (StreamExport, error) {
+func (s *streams) Add(name string, subject string) (StreamExport, error) {
 	err := s.newExport(name, subject, jwt.Stream)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (s *streams) AddStream(name string, subject string) (StreamExport, error) {
 	return x, nil
 }
 
-func (s *streams) SetStreams(exports ...StreamExport) error {
+func (s *streams) Set(exports ...StreamExport) error {
 	var buf []*jwt.Export
 	// save existing services
 	for _, e := range s.Claim.Exports {
@@ -59,7 +59,7 @@ func (s *streams) SetStreams(exports ...StreamExport) error {
 	return s.update()
 }
 
-func (a *AccountData) GetStreamByName(name string) StreamExport {
+func (a *AccountData) GetByName(name string) StreamExport {
 	for _, e := range a.Claim.Exports {
 		if e.IsStream() && e.Name == name {
 			se := &StreamExportImpl{}
@@ -71,6 +71,6 @@ func (a *AccountData) GetStreamByName(name string) StreamExport {
 	return nil
 }
 
-func (a *AccountData) ListStreams() []StreamExport {
+func (a *AccountData) List() []StreamExport {
 	return a.getStreams()
 }
