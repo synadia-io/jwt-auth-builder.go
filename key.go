@@ -1,6 +1,7 @@
 package authb
 
 import (
+	"fmt"
 	"github.com/nats-io/nkeys"
 )
 
@@ -29,6 +30,9 @@ func KeyFromNkey(kp nkeys.KeyPair, check ...nkeys.PrefixByte) (*Key, error) {
 func KeyFrom(key string, check ...nkeys.PrefixByte) (*Key, error) {
 	k := &Key{}
 	var err error
+	if len(key) == 0 {
+		return nil, fmt.Errorf("invalid key - empty string")
+	}
 	if key[0] == 'S' {
 		k.Pair, err = nkeys.FromSeed([]byte(key))
 		if err != nil {

@@ -178,6 +178,8 @@ type Account interface {
 	Expiry() int64
 	// JWT returns the encoded token
 	JWT() string
+	// Revocations manage user revocations
+	Revocations() Revocations
 }
 
 // Users is an interface for managing users
@@ -286,16 +288,16 @@ type JetStreamTieredLimits interface {
 // JetStreamLimits is an interface for managing JetStream limits
 type JetStreamLimits interface {
 	// MaxMemoryStorage returns the maximum amount of memory that
-	// memory streams can allocate across all streams in the account.
+	// memory streamExports can allocate across all streamExports in the account.
 	MaxMemoryStorage() (int64, error)
 	// SetMaxMemoryStorage sets the maximum amount of memory that
-	// can be allocated for all streams in the account
+	// can be allocated for all streamExports in the account
 	SetMaxMemoryStorage(max int64) error
 	// MaxDiskStorage returns the maximum amount of disk storage
-	// that disk streams can allocate across all streams in the account.
+	// that disk streamExports can allocate across all streamExports in the account.
 	MaxDiskStorage() (int64, error)
 	// SetMaxDiskStorage sets the maximum amount of disk storage
-	// that can be allocated for all streams in the account
+	// that can be allocated for all streamExports in the account
 	SetMaxDiskStorage(max int64) error
 	// MaxMemoryStreamSize returns the maximum size of a memory stream
 	MaxMemoryStreamSize() (int64, error)
@@ -311,10 +313,10 @@ type JetStreamLimits interface {
 	// SetMaxStreamSizeRequired sets whether all stream allocations
 	// require setting a maximum size
 	SetMaxStreamSizeRequired(tf bool) error
-	// MaxStreams is the maximum number of streams that can be created
+	// MaxStreams is the maximum number of streamExports that can be created
 	// by the account
 	MaxStreams() (int64, error)
-	// SetMaxStreams sets the maximum number of streams that can be created
+	// SetMaxStreams sets the maximum number of streamExports that can be created
 	// by the account
 	SetMaxStreams(max int64) error
 	// MaxConsumers is the maximum number of consumers that can be created
@@ -339,10 +341,149 @@ type JetStreamLimits interface {
 	Delete() error
 }
 
-type Imports interface {
+type Exports interface {
+	Services() ServiceExports
+	Streams() StreamExports
 }
 
-type Exports interface {
+type Imports interface {
+	Services() ServiceImports
+	Streams() StreamImports
+}
+
+type ServiceImports interface {
+	Add(name string, subject string) (ServiceImport, error)
+	Get(subject string) ServiceImport
+	GetByName(name string) ServiceImport
+	List() []ServiceImport
+	Set(imports ...ServiceImport) error
+}
+
+type ServiceExports interface {
+	// Add creates and adds a new public service with the specified name and subject
+	Add(name string, subject string) (ServiceExport, error)
+	// AddWithConfig adds a copy of the specified configuration to the account
+	// note that adding a service with a duplicate subject is an error
+	AddWithConfig(e ServiceExport) error
+	// Get returns the ServiceExport matching the subject or nil if not found
+	Get(subject string) ServiceExport
+	// Delete deletes the ServiceExport matching the subject
+	Delete(subject string) (bool, error)
+	// GetByName returns the ServiceExport matching the specified name,
+	// note that the first service is returned
+	GetByName(name string) ServiceExport
+	// List returns a list of ServiceExport in the account
+	List() []ServiceExport
+	// Set replaces all serviceExports with the specified ones
+	Set(exports ...ServiceExport) error
+}
+
+type StreamImports interface {
+	Add(name string, subject string) (StreamImport, error)
+	Get(subject string) StreamImport
+	GetByName(name string) StreamImport
+	List() []StreamImport
+	Set(imports ...StreamImport) error
+}
+
+type StreamExports interface {
+	// Add creates and add a new public stream with the specified name and subject
+	Add(name string, subject string) (StreamExport, error)
+	// AddWithConfig adds a copy of the specified configuration to the account
+	// note that adding a stream with a duplicate subject is an error
+	AddWithConfig(e StreamExport) error
+	// Get returns the StreamExport matching the subject or nil if not found
+	Get(subject string) StreamExport
+	// Delete deletes the StreamExport matching the subject
+	Delete(subject string) (bool, error)
+	// GetByName returns the StreamExport matching the specified name,
+	// note that the first stream is returned
+	GetByName(name string) StreamExport
+	// List returns a list of StreamExport in the account
+	List() []StreamExport
+	// Set replaces all streamExports with the specified ones
+	Set(exports ...StreamExport) error
+}
+
+type RevocationEntry interface {
+	PublicKey() string
+	At() time.Time
+}
+
+type Revocations interface {
+	// Add revoke the specified nkey for credentials issued on the specified date or earlier
+	//  The special `*` key targets all entities
+	Add(key string, at time.Time) error
+	// Delete deletes the specified nkey from the revocation list
+	Delete(key string) (bool, error)
+	// Compact removes revocations that are handled by a more recent wildcard revocation
+	Compact() ([]RevocationEntry, error)
+	// List returns a copy of current Revocations
+	List() []RevocationEntry
+	// Set replaces the current revocation list with the provided one
+	Set(revocations []RevocationEntry) error
+	// Contains returns true if the public key or "*" is in the revocation list
+	Contains(key string) (bool, error)
+}
+
+type Revocable interface {
+	Revocations() Revocations
+}
+
+type NameSubject interface {
+	Name() string
+	SetName(n string) error
+	Subject() string
+	SetSubject(s string) error
+}
+
+type Export interface {
+	NameSubject
+	Revocable
+	TokenRequired() bool
+	SetTokenRequired(tf bool) error
+	Description() string
+	SetDescription(s string) error
+	InfoURL() string
+	SetInfoURL(u string) error
+	AccountTokenPosition() uint
+	SetAccountTokenPosition(n uint) error
+}
+
+type SamplingRate int
+
+type TracingConfiguration struct {
+	SamplingRate SamplingRate
+	Subject      string
+}
+
+type ServiceExport interface {
+	Export
+	// Tracing returns the TracingConfiguration if enabled otherwise nil
+	Tracing() *TracingConfiguration
+	// SetTracing enables tracing for the service, if nil, the tracing is disabled
+	SetTracing(config *TracingConfiguration) error
+}
+
+type StreamExport interface {
+	Export
+}
+
+type baseImport interface {
+	NameSubject
+	Account() *Key
+	SetAccount(k *Key) error
+	Token() string
+	SetToken(t string) error
+	LocalSubject() string
+}
+
+type ServiceImport interface {
+	baseImport
+}
+
+type StreamImport interface {
+	baseImport
 }
 
 // SigningKeys is an interface for managing signing keys

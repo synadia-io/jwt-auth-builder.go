@@ -2,6 +2,7 @@ package tests
 
 import (
 	"github.com/nats-io/jwt/v2"
+	"github.com/nats-io/nkeys"
 	"github.com/nats-io/nuid"
 	"github.com/stretchr/testify/suite"
 	nats_auth "github.com/synadia-io/jwt-auth-builder.go"
@@ -66,6 +67,40 @@ func (suite *ProviderSuite) TearDownTest() {
 	if suite.cleanup != nil {
 		suite.cleanup(suite.T())
 	}
+}
+
+func (suite *ProviderSuite) GetAccount(auth nats_auth.Auth, operator string, account string) nats_auth.Account {
+	o := auth.Operators().Get(operator)
+	suite.NotNil(o)
+
+	a := o.Accounts().Get(account)
+	suite.NotNil(a)
+	return a
+}
+
+func (suite *ProviderSuite) MaybeCreate(auth nats_auth.Auth, operator string, account string) nats_auth.Account {
+	var err error
+	o := auth.Operators().Get(operator)
+	if o == nil {
+		o, err = auth.Operators().Add(operator)
+		suite.NoError(err)
+	}
+	a, err := o.Accounts().Add(account)
+	suite.NoError(err)
+	suite.NotNil(a)
+	return a
+}
+
+func (suite *ProviderSuite) UserKey() *nats_auth.Key {
+	k, err := nats_auth.KeyFor(nkeys.PrefixByteUser)
+	suite.Require().NoError(err)
+	return k
+}
+
+func (suite *ProviderSuite) AccountKey() *nats_auth.Key {
+	k, err := nats_auth.KeyFor(nkeys.PrefixByteAccount)
+	suite.Require().NoError(err)
+	return k
 }
 
 func Test_NscProvider(t *testing.T) {

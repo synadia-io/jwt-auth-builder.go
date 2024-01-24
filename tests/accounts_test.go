@@ -643,7 +643,6 @@ func (suite *ProviderSuite) testTier(auth authb.Auth, account authb.Account, tie
 	tf, err = lim.IsUnlimited()
 	require.NoError(t, err)
 	require.True(t, tf)
-
 }
 
 func (suite *ProviderSuite) Test_AccountJetStreamLimits() {
@@ -709,12 +708,7 @@ func (suite *ProviderSuite) Test_AccountSigningKeys() {
 	operators := auth.Operators()
 	require.Empty(t, operators.List())
 
-	o, err := operators.Add("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
-
-	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
+	a := suite.MaybeCreate(auth, "O", "A")
 	require.NotNil(t, a)
 
 	var keys []string
@@ -737,4 +731,84 @@ func (suite *ProviderSuite) Test_AccountSigningKeys() {
 	require.NotNil(t, roles)
 	require.Len(t, roles, 1)
 	require.Contains(t, roles, "admin")
+}
+
+func (s *ProviderSuite) Test_AccountRevocationEmpty() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	a := s.MaybeCreate(auth, "O", "A")
+	s.NotNil(a)
+	r := a.Revocations()
+	s.NotNil(r)
+	s.Len(r.List(), 0)
+}
+
+func (s *ProviderSuite) Test_AccountRevokesRejectNonUserKey() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	a := s.MaybeCreate(auth, "O", "A")
+	s.NotNil(a)
+	revocations := a.Revocations()
+	s.NotNil(revocations)
+	s.Len(revocations.List(), 0)
+
+	err = revocations.Add(s.AccountKey().Public, time.Now())
+	s.Error(err)
+}
+
+func (s *ProviderSuite) Test_AccountRevokeUser() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	a := s.MaybeCreate(auth, "O", "A")
+	s.NotNil(a)
+	revocations := a.Revocations()
+	s.NotNil(revocations)
+	s.Len(revocations.List(), 0)
+
+	uk := s.UserKey().Public
+	err = revocations.Add(uk, time.Now())
+	s.NoError(err)
+
+	revokes := revocations.List()
+	s.Len(revokes, 1)
+	s.Equal(uk, revokes[0].PublicKey())
+
+	s.NoError(auth.Commit())
+	s.NoError(auth.Reload())
+
+	a = s.GetAccount(auth, "O", "A")
+	s.NotNil(a)
+	s.True(a.Revocations().Contains(uk))
+
+	ok, err := a.Revocations().Delete(uk)
+	s.NoError(err)
+	s.True(ok)
+
+	s.NoError(auth.Commit())
+	s.NoError(auth.Reload())
+
+	a = s.GetAccount(auth, "O", "A")
+	s.NotNil(a)
+	s.False(a.Revocations().Contains(uk))
+}
+
+func (s *ProviderSuite) Test_AccountRevokeWildcard() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	a := s.MaybeCreate(auth, "O", "A")
+	s.NotNil(a)
+	revocations := a.Revocations()
+	s.NotNil(revocations)
+	s.Len(revocations.List(), 0)
+
+	err = revocations.Add("*", time.Now())
+	s.NoError(err)
+
+	revokes := revocations.List()
+	s.Len(revokes, 1)
+	s.Equal("*", revokes[0].PublicKey())
 }

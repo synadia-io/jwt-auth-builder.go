@@ -24,3 +24,5 @@ go.work
 coverage.out
 
 delete_test_kvs.ts
+
+experiments/
