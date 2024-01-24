@@ -7,10 +7,6 @@ tasks:
   test:
     deps:
     cmds:
-      - go test -v  ./...
-  cover:
-    deps:
-    cmds:
       - rm -f ./coverage.out
       - go test -coverpkg=./... -coverprofile=./coverage.out ./...
       - go tool cover -html=./coverage.out

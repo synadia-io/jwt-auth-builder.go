@@ -1,7 +1,6 @@
 package authb
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/nats-io/jwt/v2"
@@ -352,7 +351,7 @@ type Imports interface {
 	SetStreamImports(imports []*StreamImport) error
 }
 
-type Exports interface {
+type Services interface {
 	// AddService creates and adds a new public service with the specified name and subject
 	AddService(name string, subject string) (ServiceExport, error)
 	// AddServiceWithConfig adds a copy of the specified configuration to the account
@@ -363,11 +362,13 @@ type Exports interface {
 	// GetServiceByName returns the ServiceExport matching the specified name,
 	// note that the first service is returned
 	GetServiceByName(name string) ServiceExport
-	// Services returns a list of ServiceExport in the account
-	Services() []ServiceExport
+	// ListServices returns a list of ServiceExport in the account
+	ListServices() []ServiceExport
 	// SetServices removes all services, and copies the specified services
 	SetServices(services ...ServiceExport) error
+}
 
+type Streams interface {
 	// AddStream creates and add a new public stream with the specified name and subject
 	AddStream(name string, subject string) (StreamExport, error)
 	// AddStreamWithConfig adds a copy of the specified configuration to the account
@@ -378,64 +379,23 @@ type Exports interface {
 	// GetStreamByName returns the StreamExport matching the specified name,
 	// note that the first stream is returned
 	GetStreamByName(name string) StreamExport
-	// Streams returns a list of StreamExport in the account
-	Streams() []StreamExport
+	// ListStreams returns a list of StreamExport in the account
+	ListStreams() []StreamExport
 	// SetStreams removes all streams, and copies the specified streams
 	SetStreams(services ...StreamExport) error
+}
+
+type Exports interface {
+	Services() Services
+	Streams() Streams
+	// ListStreams() ListStreams
+	// ListStreams() ListStreams
+
 }
 
 type RevocationEntry interface {
 	PublicKey() string
 	Before() time.Time
-}
-
-func NewRevocationEntry(opts ...RevocationOption) (RevocationEntry, error) {
-	r := &revocation{}
-	for _, opt := range opts {
-		if err := opt(r); err != nil {
-			return nil, err
-		}
-	}
-	return r, nil
-}
-
-type revocation struct {
-	publicKey string
-	before    time.Time
-}
-
-func (t *revocation) PublicKey() string {
-	return t.publicKey
-}
-
-func (t *revocation) Before() time.Time {
-	return t.before
-}
-
-type RevocationOption func(*revocation) error
-
-func Revoke(k *Key) RevocationOption {
-	return func(t *revocation) error {
-		if k == nil {
-			return fmt.Errorf("key cannot be nil")
-		}
-		t.publicKey = k.Public
-		return nil
-	}
-}
-
-func All() RevocationOption {
-	return func(t *revocation) error {
-		t.publicKey = jwt.All
-		return nil
-	}
-}
-
-func Before(date time.Time) RevocationOption {
-	return func(t *revocation) error {
-		t.before = date
-		return nil
-	}
 }
 
 type Revocations interface {

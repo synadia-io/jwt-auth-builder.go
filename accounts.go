@@ -127,6 +127,100 @@ func (a *AccountData) Exports() Exports {
 	return a
 }
 
+func (a *AccountData) Services() Services {
+	return &services{a}
+}
+
+func (a *AccountData) Streams() Streams {
+	return &streams{a}
+}
+
 func (a *AccountData) Imports() Imports {
 	panic("not implemented")
+}
+
+func (a *AccountData) getServices() []ServiceExport {
+	var buf []ServiceExport
+	for _, e := range a.Claim.Exports {
+		if e.IsService() {
+			se := &ServiceExportImpl{}
+			se.data = a
+			se.export = e
+			buf = append(buf, se)
+		}
+	}
+	return buf
+}
+
+func (a *AccountData) getService(subject string) ServiceExport {
+	for _, e := range a.Claim.Exports {
+		if e.IsService() && string(e.Subject) == subject {
+			se := &ServiceExportImpl{}
+			se.data = a
+			se.export = e
+			return se
+		}
+	}
+	return nil
+}
+
+func (a *AccountData) getStreams() []StreamExport {
+	var buf []StreamExport
+	for _, e := range a.Claim.Exports {
+		if e.IsStream() {
+			se := &StreamExportImpl{}
+			se.data = a
+			se.export = e
+			buf = append(buf, se)
+		}
+	}
+	return buf
+}
+
+func (a *AccountData) getStream(subject string) StreamExport {
+	for _, e := range a.Claim.Exports {
+		if e.IsStream() && string(e.Subject) == subject {
+			se := &StreamExportImpl{}
+			se.data = a
+			se.export = e
+			return se
+		}
+	}
+	return nil
+}
+
+func (a *AccountData) addExport(export *jwt.Export) error {
+	if export == nil {
+		return errors.New("invalid export")
+	}
+	if export.Name == "" {
+		return errors.New("export name is not specified")
+	}
+	if export.Type == jwt.Unknown {
+		return errors.New("export type is not specified")
+	}
+	if export.Subject == "" {
+		return errors.New("export subject is not specified")
+	}
+
+	if export.IsService() {
+		if a.getService(string(export.Subject)) != nil {
+			return errors.New("service export already exists")
+		}
+	} else {
+		if a.getStream(string(export.Subject)) != nil {
+			return errors.New("stream export already exists")
+		}
+	}
+	a.Claim.Exports = append(a.Claim.Exports, export)
+	return nil
+}
+
+func (a *AccountData) newExport(name string, subject string, kind jwt.ExportType) error {
+	export := &jwt.Export{
+		Name:    name,
+		Subject: jwt.Subject(subject),
+		Type:    kind,
+	}
+	return a.addExport(export)
 }

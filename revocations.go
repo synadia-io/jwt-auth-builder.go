@@ -3,12 +3,62 @@ package authb
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
-	"time"
 )
 
 var ErrRevocationPublicExportsNotAllowed = fmt.Errorf("public exports are not allowed")
+
+func NewRevocationEntry(opts ...RevocationOption) (RevocationEntry, error) {
+	r := &revocation{}
+	for _, opt := range opts {
+		if err := opt(r); err != nil {
+			return nil, err
+		}
+	}
+	return r, nil
+}
+
+type revocation struct {
+	publicKey string
+	before    time.Time
+}
+
+func (t *revocation) PublicKey() string {
+	return t.publicKey
+}
+
+func (t *revocation) Before() time.Time {
+	return t.before
+}
+
+type RevocationOption func(*revocation) error
+
+func Revoke(k *Key) RevocationOption {
+	return func(t *revocation) error {
+		if k == nil {
+			return fmt.Errorf("key cannot be nil")
+		}
+		t.publicKey = k.Public
+		return nil
+	}
+}
+
+func All() RevocationOption {
+	return func(t *revocation) error {
+		t.publicKey = jwt.All
+		return nil
+	}
+}
+
+func Before(date time.Time) RevocationOption {
+	return func(t *revocation) error {
+		t.before = date
+		return nil
+	}
+}
 
 type revocationTarget interface {
 	getRevocationPrefix() nkeys.PrefixByte
