@@ -6,15 +6,15 @@ import (
 	"github.com/nats-io/jwt/v2"
 )
 
-type streams struct {
+type streamExports struct {
 	*AccountData
 }
 
-func (s *streams) Get(subject string) StreamExport {
+func (s *streamExports) Get(subject string) StreamExport {
 	return s.getStream(subject)
 }
 
-func (s *streams) AddWithConfig(e StreamExport) error {
+func (s *streamExports) AddWithConfig(e StreamExport) error {
 	if e == nil {
 		return errors.New("invalid stream export")
 	}
@@ -28,7 +28,7 @@ func (s *streams) AddWithConfig(e StreamExport) error {
 	return s.update()
 }
 
-func (s *streams) Add(name string, subject string) (StreamExport, error) {
+func (s *streamExports) Add(name string, subject string) (StreamExport, error) {
 	err := s.newExport(name, subject, jwt.Stream)
 	if err != nil {
 		return nil, err
@@ -41,9 +41,9 @@ func (s *streams) Add(name string, subject string) (StreamExport, error) {
 	return x, nil
 }
 
-func (s *streams) Set(exports ...StreamExport) error {
+func (s *streamExports) Set(exports ...StreamExport) error {
 	var buf []*jwt.Export
-	// save existing services
+	// save existing serviceExports
 	for _, e := range s.Claim.Exports {
 		if e.IsService() {
 			buf = append(buf, e)
@@ -57,6 +57,10 @@ func (s *streams) Set(exports ...StreamExport) error {
 	}
 	s.Claim.Exports = buf
 	return s.update()
+}
+
+func (s *streamExports) Delete(subject string) (bool, error) {
+	return s.deleteExport(subject, false)
 }
 
 func (a *AccountData) GetByName(name string) StreamExport {

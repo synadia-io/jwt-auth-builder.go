@@ -781,7 +781,7 @@ func (s *ProviderSuite) Test_AccountRevokeUser() {
 
 	a = s.GetAccount(auth, "O", "A")
 	s.NotNil(a)
-	s.True(a.Revocations().HasRevocation(uk))
+	s.True(a.Revocations().Contains(uk))
 
 	ok, err := a.Revocations().Delete(uk)
 	s.NoError(err)
@@ -792,7 +792,7 @@ func (s *ProviderSuite) Test_AccountRevokeUser() {
 
 	a = s.GetAccount(auth, "O", "A")
 	s.NotNil(a)
-	s.False(a.Revocations().HasRevocation(uk))
+	s.False(a.Revocations().Contains(uk))
 }
 
 func (s *ProviderSuite) Test_AccountRevokeWildcard() {

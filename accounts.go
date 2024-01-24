@@ -127,12 +127,12 @@ func (a *AccountData) Exports() Exports {
 	return a
 }
 
-func (a *AccountData) Services() Services {
-	return &services{a}
+func (a *AccountData) Services() ServiceExports {
+	return &serviceExports{a}
 }
 
-func (a *AccountData) Streams() Streams {
-	return &streams{a}
+func (a *AccountData) Streams() StreamExports {
+	return &streamExports{a}
 }
 
 func (a *AccountData) Imports() Imports {
@@ -150,6 +150,29 @@ func (a *AccountData) getServices() []ServiceExport {
 		}
 	}
 	return buf
+}
+
+func (a *AccountData) deleteExport(subject string, service bool) (bool, error) {
+	if subject == "" {
+		return false, errors.New("invalid subject")
+	}
+	if service {
+		for idx, e := range a.Claim.Exports {
+			if e.IsService() && e.Subject == jwt.Subject(subject) {
+				a.Claim.Exports = append(a.Claim.Exports[:idx], a.Claim.Exports[idx+1:]...)
+				return true, a.update()
+			}
+		}
+	} else {
+		for idx, e := range a.Claim.Exports {
+			if e.IsStream() && e.Subject == jwt.Subject(subject) {
+				a.Claim.Exports = append(a.Claim.Exports[:idx], a.Claim.Exports[idx+1:]...)
+				return true, a.update()
+			}
+		}
+	}
+
+	return false, nil
 }
 
 func (a *AccountData) getService(subject string) ServiceExport {

@@ -6,15 +6,15 @@ import (
 	"github.com/nats-io/jwt/v2"
 )
 
-type services struct {
+type serviceExports struct {
 	*AccountData
 }
 
-func (a *services) Get(subject string) ServiceExport {
+func (a *serviceExports) Get(subject string) ServiceExport {
 	return a.getService(subject)
 }
 
-func (a *services) GetByName(name string) ServiceExport {
+func (a *serviceExports) GetByName(name string) ServiceExport {
 	for _, e := range a.Claim.Exports {
 		if e.IsService() && e.Name == name {
 			se := &ServiceExportImpl{}
@@ -26,11 +26,11 @@ func (a *services) GetByName(name string) ServiceExport {
 	return nil
 }
 
-func (a *services) List() []ServiceExport {
+func (a *serviceExports) List() []ServiceExport {
 	return a.getServices()
 }
 
-func (a *services) AddWithConfig(e ServiceExport) error {
+func (a *serviceExports) AddWithConfig(e ServiceExport) error {
 	if e == nil {
 		return errors.New("invalid service export")
 	}
@@ -44,7 +44,7 @@ func (a *services) AddWithConfig(e ServiceExport) error {
 	return a.update()
 }
 
-func (a *services) Add(name string, subject string) (ServiceExport, error) {
+func (a *serviceExports) Add(name string, subject string) (ServiceExport, error) {
 	err := a.newExport(name, subject, jwt.Service)
 	if err != nil {
 		return nil, err
@@ -57,9 +57,9 @@ func (a *services) Add(name string, subject string) (ServiceExport, error) {
 	return x, nil
 }
 
-func (a *services) Set(exports ...ServiceExport) error {
+func (a *serviceExports) Set(exports ...ServiceExport) error {
 	var buf []*jwt.Export
-	// save existing streams
+	// save existing streamExports
 	for _, e := range a.Claim.Exports {
 		if e.IsStream() {
 			buf = append(buf, e)
@@ -74,4 +74,8 @@ func (a *services) Set(exports ...ServiceExport) error {
 	}
 	a.Claim.Exports = buf
 	return a.update()
+}
+
+func (a *serviceExports) Delete(subject string) (bool, error) {
+	return a.deleteExport(subject, true)
 }

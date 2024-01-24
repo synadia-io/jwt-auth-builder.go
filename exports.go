@@ -27,6 +27,29 @@ func NewService(name string, subject string) (ServiceExport, error) {
 	}, nil
 }
 
+func (b *ServiceExportImpl) Tracing() *TracingConfiguration {
+	lat := b.export.Latency
+	if lat == nil {
+		return nil
+	}
+	return &TracingConfiguration{
+		SamplingRate: SamplingRate(lat.Sampling),
+		Subject:      string(lat.Results),
+	}
+}
+
+func (b *ServiceExportImpl) SetTracing(t *TracingConfiguration) error {
+	if t == nil {
+		b.export.Latency = nil
+	} else {
+		b.export.Latency = &jwt.ServiceLatency{
+			Sampling: jwt.SamplingRate(t.SamplingRate),
+			Results:  jwt.Subject(t.Subject),
+		}
+	}
+	return b.update()
+}
+
 type StreamExportImpl struct {
 	baseExportImpl
 }
@@ -42,7 +65,7 @@ func NewStream(name string, subject string) (StreamExport, error) {
 	return &StreamExportImpl{
 		baseExportImpl{
 			data:   nil,
-			export: &jwt.Export{Name: name, Subject: jwt.Subject(subject), Type: jwt.Service},
+			export: &jwt.Export{Name: name, Subject: jwt.Subject(subject), Type: jwt.Stream},
 		},
 	}, nil
 }
@@ -106,6 +129,33 @@ func (b *baseExportImpl) TokenRequired() bool {
 
 func (b *baseExportImpl) SetTokenRequired(tf bool) error {
 	b.export.TokenReq = tf
+	return b.update()
+}
+
+func (b *baseExportImpl) Description() string {
+	return b.export.Description
+}
+
+func (b *baseExportImpl) SetDescription(s string) error {
+	b.export.Description = s
+	return b.update()
+}
+
+func (b *baseExportImpl) InfoURL() string {
+	return b.export.InfoURL
+}
+
+func (b *baseExportImpl) SetInfoURL(u string) error {
+	b.export.InfoURL = u
+	return b.update()
+}
+
+func (b *baseExportImpl) AccountTokenPosition() uint {
+	return b.export.AccountTokenPosition
+}
+
+func (b *baseExportImpl) SetAccountTokenPosition(n uint) error {
+	b.export.AccountTokenPosition = n
 	return b.update()
 }
 

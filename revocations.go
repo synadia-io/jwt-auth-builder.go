@@ -11,14 +11,8 @@ import (
 
 var ErrRevocationPublicExportsNotAllowed = fmt.Errorf("public exports are not allowed")
 
-func NewRevocationEntry(opts ...RevocationOption) (RevocationEntry, error) {
-	r := &revocation{}
-	for _, opt := range opts {
-		if err := opt(r); err != nil {
-			return nil, err
-		}
-	}
-	return r, nil
+func NewRevocationEntry(key string, before time.Time) RevocationEntry {
+	return &revocation{publicKey: key, before: before}
 }
 
 type revocation struct {
@@ -30,34 +24,8 @@ func (t *revocation) PublicKey() string {
 	return t.publicKey
 }
 
-func (t *revocation) Before() time.Time {
+func (t *revocation) At() time.Time {
 	return t.before
-}
-
-type RevocationOption func(*revocation) error
-
-func Revoke(k *Key) RevocationOption {
-	return func(t *revocation) error {
-		if k == nil {
-			return fmt.Errorf("key cannot be nil")
-		}
-		t.publicKey = k.Public
-		return nil
-	}
-}
-
-func All() RevocationOption {
-	return func(t *revocation) error {
-		t.publicKey = jwt.All
-		return nil
-	}
-}
-
-func Before(date time.Time) RevocationOption {
-	return func(t *revocation) error {
-		t.before = date
-		return nil
-	}
 }
 
 type revocationTarget interface {
@@ -116,8 +84,8 @@ func (b *revocations) addRevocation(key string, before time.Time) error {
 	return nil
 }
 
-func (b *revocations) Add(key string, before time.Time) error {
-	if err := b.addRevocation(key, before); err != nil {
+func (b *revocations) Add(key string, at time.Time) error {
+	if err := b.addRevocation(key, at); err != nil {
 		return err
 	}
 	return b.data.update()
@@ -168,7 +136,7 @@ func (b *revocations) List() []RevocationEntry {
 	return buf
 }
 
-func (b *revocations) SetRevocations(revocations []RevocationEntry) error {
+func (b *revocations) Set(revocations []RevocationEntry) error {
 	for k := range b.data.getRevocations() {
 		delete(b.data.getRevocations(), k)
 	}
@@ -180,7 +148,7 @@ func (b *revocations) SetRevocations(revocations []RevocationEntry) error {
 	return b.data.update()
 }
 
-func (b *revocations) HasRevocation(key string) (bool, error) {
+func (b *revocations) Contains(key string) (bool, error) {
 	k, err := b.checkKey(key)
 	if err != nil {
 		return false, err

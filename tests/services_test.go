@@ -1,319 +1,146 @@
 package tests
 
-import (
-	"errors"
-	"time"
+import authb "github.com/synadia-io/jwt-auth-builder.go"
 
-	"github.com/nats-io/nkeys"
-	authb "github.com/synadia-io/jwt-auth-builder.go"
-)
-
-func (s *ProviderSuite) Test_ServiceRequiresName() {
-	auth, err := authb.NewAuth(s.Provider)
-	s.NoError(err)
-
-	operators := auth.Operators()
-	s.Empty(operators.List())
-
-	a := s.MaybeCreate(auth, "O", "A")
-	s.NotNil(a)
-
-	_, err = a.Exports().Services().Add("", "q.foo.>")
-	s.Error(err)
-}
-
-func (s *ProviderSuite) Test_ServiceRequiresSubject() {
-	auth, err := authb.NewAuth(s.Provider)
-	s.NoError(err)
-
-	operators := auth.Operators()
-	s.Empty(operators.List())
-
-	o, err := operators.Add("O")
-	s.NoError(err)
-	s.NotNil(o)
-
-	a, err := o.Accounts().Add("A")
-	s.NoError(err)
-	s.NotNil(a)
-
-	_, err = a.Exports().Services().Add("name", "")
-	s.Error(err)
-}
-
-func (s *ProviderSuite) Test_AddService() {
-	auth, err := authb.NewAuth(s.Provider)
-	s.NoError(err)
-
-	operators := auth.Operators()
-	s.Empty(operators.List())
-
-	o, err := operators.Add("O")
-	s.NoError(err)
-	s.NotNil(o)
-
-	a, err := o.Accounts().Add("A")
-	s.NoError(err)
-	s.NotNil(a)
-
-	service, err := authb.NewService("q", "q.*")
-	s.NoError(err)
-
-	err = a.Exports().Services().AddWithConfig(service)
-	s.NoError(err)
-
-	service = a.Exports().Services().Get("q.*")
-	s.NotNil(service)
-	s.Equal("q", service.Name())
-	s.Equal("q.*", service.Subject())
-}
-
-func (s *ProviderSuite) Test_ServiceCrud() {
+func (s *ProviderSuite) Test_ServiceExportCrud() {
 	auth, err := authb.NewAuth(s.Provider)
 	s.NoError(err)
 
 	a := s.MaybeCreate(auth, "O", "A")
 	s.Len(a.Exports().Services().List(), 0)
 
-	service, err := a.Exports().Services().Add("foos", "q.foo.>")
+	_, err = a.Exports().Services().Add("q", "q.>")
 	s.NoError(err)
-	s.NotNil(service)
-	s.Equal("foos", service.Name())
-	s.Equal("q.foo.>", service.Subject())
-	s.NoError(service.SetTokenRequired(true))
-	s.Equal(true, service.TokenRequired())
-
-	s.NoError(auth.Commit())
-	s.NoError(auth.Reload())
-
-	a = s.GetAccount(auth, "O", "A")
-	s.NotNil(a)
-
-	services := a.Exports().Services().List()
-	s.Len(services, 1)
-	s.Equal("foos", services[0].Name())
-	s.Equal("q.foo.>", services[0].Subject())
-	s.Equal(true, services[0].TokenRequired())
-
-	s.Nil(a.Exports().Services().GetByName("foo"))
-
-	service = a.Exports().Services().GetByName("foos")
-	s.NotNil(service)
-
-	service = a.Exports().Services().Get("q.foo.>")
-	s.NotNil(service)
-
-	s.NoError(service.SetName("bar"))
-	s.NoError(service.SetTokenRequired(false))
-	s.NoError(service.SetSubject("bar.*"))
-	s.NoError(auth.Commit())
-	s.NoError(auth.Reload())
-
-	services = a.Exports().Services().List()
-	s.Len(services, 1)
-	s.Equal("bar", services[0].Name())
-	s.Equal("bar.*", services[0].Subject())
-	s.Equal(false, services[0].TokenRequired())
-}
-
-func (s *ProviderSuite) Test_StreamCrud() {
-	auth, err := authb.NewAuth(s.Provider)
-	s.NoError(err)
-
-	a := s.MaybeCreate(auth, "O", "A")
-	s.Len(a.Exports().Streams().List(), 0)
-
-	stream, err := a.Exports().Streams().Add("foos", "q.foo.>")
-	s.NoError(err)
-	s.NotNil(stream)
-	s.Equal("foos", stream.Name())
-	s.Equal("q.foo.>", stream.Subject())
-	s.NoError(stream.SetTokenRequired(true))
-	s.Equal(true, stream.TokenRequired())
-
-	s.NoError(auth.Commit())
-	s.NoError(auth.Reload())
-
-	a = s.GetAccount(auth, "O", "A")
-	s.NotNil(a)
-
-	streams := a.Exports().Streams().List()
-	s.Len(streams, 1)
-	s.Equal("foos", streams[0].Name())
-	s.Equal("q.foo.>", streams[0].Subject())
-	s.Equal(true, streams[0].TokenRequired())
-
-	s.Nil(a.Exports().Streams().GetByName("foo"))
-
-	stream = a.Exports().Streams().GetByName("foos")
-	s.NotNil(stream)
-
-	stream = a.Exports().Streams().Get("q.foo.>")
-	s.NotNil(stream)
-
-	s.NoError(stream.SetName("bar"))
-	s.NoError(stream.SetTokenRequired(false))
-	s.NoError(stream.SetSubject("bar.*"))
-	s.NoError(auth.Commit())
-	s.NoError(auth.Reload())
-
-	streams = a.Exports().Streams().List()
-	s.Len(streams, 1)
-	s.Equal("bar", streams[0].Name())
-	s.Equal("bar.*", streams[0].Subject())
-	s.Equal(false, streams[0].TokenRequired())
-}
-
-func (s *ProviderSuite) Test_SetStream() {
-	auth, err := authb.NewAuth(s.Provider)
-	s.NoError(err)
-
-	a := s.MaybeCreate(auth, "O", "A")
-	s.Len(a.Exports().Streams().List(), 0)
-
-	_, err = a.Exports().Services().Add("a", "q.a.>")
-	s.NoError(err)
-
-	_, err = a.Exports().Streams().Add("a", "a.>")
-	s.NoError(err)
-
-	// empty set clears
-	err = a.Exports().Streams().Set(nil)
-	s.NoError(err)
-	s.Len(a.Exports().Streams().List(), 0)
 	s.Len(a.Exports().Services().List(), 1)
 
-	service1, err := authb.NewService("q", "q")
-	s.NoError(err)
-	service2, err := authb.NewService("qq", "qq")
+	service := a.Exports().Services().Get("q.>")
+	s.NotNil(service)
+
+	service = a.Exports().Services().GetByName("q")
+	s.NotNil(service)
+
+	x, err := authb.NewService("x", "x.>")
 	s.NoError(err)
 
-	err = a.Exports().Services().Set(service1, service2)
+	y, err := authb.NewService("y", "y.>")
 	s.NoError(err)
-	s.Nil(a.Exports().Services().Get("q.a.>"))
-	services := a.Exports().Services().List()
-	s.Len(services, 2)
+
+	s.NoError(a.Exports().Services().Set(x, y))
+	s.Len(a.Exports().Services().List(), 2)
+	s.Equal("x.>", a.Exports().Services().List()[0].Subject())
+	s.Equal("y.>", a.Exports().Services().List()[1].Subject())
+
+	ok, err := a.Exports().Services().Delete("x.>")
+	s.NoError(err)
+	s.True(ok)
+
+	ok, err = a.Exports().Services().Delete("x.>")
+	s.NoError(err)
+	s.False(ok)
 }
 
-func (s *ProviderSuite) Test_ServiceRevocationCrud() {
+func (s *ProviderSuite) Test_StreamExportCrud() {
 	auth, err := authb.NewAuth(s.Provider)
 	s.NoError(err)
 
 	a := s.MaybeCreate(auth, "O", "A")
-	s.NotNil(a)
-	s.Len(a.Exports().Services().List(), 0)
+	s.Len(a.Exports().Streams().List(), 0)
 
-	service, err := a.Exports().Services().Add("foos", "q.foo.>")
+	_, err = a.Exports().Streams().Add("q", "q.>")
 	s.NoError(err)
-	s.NotNil(service)
-	s.Equal("foos", service.Name())
-	s.Equal("q.foo.>", service.Subject())
+	s.Len(a.Exports().Streams().List(), 1)
 
-	// Let's create a revocation for an account
-	k, _ := authb.KeyFor(nkeys.PrefixByteAccount)
+	stream := a.Exports().Streams().Get("q.>")
+	s.NotNil(stream)
 
-	// Since the export is public this fails
-	err = service.Revocations().Add(k.Public, time.Now())
-	s.Error(err)
-	s.True(errors.Is(err, authb.ErrRevocationPublicExportsNotAllowed))
+	stream = a.Exports().Streams().GetByName("q")
+	s.NotNil(stream)
 
-	// Require a token, and revocation is now added
-	err = service.SetTokenRequired(true)
+	x, err := authb.NewStream("x", "x.>")
 	s.NoError(err)
-	err = service.Revocations().Add(k.Public, time.Now())
+
+	y, err := authb.NewStream("y", "y.>")
 	s.NoError(err)
+
+	s.NoError(a.Exports().Streams().Set(x, y))
+	s.Len(a.Exports().Streams().List(), 2)
+	s.Equal("x.>", a.Exports().Streams().List()[0].Subject())
+	s.Equal("y.>", a.Exports().Streams().List()[1].Subject())
+
+	ok, err := a.Exports().Streams().Delete("x.>")
+	s.NoError(err)
+	s.True(ok)
+
+	ok, err = a.Exports().Streams().Delete("x.>")
+	s.NoError(err)
+	s.False(ok)
+}
+
+func (s *ProviderSuite) Test_ServiceTracing() {
+	auth, err := authb.NewAuth(s.Provider)
+	s.NoError(err)
+
+	a := s.MaybeCreate(auth, "O", "A")
+	service, err := a.Exports().Services().Add("q", "q.>")
+	s.NoError(err)
+
+	s.Nil(service.Tracing())
+
+	s.NoError(service.SetTracing(&authb.TracingConfiguration{
+		SamplingRate: 100,
+		Subject:      "tracing.q",
+	}))
+
+	tc := service.Tracing()
+	s.NotNil(tc)
+	s.Equal(authb.SamplingRate(100), tc.SamplingRate)
+	s.Equal("tracing.q", tc.Subject)
 
 	s.NoError(auth.Commit())
 	s.NoError(auth.Reload())
 
-	// reload the configuration, find the service
 	a = s.GetAccount(auth, "O", "A")
-	s.NotNil(a)
-	service = a.Exports().Services().GetByName("foos")
-	s.NotNil(service)
+	service = a.Exports().Services().Get("q.>")
 
-	revocations := service.Revocations()
+	tc = service.Tracing()
+	s.NotNil(tc)
+	s.Equal(authb.SamplingRate(100), tc.SamplingRate)
+	s.Equal("tracing.q", tc.Subject)
 
-	// check the revocation is there
-	s.Len(revocations.List(), 1)
-	tf, err := revocations.HasRevocation("*")
-	s.Nil(err)
-	s.False(tf)
+	s.NoError(service.SetTracing(nil))
+	s.Nil(service.Tracing())
 
-	// try a key that is not supported
-	uk, _ := authb.KeyFor(nkeys.PrefixByteUser)
-	tf, err = revocations.HasRevocation(uk.Public)
-	s.Error(err)
-	s.False(tf)
+	s.NoError(auth.Commit())
+	s.NoError(auth.Reload())
 
-	// find the key we want
-	tf, err = revocations.HasRevocation(k.Public)
+	a = s.GetAccount(auth, "O", "A")
+	service = a.Exports().Services().Get("q.>")
+	tc = service.Tracing()
+	s.Nil(tc)
+}
+
+func (s *ProviderSuite) Test_ServiceTracingRejectsBadOptions() {
+	auth, err := authb.NewAuth(s.Provider)
 	s.NoError(err)
-	s.True(tf)
 
-	// test listing
-	entries := revocations.List()
-	s.Len(entries, 1)
-	s.Equal(k.Public, entries[0].PublicKey())
-
-	// try to remove it - it doesn't exist
-	ok, err := revocations.Delete("*")
+	a := s.MaybeCreate(auth, "O", "A")
+	service, err := a.Exports().Services().Add("q", "q.>")
 	s.NoError(err)
-	s.False(ok)
 
-	// add it
-	s.NoError(revocations.Add("*", time.Now()))
-	entries = revocations.List()
-	s.Len(entries, 2)
+	s.Nil(service.Tracing())
 
-	tf, _ = revocations.HasRevocation(k.Public)
-	s.True(tf)
-	tf, _ = revocations.HasRevocation("*")
-	s.True(tf)
+	s.Error(service.SetTracing(&authb.TracingConfiguration{
+		SamplingRate: 0,
+		Subject:      "",
+	}))
 
-	// verify the list contains them
-	var wildcard authb.RevocationEntry
-	var account authb.RevocationEntry
-	for _, e := range entries {
-		if e.PublicKey() == "*" {
-			wildcard = e
-		} else {
-			account = e
-		}
-	}
-	s.NotNil(wildcard)
-	s.NotNil(account)
+	s.Error(service.SetTracing(&authb.TracingConfiguration{
+		SamplingRate: 1,
+		Subject:      "",
+	}))
 
-	tf, err = revocations.Delete(k.Public)
-	s.NoError(err)
-	s.True(tf)
-
-	entries = revocations.List()
-	s.Len(entries, 1)
-	tf, _ = revocations.HasRevocation(k.Public)
-	s.False(tf)
-
-	// add them both
-	s.NoError(revocations.SetRevocations([]authb.RevocationEntry{account, wildcard}))
-	entries = revocations.List()
-	s.Len(entries, 2)
-
-	// clear
-	s.NoError(revocations.SetRevocations(nil))
-	entries = revocations.List()
-	s.Len(entries, 0)
-
-	// yesterday
-	s.NoError(revocations.Add(k.Public, time.Now().Add(time.Hour*-24)))
-
-	// add a wildcard as of now (includes and rejects the previous revocation
-	s.NoError(revocations.Add("*", time.Now()))
-	entries = revocations.List()
-	s.Len(entries, 2)
-
-	// wildcard includes yesterday
-	removed, err := revocations.Compact()
-	s.NoError(err)
-	s.Len(removed, 1)
-	s.Equal(k.Public, removed[0].PublicKey())
+	s.Error(service.SetTracing(&authb.TracingConfiguration{
+		SamplingRate: 101,
+		Subject:      "hello",
+	}))
 }
