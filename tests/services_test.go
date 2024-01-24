@@ -2,144 +2,144 @@ package tests
 
 import authb "github.com/synadia-io/jwt-auth-builder.go"
 
-func (s *ProviderSuite) Test_ServiceExportCrud() {
-	auth, err := authb.NewAuth(s.Provider)
-	s.NoError(err)
+func (t *ProviderSuite) Test_ServiceExportCrud() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
-	a := s.MaybeCreate(auth, "O", "A")
-	s.Len(a.Exports().Services().List(), 0)
+	a := t.MaybeCreate(auth, "O", "A")
+	t.Len(a.Exports().Services().List(), 0)
 
 	_, err = a.Exports().Services().Add("q", "q.>")
-	s.NoError(err)
-	s.Len(a.Exports().Services().List(), 1)
+	t.NoError(err)
+	t.Len(a.Exports().Services().List(), 1)
 
 	service := a.Exports().Services().Get("q.>")
-	s.NotNil(service)
+	t.NotNil(service)
 
 	service = a.Exports().Services().GetByName("q")
-	s.NotNil(service)
+	t.NotNil(service)
 
 	x, err := authb.NewService("x", "x.>")
-	s.NoError(err)
+	t.NoError(err)
 
 	y, err := authb.NewService("y", "y.>")
-	s.NoError(err)
+	t.NoError(err)
 
-	s.NoError(a.Exports().Services().Set(x, y))
-	s.Len(a.Exports().Services().List(), 2)
-	s.Equal("x.>", a.Exports().Services().List()[0].Subject())
-	s.Equal("y.>", a.Exports().Services().List()[1].Subject())
+	t.NoError(a.Exports().Services().Set(x, y))
+	t.Len(a.Exports().Services().List(), 2)
+	t.Equal("x.>", a.Exports().Services().List()[0].Subject())
+	t.Equal("y.>", a.Exports().Services().List()[1].Subject())
 
 	ok, err := a.Exports().Services().Delete("x.>")
-	s.NoError(err)
-	s.True(ok)
+	t.NoError(err)
+	t.True(ok)
 
 	ok, err = a.Exports().Services().Delete("x.>")
-	s.NoError(err)
-	s.False(ok)
+	t.NoError(err)
+	t.False(ok)
 }
 
-func (s *ProviderSuite) Test_StreamExportCrud() {
-	auth, err := authb.NewAuth(s.Provider)
-	s.NoError(err)
+func (t *ProviderSuite) Test_StreamExportCrud() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
-	a := s.MaybeCreate(auth, "O", "A")
-	s.Len(a.Exports().Streams().List(), 0)
+	a := t.MaybeCreate(auth, "O", "A")
+	t.Len(a.Exports().Streams().List(), 0)
 
 	_, err = a.Exports().Streams().Add("q", "q.>")
-	s.NoError(err)
-	s.Len(a.Exports().Streams().List(), 1)
+	t.NoError(err)
+	t.Len(a.Exports().Streams().List(), 1)
 
 	stream := a.Exports().Streams().Get("q.>")
-	s.NotNil(stream)
+	t.NotNil(stream)
 
 	stream = a.Exports().Streams().GetByName("q")
-	s.NotNil(stream)
+	t.NotNil(stream)
 
 	x, err := authb.NewStream("x", "x.>")
-	s.NoError(err)
+	t.NoError(err)
 
 	y, err := authb.NewStream("y", "y.>")
-	s.NoError(err)
+	t.NoError(err)
 
-	s.NoError(a.Exports().Streams().Set(x, y))
-	s.Len(a.Exports().Streams().List(), 2)
-	s.Equal("x.>", a.Exports().Streams().List()[0].Subject())
-	s.Equal("y.>", a.Exports().Streams().List()[1].Subject())
+	t.NoError(a.Exports().Streams().Set(x, y))
+	t.Len(a.Exports().Streams().List(), 2)
+	t.Equal("x.>", a.Exports().Streams().List()[0].Subject())
+	t.Equal("y.>", a.Exports().Streams().List()[1].Subject())
 
 	ok, err := a.Exports().Streams().Delete("x.>")
-	s.NoError(err)
-	s.True(ok)
+	t.NoError(err)
+	t.True(ok)
 
 	ok, err = a.Exports().Streams().Delete("x.>")
-	s.NoError(err)
-	s.False(ok)
+	t.NoError(err)
+	t.False(ok)
 }
 
-func (s *ProviderSuite) Test_ServiceTracing() {
-	auth, err := authb.NewAuth(s.Provider)
-	s.NoError(err)
+func (t *ProviderSuite) Test_ServiceTracing() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
-	a := s.MaybeCreate(auth, "O", "A")
+	a := t.MaybeCreate(auth, "O", "A")
 	service, err := a.Exports().Services().Add("q", "q.>")
-	s.NoError(err)
+	t.NoError(err)
 
-	s.Nil(service.Tracing())
+	t.Nil(service.Tracing())
 
-	s.NoError(service.SetTracing(&authb.TracingConfiguration{
+	t.NoError(service.SetTracing(&authb.TracingConfiguration{
 		SamplingRate: 100,
 		Subject:      "tracing.q",
 	}))
 
 	tc := service.Tracing()
-	s.NotNil(tc)
-	s.Equal(authb.SamplingRate(100), tc.SamplingRate)
-	s.Equal("tracing.q", tc.Subject)
+	t.NotNil(tc)
+	t.Equal(authb.SamplingRate(100), tc.SamplingRate)
+	t.Equal("tracing.q", tc.Subject)
 
-	s.NoError(auth.Commit())
-	s.NoError(auth.Reload())
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
 
-	a = s.GetAccount(auth, "O", "A")
+	a = t.GetAccount(auth, "O", "A")
 	service = a.Exports().Services().Get("q.>")
 
 	tc = service.Tracing()
-	s.NotNil(tc)
-	s.Equal(authb.SamplingRate(100), tc.SamplingRate)
-	s.Equal("tracing.q", tc.Subject)
+	t.NotNil(tc)
+	t.Equal(authb.SamplingRate(100), tc.SamplingRate)
+	t.Equal("tracing.q", tc.Subject)
 
-	s.NoError(service.SetTracing(nil))
-	s.Nil(service.Tracing())
+	t.NoError(service.SetTracing(nil))
+	t.Nil(service.Tracing())
 
-	s.NoError(auth.Commit())
-	s.NoError(auth.Reload())
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
 
-	a = s.GetAccount(auth, "O", "A")
+	a = t.GetAccount(auth, "O", "A")
 	service = a.Exports().Services().Get("q.>")
 	tc = service.Tracing()
-	s.Nil(tc)
+	t.Nil(tc)
 }
 
-func (s *ProviderSuite) Test_ServiceTracingRejectsBadOptions() {
-	auth, err := authb.NewAuth(s.Provider)
-	s.NoError(err)
+func (t *ProviderSuite) Test_ServiceTracingRejectsBadOptions() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
-	a := s.MaybeCreate(auth, "O", "A")
+	a := t.MaybeCreate(auth, "O", "A")
 	service, err := a.Exports().Services().Add("q", "q.>")
-	s.NoError(err)
+	t.NoError(err)
 
-	s.Nil(service.Tracing())
+	t.Nil(service.Tracing())
 
-	s.Error(service.SetTracing(&authb.TracingConfiguration{
+	t.Error(service.SetTracing(&authb.TracingConfiguration{
 		SamplingRate: 0,
 		Subject:      "",
 	}))
 
-	s.Error(service.SetTracing(&authb.TracingConfiguration{
+	t.Error(service.SetTracing(&authb.TracingConfiguration{
 		SamplingRate: 1,
 		Subject:      "",
 	}))
 
-	s.Error(service.SetTracing(&authb.TracingConfiguration{
+	t.Error(service.SetTracing(&authb.TracingConfiguration{
 		SamplingRate: 101,
 		Subject:      "hello",
 	}))

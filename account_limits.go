@@ -91,7 +91,6 @@ func (a *accountLimits) SetAllowWildcardExports(tf bool) error {
 
 func (a *accountLimits) DisallowBearerTokens() bool {
 	return a.data.Claim.Limits.DisallowBearer
-
 }
 
 func (a *accountLimits) SetDisallowBearerTokens(tf bool) error {

@@ -63,11 +63,11 @@ func (s *streamExports) Delete(subject string) (bool, error) {
 	return s.deleteExport(subject, false)
 }
 
-func (a *AccountData) GetByName(name string) StreamExport {
-	for _, e := range a.Claim.Exports {
+func (s *streamExports) GetByName(name string) StreamExport {
+	for _, e := range s.Claim.Exports {
 		if e.IsStream() && e.Name == name {
 			se := &StreamExportImpl{}
-			se.data = a
+			se.data = s.AccountData
 			se.export = e
 			return se
 		}
@@ -75,6 +75,6 @@ func (a *AccountData) GetByName(name string) StreamExport {
 	return nil
 }
 
-func (a *AccountData) List() []StreamExport {
-	return a.getStreams()
+func (s *streamExports) List() []StreamExport {
+	return s.getStreams()
 }

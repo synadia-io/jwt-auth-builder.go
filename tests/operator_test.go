@@ -3,296 +3,282 @@ package tests
 import (
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
-	"github.com/stretchr/testify/require"
 	authb "github.com/synadia-io/jwt-auth-builder.go"
 )
 
-func (suite *ProviderSuite) Test_OperatorBasics() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_OperatorBasics() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
 	operators := auth.Operators()
-	require.Empty(t, operators.List())
+	t.Empty(operators.List())
 
 	o := auth.Operators().Get("O")
-	require.NoError(t, err)
-	require.Nil(t, o)
+	t.NoError(err)
+	t.Nil(o)
 	o, err = operators.Add("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
+	t.NoError(err)
+	t.NotNil(o)
 
-	require.NoError(t, err)
-	require.Len(t, operators.List(), 1)
-	require.Equal(t, "O", operators.List()[0].Name())
-	require.False(t, suite.Store.OperatorExists("O"))
+	t.NoError(err)
+	t.Len(operators.List(), 1)
+	t.Equal("O", operators.List()[0].Name())
+	t.False(t.Store.OperatorExists("O"))
 
-	require.NoError(t, auth.Commit())
+	t.NoError(auth.Commit())
 
-	oc := suite.Store.GetOperator("O")
-	require.NotNil(t, oc)
-	require.Equal(t, "O", oc.Name)
-	require.True(t, suite.Store.OperatorExists("O"))
+	oc := t.Store.GetOperator("O")
+	t.NotNil(oc)
+	t.Equal("O", oc.Name)
+	t.True(t.Store.OperatorExists("O"))
 
-	key := suite.Store.GetKey(oc.Subject)
-	require.NotNil(t, key)
-	require.Equal(t, oc.Subject, key.Public)
+	key := t.Store.GetKey(oc.Subject)
+	t.NotNil(key)
+	t.Equal(oc.Subject, key.Public)
 }
 
-func (suite *ProviderSuite) Test_SkUpdate() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_SkUpdate() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
 	operators := auth.Operators()
-	require.Empty(t, operators.List())
+	t.Empty(operators.List())
 
 	o := auth.Operators().Get("O")
-	require.NoError(t, err)
-	require.Nil(t, o)
+	t.NoError(err)
+	t.Nil(o)
 	o, err = operators.Add("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
+	t.NoError(err)
+	t.NotNil(o)
 
-	require.NoError(t, auth.Commit())
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
 
 	o = operators.Get("O")
-	require.NotNil(t, o)
+	t.NotNil(o)
 
 	k, err := o.SigningKeys().Add()
-	require.NoError(t, err)
-	require.NotEmpty(t, k)
+	t.NoError(err)
+	t.NotEmpty(k)
 
-	require.NoError(t, auth.Commit())
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
 
 	o = operators.Get("O")
-	require.NotNil(t, o)
+	t.NotNil(o)
 	keys := o.SigningKeys().List()
-	require.Len(t, keys, 1)
-	require.Contains(t, keys, k)
+	t.Len(keys, 1)
+	t.Contains(keys, k)
 }
 
-func (suite *ProviderSuite) Test_OperatorValidation() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_OperatorValidation() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
-	require.Error(t, o.SetOperatorServiceURL("foo://localhost:8080"))
+	t.NoError(err)
+	t.Error(o.SetOperatorServiceURL("foo://localhost:8080"))
 }
 
-func (suite *ProviderSuite) Test_OperatorLoads() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_OperatorLoads() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
-	require.NoError(t, auth.Commit())
+	t.NoError(err)
+	t.NotNil(o)
+	t.NoError(auth.Commit())
 
-	auth, err = authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+	auth, err = authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o = auth.Operators().Get("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
+	t.NoError(err)
+	t.NotNil(o)
 }
 
-func (suite *ProviderSuite) Test_OperatorSigningKeys() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_OperatorSigningKeys() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 	sk1, err := o.SigningKeys().Add()
-	require.NoError(t, err)
-	require.NotEmpty(t, sk1)
+	t.NoError(err)
+	t.NotEmpty(sk1)
 	sk2, err := o.SigningKeys().Add()
-	require.NoError(t, err)
-	require.NotEmpty(t, sk2)
+	t.NoError(err)
+	t.NotEmpty(sk2)
 	sk3, err := o.SigningKeys().Add()
-	require.NoError(t, err)
-	require.NotEmpty(t, sk3)
+	t.NoError(err)
+	t.NotEmpty(sk3)
 
 	keys := o.SigningKeys().List()
-	require.Len(t, keys, 3)
-	require.Contains(t, keys, sk1)
-	require.Contains(t, keys, sk2)
-	require.Contains(t, keys, sk3)
-	require.NoError(t, auth.Commit())
+	t.Len(keys, 3)
+	t.Contains(keys, sk1)
+	t.Contains(keys, sk2)
+	t.Contains(keys, sk3)
+	t.NoError(auth.Commit())
 
-	k := suite.Store.GetKey(sk1)
-	require.NotNil(t, k)
-	k = suite.Store.GetKey(sk2)
-	require.NotNil(t, k)
-	k = suite.Store.GetKey(sk3)
-	require.NotNil(t, k)
+	k := t.Store.GetKey(sk1)
+	t.NotNil(k)
+	k = t.Store.GetKey(sk2)
+	t.NotNil(k)
+	k = t.Store.GetKey(sk3)
+	t.NotNil(k)
 
 	sk1a, err := o.SigningKeys().Rotate(sk1)
-	require.NoError(t, err)
+	t.NoError(err)
 
 	ok, err := o.SigningKeys().Delete(sk2)
-	require.NoError(t, err)
-	require.True(t, ok)
-	require.NoError(t, auth.Commit())
+	t.NoError(err)
+	t.True(ok)
+	t.NoError(auth.Commit())
 
 	ok, err = o.SigningKeys().Delete(sk2)
-	require.NoError(t, err)
-	require.False(t, ok)
+	t.NoError(err)
+	t.False(ok)
 
 	keys = o.SigningKeys().List()
-	require.Len(t, keys, 2)
-	require.Contains(t, keys, sk1a)
-	require.Contains(t, keys, sk3)
+	t.Len(keys, 2)
+	t.Contains(keys, sk1a)
+	t.Contains(keys, sk3)
 }
 
-func (suite *ProviderSuite) Test_OperatorAccountServerURL() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_OperatorAccountServerURL() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
-	require.NoError(t, o.SetAccountServerURL("http://localhost:8080"))
-	require.NoError(t, auth.Commit())
-	require.Equal(t, "http://localhost:8080", o.AccountServerURL())
+	t.NoError(err)
+	t.NoError(o.SetAccountServerURL("http://localhost:8080"))
+	t.NoError(auth.Commit())
+	t.Equal("http://localhost:8080", o.AccountServerURL())
 
-	oc := suite.Store.GetOperator("O")
-	require.Equal(t, "http://localhost:8080", oc.AccountServerURL)
+	oc := t.Store.GetOperator("O")
+	t.Equal("http://localhost:8080", oc.AccountServerURL)
 }
 
-func (suite *ProviderSuite) Test_OperatorServiceURL() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_OperatorServiceURL() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
-	require.NoError(t, o.SetOperatorServiceURL("nats://localhost:4222"))
-	require.NoError(t, auth.Commit())
-	require.Equal(t, "nats://localhost:4222", o.OperatorServiceURLs()[0])
+	t.NoError(err)
+	t.NoError(o.SetOperatorServiceURL("nats://localhost:4222"))
+	t.NoError(auth.Commit())
+	t.Equal("nats://localhost:4222", o.OperatorServiceURLs()[0])
 
-	oc := suite.Store.GetOperator("O")
-	require.Equal(t, "nats://localhost:4222", oc.OperatorServiceURLs[0])
+	oc := t.Store.GetOperator("O")
+	t.Equal("nats://localhost:4222", oc.OperatorServiceURLs[0])
 }
 
-func (suite *ProviderSuite) Test_OperatorUsesMainKeyToSignAccount() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_OperatorUsesMainKeyToSignAccount() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
+	t.NoError(err)
 	// no signing keys on the operator, so the main key was used
-	require.NotNil(t, o.Subject(), a.Issuer())
-	require.NoError(t, auth.Commit())
+	t.NotNil(o.Subject(), a.Issuer())
+	t.NoError(auth.Commit())
 }
 
-func (suite *ProviderSuite) Test_OperatorUsesSigningKeyToSignAccount() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_OperatorUsesSigningKeyToSignAccount() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 	sk, err := o.SigningKeys().Add()
-	require.NoError(t, err)
-	require.NotEmpty(t, sk)
+	t.NoError(err)
+	t.NotEmpty(sk)
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
-	require.NotNil(t, sk, a.Issuer())
-	require.NoError(t, auth.Commit())
+	t.NoError(err)
+	t.NotNil(sk, a.Issuer())
+	t.NoError(auth.Commit())
 
-	ac := suite.Store.GetAccount("O", "A")
-	require.Equal(t, sk, ac.ClaimsData.Issuer)
+	ac := t.Store.GetAccount("O", "A")
+	t.Equal(sk, ac.ClaimsData.Issuer)
 }
 
-func (suite *ProviderSuite) Test_OperatorRotate() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_OperatorRotate() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 	sk, err := o.SigningKeys().Add()
-	require.NoError(t, err)
-	require.NotEmpty(t, sk)
+	t.NoError(err)
+	t.NotEmpty(sk)
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
-	require.Equal(t, sk, a.Issuer())
-	require.NoError(t, auth.Commit())
+	t.NoError(err)
+	t.Equal(sk, a.Issuer())
+	t.NoError(auth.Commit())
 
 	sk2, err := o.SigningKeys().Rotate(sk)
-	require.NoError(t, err)
-	require.Equal(t, sk2, a.Issuer())
-	require.NoError(t, auth.Commit())
+	t.NoError(err)
+	t.Equal(sk2, a.Issuer())
+	t.NoError(auth.Commit())
 
-	require.False(t, suite.Store.KeyExists(sk))
-	require.True(t, suite.Store.KeyExists(sk2))
+	t.False(t.Store.KeyExists(sk))
+	t.True(t.Store.KeyExists(sk2))
 }
 
-func (suite *ProviderSuite) Test_OperatorSystemAccount() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_OperatorSystemAccount() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
-	require.Nil(t, o.SystemAccount())
+	t.NoError(err)
+	t.Nil(o.SystemAccount())
 	a, err := o.Accounts().Add("SYS")
-	require.NoError(t, err)
-	require.NoError(t, o.SetSystemAccount(a))
-	require.NotNil(t, o.SystemAccount())
+	t.NoError(err)
+	t.NoError(o.SetSystemAccount(a))
+	t.NotNil(o.SystemAccount())
 
-	require.Error(t, o.Accounts().Delete("SYS"))
-	require.NoError(t, o.SetSystemAccount(nil))
-	require.Nil(t, o.SystemAccount())
-	require.NoError(t, o.Accounts().Delete("SYS"))
+	t.Error(o.Accounts().Delete("SYS"))
+	t.NoError(o.SetSystemAccount(nil))
+	t.Nil(o.SystemAccount())
+	t.NoError(o.Accounts().Delete("SYS"))
 }
 
-func (suite *ProviderSuite) Test_MemResolver() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_MemResolver() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
 	_, err = auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 
-	require.NoError(t, auth.Commit())
+	t.NoError(auth.Commit())
 
-	auth, err = authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+	auth, err = authb.NewAuth(t.Provider)
+	t.NoError(err)
 
 	o := auth.Operators().Get("O")
 
 	_, err = o.MemResolver()
-	require.NoError(t, err)
+	t.NoError(err)
 }
 
-func (suite *ProviderSuite) Test_OperatorImport() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_OperatorImport() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
 	kp, err := authb.KeyFor(nkeys.PrefixByteOperator)
-	require.NoError(t, err)
+	t.NoError(err)
 
 	oc := jwt.NewOperatorClaims(kp.Public)
 	oc.Name = "O"
 	skp, err := authb.KeyFor(nkeys.PrefixByteOperator)
-	require.NoError(t, err)
+	t.NoError(err)
 	oc.SigningKeys.Add(skp.Public)
 
 	token, err := oc.Encode(kp.Pair)
-	require.NoError(t, err)
+	t.NoError(err)
 
 	o, err := auth.Operators().Import(
 		[]byte(token),
 		[]string{string(kp.Seed), string(skp.Seed)})
-	require.NoError(t, err)
-	require.NotNil(t, o)
+	t.NoError(err)
+	t.NotNil(o)
 
-	require.NoError(t, auth.Commit())
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
 	o = auth.Operators().Get("O")
-	require.NotNil(t, o)
-	require.Equal(t, kp.Public, o.Subject())
-	require.Equal(t, skp.Public, o.SigningKeys().List()[0])
+	t.NotNil(o)
+	t.Equal(kp.Public, o.Subject())
+	t.Equal(skp.Public, o.SigningKeys().List()[0])
 }

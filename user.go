@@ -62,6 +62,7 @@ func (u *UserData) update() error {
 func (u *UserData) MaxSubscriptions() int64 {
 	return u.Claim.Limits.Subs
 }
+
 func (u *UserData) SetMaxSubscriptions(max int64) error {
 	if u.RejectEdits {
 		return ErrUserIsScoped
@@ -69,9 +70,11 @@ func (u *UserData) SetMaxSubscriptions(max int64) error {
 	u.Claim.Limits.Subs = max
 	return u.update()
 }
+
 func (u *UserData) MaxPayload() int64 {
 	return u.Claim.Limits.Payload
 }
+
 func (u *UserData) SetMaxPayload(max int64) error {
 	if u.RejectEdits {
 		return ErrUserIsScoped
@@ -79,9 +82,11 @@ func (u *UserData) SetMaxPayload(max int64) error {
 	u.Claim.Limits.Payload = max
 	return u.update()
 }
+
 func (u *UserData) MaxData() int64 {
 	return u.Claim.Limits.Data
 }
+
 func (u *UserData) SetMaxData(max int64) error {
 	if u.RejectEdits {
 		return ErrUserIsScoped
@@ -89,6 +94,7 @@ func (u *UserData) SetMaxData(max int64) error {
 	u.Claim.Limits.Data = max
 	return u.update()
 }
+
 func (u *UserData) SetBearerToken(tf bool) error {
 	if u.RejectEdits {
 		return ErrUserIsScoped
@@ -96,9 +102,11 @@ func (u *UserData) SetBearerToken(tf bool) error {
 	u.Claim.BearerToken = tf
 	return u.update()
 }
+
 func (u *UserData) BearerToken() bool {
 	return u.Claim.BearerToken
 }
+
 func (u *UserData) ConnectionTypes() ConnectionTypes {
 	v := &ConnectionTypesImpl{}
 	v.rejectEdits = u.RejectEdits
@@ -107,6 +115,7 @@ func (u *UserData) ConnectionTypes() ConnectionTypes {
 	v.userData = u
 	return v
 }
+
 func (u *UserData) PubPermissions() Permissions {
 	v := &PermissionsImpl{}
 	v.rejectEdits = u.RejectEdits
@@ -116,6 +125,7 @@ func (u *UserData) PubPermissions() Permissions {
 	v.userData = u
 	return v
 }
+
 func (u *UserData) SubPermissions() Permissions {
 	v := &PermissionsImpl{}
 	v.rejectEdits = u.RejectEdits
@@ -124,6 +134,7 @@ func (u *UserData) SubPermissions() Permissions {
 	v.userData = u
 	return v
 }
+
 func (u *UserData) ResponsePermissions() ResponsePermissions {
 	v := &ResponsePermissionsImpl{}
 	v.rejectEdits = u.RejectEdits
@@ -154,6 +165,7 @@ func (u *UserData) ConnectionTimes() ConnectionTimes {
 func (u *UserData) Locale() string {
 	return u.Claim.Limits.Locale
 }
+
 func (u *UserData) SetLocale(locale string) error {
 	if u.RejectEdits {
 		return ErrUserIsScoped

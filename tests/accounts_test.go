@@ -5,86 +5,82 @@ import (
 	"time"
 
 	"github.com/nats-io/jwt/v2"
-	"github.com/stretchr/testify/require"
 	authb "github.com/synadia-io/jwt-auth-builder.go"
 )
 
-func (suite *ProviderSuite) Test_AccountsCrud() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_AccountsCrud() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	accounts := o.Accounts().List()
-	require.Nil(t, err)
-	require.Equal(t, 0, len(accounts))
+	t.Nil(err)
+	t.Equal(0, len(accounts))
 
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
+	t.NoError(err)
 	b, err := o.Accounts().Add("B")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	x := o.Accounts().Get("X")
-	require.Nil(t, err)
-	require.Nil(t, x)
+	t.Nil(err)
+	t.Nil(x)
 
 	x = o.Accounts().Get("A")
-	require.Nil(t, err)
-	require.NotNil(t, x)
-	require.Equal(t, "A", x.Name())
+	t.Nil(err)
+	t.NotNil(x)
+	t.Equal("A", x.Name())
 
 	accounts = o.Accounts().List()
-	require.Nil(t, err)
-	require.Equal(t, 2, len(accounts))
-	require.Contains(t, accounts, a)
-	require.Contains(t, accounts, b)
+	t.Nil(err)
+	t.Equal(2, len(accounts))
+	t.Contains(accounts, a)
+	t.Contains(accounts, b)
 
-	require.NoError(t, o.Accounts().Delete("A"))
+	t.NoError(o.Accounts().Delete("A"))
 	accounts = o.Accounts().List()
-	require.Nil(t, err)
-	require.Equal(t, 1, len(accounts))
-	require.Contains(t, accounts, b)
+	t.Nil(err)
+	t.Equal(1, len(accounts))
+	t.Contains(accounts, b)
 
-	require.NoError(t, auth.Commit())
-	require.True(t, suite.Store.AccountExists("O", "B"))
-	require.False(t, suite.Store.AccountExists("O", "A"))
+	t.NoError(auth.Commit())
+	t.True(t.Store.AccountExists("O", "B"))
+	t.False(t.Store.AccountExists("O", "A"))
 }
 
-func (suite *ProviderSuite) Test_AccountsBasics() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_AccountsBasics() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	ai := a.(*authb.AccountData)
-	require.Equal(t, ai.Claim.Subject, a.Subject())
-	require.Equal(t, o.Subject(), a.Issuer())
+	t.Equal(ai.Claim.Subject, a.Subject())
+	t.Equal(o.Subject(), a.Issuer())
 
 	acct, err := authb.NewAccountFromJWT(a.JWT())
-	require.NoError(t, err)
-	require.Equal(t, acct.Subject(), a.Subject())
+	t.NoError(err)
+	t.Equal(acct.Subject(), a.Subject())
 	err = acct.SetExpiry(time.Now().Unix())
-	require.Equal(t, err, fmt.Errorf("account is read-only"))
+	t.Equal(err, fmt.Errorf("account is read-only"))
 }
 
-func (suite *ProviderSuite) Test_AccountLimitsSetter() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_AccountLimitsSetter() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
+	t.NoError(err)
 
-	require.NoError(t, a.Limits().SetMaxExports(10))
-	require.Equal(t, a.Limits().MaxExports(), int64(10))
-	require.Equal(t, a.Limits().MaxImports(), int64(-1))
+	t.NoError(a.Limits().SetMaxExports(10))
+	t.Equal(a.Limits().MaxExports(), int64(10))
+	t.Equal(a.Limits().MaxImports(), int64(-1))
 
 	type operatorLimitsManager interface {
 		OperatorLimits() jwt.OperatorLimits
@@ -92,30 +88,29 @@ func (suite *ProviderSuite) Test_AccountLimitsSetter() {
 	}
 
 	al := a.Limits().(operatorLimitsManager).OperatorLimits()
-	require.Equal(t, al.Exports, int64(10))
+	t.Equal(al.Exports, int64(10))
 
 	al.Exports = 20
 	al.Imports = 10
-	require.NoError(t, a.Limits().(operatorLimitsManager).SetOperatorLimits(al))
-	require.Equal(t, a.Limits().MaxExports(), int64(20))
-	require.Equal(t, a.Limits().MaxImports(), int64(10))
+	t.NoError(a.Limits().(operatorLimitsManager).SetOperatorLimits(al))
+	t.Equal(a.Limits().MaxExports(), int64(20))
+	t.Equal(a.Limits().MaxImports(), int64(10))
 }
 
-func (suite *ProviderSuite) Test_UserPermissionLimitsSetter() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_UserPermissionLimitsSetter() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	user, err := a.Users().Add("BOB", "")
-	require.NoError(t, err)
+	t.NoError(err)
 
-	require.Equal(t, user.MaxSubscriptions(), int64(-1))
-	require.Empty(t, user.PubPermissions().Allow())
+	t.Equal(user.MaxSubscriptions(), int64(-1))
+	t.Empty(user.PubPermissions().Allow())
 
 	type userLimitsManager interface {
 		UserPermissionLimits() jwt.UserPermissionLimits
@@ -127,30 +122,29 @@ func (suite *ProviderSuite) Test_UserPermissionLimitsSetter() {
 	limits.NatsLimits.Subs = 1000
 
 	err = user.(userLimitsManager).SetUserPermissionLimits(limits)
-	require.NoError(t, err)
+	t.NoError(err)
 
-	require.Equal(t, user.MaxSubscriptions(), int64(1000))
-	require.Equal(t, user.PubPermissions().Allow(), []string{"test.>"})
+	t.Equal(user.MaxSubscriptions(), int64(1000))
+	t.Equal(user.PubPermissions().Allow(), []string{"test.>"})
 }
 
-func (suite *ProviderSuite) Test_ScopedUserPermissionLimitsSetter() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_ScopedUserPermissionLimitsSetter() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	scope, err := a.ScopedSigningKeys().AddScope("test")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	user, err := a.Users().Add("BOB", scope.Key())
-	require.NoError(t, err)
+	t.NoError(err)
 
-	require.Equal(t, scope.MaxSubscriptions(), int64(-1))
-	require.Empty(t, scope.PubPermissions().Allow())
+	t.Equal(scope.MaxSubscriptions(), int64(-1))
+	t.Empty(scope.PubPermissions().Allow())
 
 	limits := jwt.UserPermissionLimits{}
 	limits.Permissions.Pub.Allow = []string{"test.>"}
@@ -162,653 +156,635 @@ func (suite *ProviderSuite) Test_ScopedUserPermissionLimitsSetter() {
 	}
 
 	err = user.(userLimitsManager).SetUserPermissionLimits(limits)
-	require.Errorf(t, err, "user is scoped")
+	t.Errorf(err, "user is scoped")
 
 	err = scope.(userLimitsManager).SetUserPermissionLimits(limits)
-	require.NoError(t, err)
+	t.NoError(err)
 
-	require.Equal(t, scope.MaxSubscriptions(), int64(1000))
-	require.Equal(t, scope.PubPermissions().Allow(), []string{"test.>"})
+	t.Equal(scope.MaxSubscriptions(), int64(1000))
+	t.Equal(scope.PubPermissions().Allow(), []string{"test.>"})
 }
 
 func setupTestWithOperatorAndAccount(p *ProviderSuite) (authb.Auth, authb.Operator, authb.Account) {
-	t := p.T()
 	auth, err := authb.NewAuth(p.Provider)
-	require.NoError(t, err)
+	p.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
-	require.NoError(t, auth.Commit())
+	p.NoError(err)
+	p.NoError(auth.Commit())
 
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
+	p.NoError(err)
 	return auth, o, a
 }
 
-func (suite *ProviderSuite) Test_ScopedPermissionsMaxSubs() {
-	t := suite.T()
-	auth, _, a := setupTestWithOperatorAndAccount(suite)
+func (t *ProviderSuite) Test_ScopedPermissionsMaxSubs() {
+	auth, _, a := setupTestWithOperatorAndAccount(t)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
-	require.NoError(t, err)
-	require.NoError(t, s.SetMaxSubscriptions(10))
-	require.Equal(t, int64(10), s.MaxSubscriptions())
-	require.NoError(t, auth.Commit())
+	t.NoError(err)
+	t.NoError(s.SetMaxSubscriptions(10))
+	t.Equal(int64(10), s.MaxSubscriptions())
+	t.NoError(auth.Commit())
 
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Reload())
 
 	o := auth.Operators().Get("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
+	t.NoError(err)
+	t.NotNil(o)
 
 	a = o.Accounts().Get("A")
-	require.NoError(t, err)
-	require.NotNil(t, a)
+	t.NoError(err)
+	t.NotNil(a)
 
 	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
-	require.Equal(t, int64(10), s.MaxSubscriptions())
+	t.NotNil(s)
+	t.Equal(int64(10), s.MaxSubscriptions())
 }
 
-func (suite *ProviderSuite) Test_ScopedPermissionsMaxPayload() {
-	t := suite.T()
-	auth, _, a := setupTestWithOperatorAndAccount(suite)
+func (t *ProviderSuite) Test_ScopedPermissionsMaxPayload() {
+	auth, _, a := setupTestWithOperatorAndAccount(t)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
-	require.NoError(t, err)
-	require.NoError(t, s.SetMaxPayload(101))
-	require.Equal(t, int64(101), s.MaxPayload())
-	require.NoError(t, auth.Commit())
+	t.NoError(err)
+	t.NoError(s.SetMaxPayload(101))
+	t.Equal(int64(101), s.MaxPayload())
+	t.NoError(auth.Commit())
 
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Reload())
 
 	o := auth.Operators().Get("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
+	t.NoError(err)
+	t.NotNil(o)
 
 	a = o.Accounts().Get("A")
-	require.NoError(t, err)
-	require.NotNil(t, a)
+	t.NoError(err)
+	t.NotNil(a)
 
 	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
-	require.Equal(t, int64(101), s.MaxPayload())
+	t.NotNil(s)
+	t.Equal(int64(101), s.MaxPayload())
 }
 
-func (suite *ProviderSuite) Test_ScopedPermissionsMaxData() {
-	t := suite.T()
-	auth, _, a := setupTestWithOperatorAndAccount(suite)
+func (t *ProviderSuite) Test_ScopedPermissionsMaxData() {
+	auth, _, a := setupTestWithOperatorAndAccount(t)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
-	require.NoError(t, err)
-	require.NoError(t, s.SetMaxData(4123))
-	require.Equal(t, int64(4123), s.MaxData())
-	require.NoError(t, auth.Commit())
+	t.NoError(err)
+	t.NoError(s.SetMaxData(4123))
+	t.Equal(int64(4123), s.MaxData())
+	t.NoError(auth.Commit())
 
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Reload())
 
 	o := auth.Operators().Get("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
+	t.NoError(err)
+	t.NotNil(o)
 
 	a = o.Accounts().Get("A")
-	require.NoError(t, err)
-	require.NotNil(t, a)
+	t.NoError(err)
+	t.NotNil(a)
 
 	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
-	require.Equal(t, int64(4123), s.MaxData())
+	t.NotNil(s)
+	t.Equal(int64(4123), s.MaxData())
 }
 
-func (suite *ProviderSuite) Test_ScopedPermissionsBearerToken() {
-	t := suite.T()
-	auth, _, a := setupTestWithOperatorAndAccount(suite)
+func (t *ProviderSuite) Test_ScopedPermissionsBearerToken() {
+	auth, _, a := setupTestWithOperatorAndAccount(t)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
-	require.NoError(t, err)
-	require.NoError(t, s.SetBearerToken(true))
-	require.True(t, s.BearerToken())
-	require.NoError(t, auth.Commit())
+	t.NoError(err)
+	t.NoError(s.SetBearerToken(true))
+	t.True(s.BearerToken())
+	t.NoError(auth.Commit())
 
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Reload())
 
 	o := auth.Operators().Get("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
+	t.NoError(err)
+	t.NotNil(o)
 
 	a = o.Accounts().Get("A")
-	require.NoError(t, err)
-	require.NotNil(t, a)
+	t.NoError(err)
+	t.NotNil(a)
 
 	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
-	require.True(t, s.BearerToken())
+	t.NotNil(s)
+	t.True(s.BearerToken())
 }
 
-func (suite *ProviderSuite) Test_ScopedPermissionsConnectionTypes() {
-	t := suite.T()
-	auth, _, a := setupTestWithOperatorAndAccount(suite)
+func (t *ProviderSuite) Test_ScopedPermissionsConnectionTypes() {
+	auth, _, a := setupTestWithOperatorAndAccount(t)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
-	require.NoError(t, err)
+	t.NoError(err)
 	types := s.ConnectionTypes()
-	require.NoError(t, types.Set("websocket"))
-	require.Contains(t, types.Types(), "websocket")
-	require.NoError(t, auth.Commit())
+	t.NoError(types.Set("websocket"))
+	t.Contains(types.Types(), "websocket")
+	t.NoError(auth.Commit())
 
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Reload())
 
 	o := auth.Operators().Get("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
+	t.NoError(err)
+	t.NotNil(o)
 
 	a = o.Accounts().Get("A")
-	require.NoError(t, err)
-	require.NotNil(t, a)
+	t.NoError(err)
+	t.NotNil(a)
 
 	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
+	t.NotNil(s)
 	types = s.ConnectionTypes()
-	require.Contains(t, types.Types(), "websocket")
+	t.Contains(types.Types(), "websocket")
 }
 
-func (suite *ProviderSuite) Test_ScopedPermissionsConnectionSources() {
-	t := suite.T()
-	auth, _, a := setupTestWithOperatorAndAccount(suite)
+func (t *ProviderSuite) Test_ScopedPermissionsConnectionSources() {
+	auth, _, a := setupTestWithOperatorAndAccount(t)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
-	require.NoError(t, err)
+	t.NoError(err)
 	sources := s.ConnectionSources()
-	require.NoError(t, sources.Add("192.0.2.0/24"))
-	require.Contains(t, sources.Sources(), "192.0.2.0/24")
-	require.NoError(t, auth.Commit())
+	t.NoError(sources.Add("192.0.2.0/24"))
+	t.Contains(sources.Sources(), "192.0.2.0/24")
+	t.NoError(auth.Commit())
 
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Reload())
 
 	o := auth.Operators().Get("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
+	t.NoError(err)
+	t.NotNil(o)
 
 	a = o.Accounts().Get("A")
-	require.NoError(t, err)
-	require.NotNil(t, a)
+	t.NoError(err)
+	t.NotNil(a)
 
 	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
+	t.NotNil(s)
 	sources = s.ConnectionSources()
-	require.Contains(t, sources.Sources(), "192.0.2.0/24")
+	t.Contains(sources.Sources(), "192.0.2.0/24")
 }
 
-func (suite *ProviderSuite) Test_ScopedPermissionsConnectionTimes() {
-	t := suite.T()
-	auth, _, a := setupTestWithOperatorAndAccount(suite)
+func (t *ProviderSuite) Test_ScopedPermissionsConnectionTimes() {
+	auth, _, a := setupTestWithOperatorAndAccount(t)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
-	require.NoError(t, err)
+	t.NoError(err)
 	times := s.ConnectionTimes()
-	require.NoError(t, times.Set(authb.TimeRange{Start: "08:00:00", End: "12:00:00"}))
-	require.Len(t, times.List(), 1)
-	require.NoError(t, auth.Commit())
+	t.NoError(times.Set(authb.TimeRange{Start: "08:00:00", End: "12:00:00"}))
+	t.Len(times.List(), 1)
+	t.NoError(auth.Commit())
 
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Reload())
 
 	o := auth.Operators().Get("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
+	t.NoError(err)
+	t.NotNil(o)
 
 	a = o.Accounts().Get("A")
-	require.NoError(t, err)
-	require.NotNil(t, a)
+	t.NoError(err)
+	t.NotNil(a)
 
 	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
+	t.NotNil(s)
 	times = s.ConnectionTimes()
-	require.Len(t, times.List(), 1)
-	require.Equal(t, times.List()[0].Start, "08:00:00")
-	require.Equal(t, times.List()[0].End, "12:00:00")
+	t.Len(times.List(), 1)
+	t.Equal(times.List()[0].Start, "08:00:00")
+	t.Equal(times.List()[0].End, "12:00:00")
 }
 
-func (suite *ProviderSuite) Test_ScopedPermissionsLocale() {
-	t := suite.T()
-	auth, _, a := setupTestWithOperatorAndAccount(suite)
+func (t *ProviderSuite) Test_ScopedPermissionsLocale() {
+	auth, _, a := setupTestWithOperatorAndAccount(t)
 	s, err := a.ScopedSigningKeys().AddScope("admin")
-	require.NoError(t, err)
-	require.NoError(t, s.SetLocale("en_US"))
-	require.NoError(t, auth.Commit())
+	t.NoError(err)
+	t.NoError(s.SetLocale("en_US"))
+	t.NoError(auth.Commit())
 
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Reload())
 
 	o := auth.Operators().Get("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
+	t.NoError(err)
+	t.NotNil(o)
 
 	a = o.Accounts().Get("A")
-	require.NoError(t, err)
-	require.NotNil(t, a)
+	t.NoError(err)
+	t.NotNil(a)
 
 	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
-	require.Equal(t, "en_US", s.Locale())
+	t.NotNil(s)
+	t.Equal("en_US", s.Locale())
 }
 
-func (suite *ProviderSuite) Test_ScopedPermissionsSubject() {
-	t := suite.T()
-	auth, _, a := setupTestWithOperatorAndAccount(suite)
+func (t *ProviderSuite) Test_ScopedPermissionsSubject() {
+	auth, _, a := setupTestWithOperatorAndAccount(t)
 
 	admin, err := a.ScopedSigningKeys().AddScope("admin")
-	require.NoError(t, err)
-	require.NotNil(t, admin)
+	t.NoError(err)
+	t.NotNil(admin)
 
 	pubPerms := admin.PubPermissions()
-	require.NoError(t, pubPerms.SetAllow("foo", "bar"))
-	require.NoError(t, pubPerms.SetDeny("baz"))
+	t.NoError(pubPerms.SetAllow("foo", "bar"))
+	t.NoError(pubPerms.SetDeny("baz"))
 
 	subPerms := admin.SubPermissions()
-	require.NoError(t, subPerms.SetAllow("foo", "bar"))
-	require.NoError(t, subPerms.SetDeny("baz"))
+	t.NoError(subPerms.SetAllow("foo", "bar"))
+	t.NoError(subPerms.SetDeny("baz"))
 
 	respPerms := admin.ResponsePermissions()
-	require.NoError(t, respPerms.SetMaxMessages(10))
-	require.NoError(t, respPerms.SetExpires(time.Second))
+	t.NoError(respPerms.SetMaxMessages(10))
+	t.NoError(respPerms.SetExpires(time.Second))
 
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Reload())
 
 	admin = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, admin)
+	t.NotNil(admin)
 
-	require.Contains(t, admin.PubPermissions().Allow(), "foo")
-	require.Contains(t, admin.PubPermissions().Allow(), "bar")
-	require.Contains(t, admin.PubPermissions().Deny(), "baz")
+	t.Contains(admin.PubPermissions().Allow(), "foo")
+	t.Contains(admin.PubPermissions().Allow(), "bar")
+	t.Contains(admin.PubPermissions().Deny(), "baz")
 
-	require.Contains(t, admin.SubPermissions().Allow(), "foo")
-	require.Contains(t, admin.SubPermissions().Allow(), "bar")
-	require.Contains(t, admin.SubPermissions().Deny(), "baz")
+	t.Contains(admin.SubPermissions().Allow(), "foo")
+	t.Contains(admin.SubPermissions().Allow(), "bar")
+	t.Contains(admin.SubPermissions().Deny(), "baz")
 
 	perm := admin.ResponsePermissions()
-	require.NotNil(t, perm)
-	require.Equal(t, 10, perm.MaxMessages())
-	require.Equal(t, time.Second, perm.Expires())
+	t.NotNil(perm)
+	t.Equal(10, perm.MaxMessages())
+	t.Equal(time.Second, perm.Expires())
 }
 
-func (suite *ProviderSuite) Test_ScopeRotation() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_ScopeRotation() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	scope, err := a.ScopedSigningKeys().AddScope("admin")
-	require.NoError(t, err)
-	require.NotNil(t, scope)
+	t.NoError(err)
+	t.NotNil(scope)
 	scope2, ok := a.ScopedSigningKeys().GetScope(scope.Key())
-	require.True(t, ok)
-	require.NotNil(t, scope2)
+	t.True(ok)
+	t.NotNil(scope2)
 
 	key, err := a.ScopedSigningKeys().Rotate(scope.Key())
-	require.NoError(t, err)
-	require.NotEmpty(t, key)
+	t.NoError(err)
+	t.NotEmpty(key)
 
 	scope2, ok = a.ScopedSigningKeys().GetScope(scope.Key())
-	require.False(t, ok)
-	require.Nil(t, scope2)
+	t.False(ok)
+	t.Nil(scope2)
 
 	scope2, ok = a.ScopedSigningKeys().GetScope(key)
-	require.True(t, ok)
-	require.NotNil(t, scope2)
+	t.True(ok)
+	t.NotNil(scope2)
 
 	ok, err = a.ScopedSigningKeys().Delete(key)
-	require.NoError(t, err)
-	require.True(t, ok)
+	t.NoError(err)
+	t.True(ok)
 
 	scope2, ok = a.ScopedSigningKeys().GetScope(key)
-	require.False(t, ok)
-	require.Nil(t, scope2)
+	t.False(ok)
+	t.Nil(scope2)
 }
 
-func (suite *ProviderSuite) Test_SigningKeyRotation() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_SigningKeyRotation() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
+	t.NoError(err)
 
 	sk, err := a.ScopedSigningKeys().Add()
-	require.NoError(t, err)
-	require.NotEmpty(t, sk)
+	t.NoError(err)
+	t.NotEmpty(sk)
 	scope, ok := a.ScopedSigningKeys().GetScope(sk)
-	require.True(t, ok)
-	require.Nil(t, scope)
+	t.True(ok)
+	t.Nil(scope)
 
 	u, err := a.Users().Add("U", sk)
-	require.NoError(t, err)
-	require.NotNil(t, u)
+	t.NoError(err)
+	t.NotNil(u)
 
-	require.Equal(t, sk, u.Issuer())
+	t.Equal(sk, u.Issuer())
 
 	key, err := a.ScopedSigningKeys().Rotate(sk)
-	require.NoError(t, err)
-	require.NotEmpty(t, key)
+	t.NoError(err)
+	t.NotEmpty(key)
 
-	require.Equal(t, key, u.Issuer())
+	t.Equal(key, u.Issuer())
 }
 
-func (suite *ProviderSuite) Test_AccountLimits() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_AccountLimits() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
+	t.NoError(err)
 
-	require.Equal(t, int64(-1), a.Limits().MaxData())
-	require.Equal(t, int64(-1), a.Limits().MaxSubscriptions())
-	require.Equal(t, int64(-1), a.Limits().MaxPayload())
-	require.Equal(t, int64(-1), a.Limits().MaxConnections())
-	require.Equal(t, int64(-1), a.Limits().MaxLeafNodeConnections())
-	require.Equal(t, int64(-1), a.Limits().MaxImports())
-	require.Equal(t, int64(-1), a.Limits().MaxExports())
-	require.True(t, a.Limits().AllowWildcardExports())
-	require.False(t, a.Limits().DisallowBearerTokens())
+	t.Equal(int64(-1), a.Limits().MaxData())
+	t.Equal(int64(-1), a.Limits().MaxSubscriptions())
+	t.Equal(int64(-1), a.Limits().MaxPayload())
+	t.Equal(int64(-1), a.Limits().MaxConnections())
+	t.Equal(int64(-1), a.Limits().MaxLeafNodeConnections())
+	t.Equal(int64(-1), a.Limits().MaxImports())
+	t.Equal(int64(-1), a.Limits().MaxExports())
+	t.True(a.Limits().AllowWildcardExports())
+	t.False(a.Limits().DisallowBearerTokens())
 
-	require.NoError(t, a.Limits().SetMaxData(100))
-	require.NoError(t, a.Limits().SetMaxSubscriptions(1_000))
-	require.NoError(t, a.Limits().SetMaxPayload(1_0000))
-	require.NoError(t, a.Limits().SetMaxConnections(3))
-	require.NoError(t, a.Limits().SetMaxLeafNodeConnections(30))
-	require.NoError(t, a.Limits().SetMaxImports(300))
-	require.NoError(t, a.Limits().SetMaxExports(3_000))
-	require.NoError(t, a.Limits().SetAllowWildcardExports(false))
-	require.NoError(t, a.Limits().SetDisallowBearerTokens(true))
-	require.NoError(t, auth.Commit())
-	require.NoError(t, auth.Reload())
+	t.NoError(a.Limits().SetMaxData(100))
+	t.NoError(a.Limits().SetMaxSubscriptions(1_000))
+	t.NoError(a.Limits().SetMaxPayload(1_0000))
+	t.NoError(a.Limits().SetMaxConnections(3))
+	t.NoError(a.Limits().SetMaxLeafNodeConnections(30))
+	t.NoError(a.Limits().SetMaxImports(300))
+	t.NoError(a.Limits().SetMaxExports(3_000))
+	t.NoError(a.Limits().SetAllowWildcardExports(false))
+	t.NoError(a.Limits().SetDisallowBearerTokens(true))
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
 
-	require.Equal(t, int64(100), a.Limits().MaxData())
-	require.Equal(t, int64(1_000), a.Limits().MaxSubscriptions())
-	require.Equal(t, int64(10_000), a.Limits().MaxPayload())
-	require.Equal(t, int64(3), a.Limits().MaxConnections())
-	require.Equal(t, int64(30), a.Limits().MaxLeafNodeConnections())
-	require.Equal(t, int64(300), a.Limits().MaxImports())
-	require.Equal(t, int64(3_000), a.Limits().MaxExports())
-	require.False(t, a.Limits().AllowWildcardExports())
-	require.True(t, a.Limits().DisallowBearerTokens())
+	t.Equal(int64(100), a.Limits().MaxData())
+	t.Equal(int64(1_000), a.Limits().MaxSubscriptions())
+	t.Equal(int64(10_000), a.Limits().MaxPayload())
+	t.Equal(int64(3), a.Limits().MaxConnections())
+	t.Equal(int64(30), a.Limits().MaxLeafNodeConnections())
+	t.Equal(int64(300), a.Limits().MaxImports())
+	t.Equal(int64(3_000), a.Limits().MaxExports())
+	t.False(a.Limits().AllowWildcardExports())
+	t.True(a.Limits().DisallowBearerTokens())
 }
 
-func (suite *ProviderSuite) testTier(auth authb.Auth, account authb.Account, tier int8) {
-	t := suite.T()
+func (t *ProviderSuite) testTier(auth authb.Auth, account authb.Account, tier int8) {
 	var err error
 
 	js := account.Limits().JetStream()
-	require.False(t, js.IsJetStreamEnabled())
+	t.False(js.IsJetStreamEnabled())
 	lim, err := js.Get(tier)
-	require.NoError(t, err)
+	t.NoError(err)
 	if tier == 0 {
-		require.NotNil(t, lim)
+		t.NotNil(lim)
 	} else {
-		require.Nil(t, lim)
+		t.Nil(lim)
 		lim, err = js.Add(tier)
-		require.NoError(t, err)
+		t.NoError(err)
 	}
 	ok, err := lim.IsUnlimited()
-	require.NoError(t, err)
-	require.False(t, ok)
+	t.NoError(err)
+	t.False(ok)
 
 	num, err := lim.MaxMemoryStorage()
-	require.NoError(t, err)
-	require.Equal(t, int64(0), num)
+	t.NoError(err)
+	t.Equal(int64(0), num)
 
 	num, err = lim.MaxDiskStorage()
-	require.NoError(t, err)
-	require.Equal(t, int64(0), num)
+	t.NoError(err)
+	t.Equal(int64(0), num)
 
 	num, err = lim.MaxMemoryStreamSize()
-	require.NoError(t, err)
-	require.Equal(t, int64(0), num)
+	t.NoError(err)
+	t.Equal(int64(0), num)
 
 	num, err = lim.MaxDiskStreamSize()
-	require.NoError(t, err)
-	require.Equal(t, int64(0), num)
+	t.NoError(err)
+	t.Equal(int64(0), num)
 
 	tf, err := lim.MaxStreamSizeRequired()
-	require.NoError(t, err)
-	require.False(t, tf)
+	t.NoError(err)
+	t.False(tf)
 
 	num, err = lim.MaxStreams()
-	require.NoError(t, err)
-	require.Equal(t, int64(0), num)
+	t.NoError(err)
+	t.Equal(int64(0), num)
 
 	num, err = lim.MaxConsumers()
-	require.NoError(t, err)
-	require.Equal(t, int64(0), num)
+	t.NoError(err)
+	t.Equal(int64(0), num)
 
 	num, err = lim.MaxAckPending()
-	require.NoError(t, err)
-	require.Equal(t, int64(0), num)
+	t.NoError(err)
+	t.Equal(int64(0), num)
 
-	require.NoError(t, lim.SetMaxDiskStorage(1000))
-	require.NoError(t, lim.SetMaxMemoryStorage(2000))
-	require.NoError(t, lim.SetMaxMemoryStreamSize(4000))
-	require.NoError(t, lim.SetMaxDiskStreamSize(8000))
-	require.NoError(t, lim.SetMaxStreamSizeRequired(true))
-	require.NoError(t, lim.SetMaxStreams(5))
-	require.NoError(t, lim.SetMaxConsumers(50))
-	require.NoError(t, lim.SetMaxAckPending(22))
+	t.NoError(lim.SetMaxDiskStorage(1000))
+	t.NoError(lim.SetMaxMemoryStorage(2000))
+	t.NoError(lim.SetMaxMemoryStreamSize(4000))
+	t.NoError(lim.SetMaxDiskStreamSize(8000))
+	t.NoError(lim.SetMaxStreamSizeRequired(true))
+	t.NoError(lim.SetMaxStreams(5))
+	t.NoError(lim.SetMaxConsumers(50))
+	t.NoError(lim.SetMaxAckPending(22))
 
 	tf, err = lim.IsUnlimited()
-	require.NoError(t, err)
-	require.False(t, tf)
+	t.NoError(err)
+	t.False(tf)
 
-	require.NoError(t, auth.Commit())
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
 
 	lim, err = js.Get(tier)
-	require.NoError(t, err)
-	require.NotNil(t, lim)
+	t.NoError(err)
+	t.NotNil(lim)
 
 	tf, err = lim.IsUnlimited()
-	require.NoError(t, err)
-	require.False(t, tf)
+	t.NoError(err)
+	t.False(tf)
 
 	num, err = lim.MaxDiskStorage()
-	require.NoError(t, err)
-	require.Equal(t, int64(1000), num)
+	t.NoError(err)
+	t.Equal(int64(1000), num)
 
 	num, err = lim.MaxMemoryStorage()
-	require.NoError(t, err)
-	require.Equal(t, int64(2000), num)
+	t.NoError(err)
+	t.Equal(int64(2000), num)
 
 	num, err = lim.MaxMemoryStreamSize()
-	require.NoError(t, err)
-	require.Equal(t, int64(4000), num)
+	t.NoError(err)
+	t.Equal(int64(4000), num)
 
 	num, err = lim.MaxDiskStreamSize()
-	require.NoError(t, err)
-	require.Equal(t, int64(8000), num)
+	t.NoError(err)
+	t.Equal(int64(8000), num)
 
 	tf, err = lim.MaxStreamSizeRequired()
-	require.NoError(t, err)
-	require.True(t, tf)
+	t.NoError(err)
+	t.True(tf)
 
 	num, err = lim.MaxStreams()
-	require.NoError(t, err)
-	require.Equal(t, int64(5), num)
+	t.NoError(err)
+	t.Equal(int64(5), num)
 
 	num, err = lim.MaxConsumers()
-	require.NoError(t, err)
-	require.Equal(t, int64(50), num)
+	t.NoError(err)
+	t.Equal(int64(50), num)
 
 	num, err = lim.MaxAckPending()
-	require.NoError(t, err)
-	require.Equal(t, int64(22), num)
+	t.NoError(err)
+	t.Equal(int64(22), num)
 
-	require.NoError(t, lim.SetUnlimited())
+	t.NoError(lim.SetUnlimited())
 	tf, err = lim.IsUnlimited()
-	require.NoError(t, err)
-	require.True(t, tf)
+	t.NoError(err)
+	t.True(tf)
 }
 
-func (suite *ProviderSuite) Test_AccountJetStreamLimits() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_AccountJetStreamLimits() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 	o, err := auth.Operators().Add("O")
-	require.NoError(t, err)
+	t.NoError(err)
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
-	suite.testTier(auth, a, 0)
+	t.NoError(err)
+	t.testTier(auth, a, 0)
 	b, err := o.Accounts().Add("B")
-	require.NoError(t, err)
-	suite.testTier(auth, b, 1)
+	t.NoError(err)
+	t.testTier(auth, b, 1)
 }
 
-func (suite *ProviderSuite) Test_AccountSkUpdate() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_AccountSkUpdate() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
 	operators := auth.Operators()
-	require.Empty(t, operators.List())
+	t.Empty(operators.List())
 
 	o, err := operators.Add("O")
-	require.NoError(t, err)
-	require.NotNil(t, o)
+	t.NoError(err)
+	t.NotNil(o)
 
 	a, err := o.Accounts().Add("A")
-	require.NoError(t, err)
-	require.NotNil(t, a)
+	t.NoError(err)
+	t.NotNil(a)
 
-	require.NoError(t, auth.Commit())
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
 
 	o = operators.Get("O")
-	require.NotNil(t, o)
+	t.NotNil(o)
 
 	a = o.Accounts().Get("A")
-	require.NotNil(t, a)
+	t.NotNil(a)
 
 	k, err := a.ScopedSigningKeys().Add()
-	require.NoError(t, err)
-	require.NotEmpty(t, k)
+	t.NoError(err)
+	t.NotEmpty(k)
 
-	require.NoError(t, auth.Commit())
-	require.NoError(t, auth.Reload())
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
 
 	o = operators.Get("O")
-	require.NotNil(t, o)
+	t.NotNil(o)
 	a = o.Accounts().Get("A")
-	require.NotNil(t, a)
+	t.NotNil(a)
 	scope, ok := a.ScopedSigningKeys().GetScope(k)
-	require.Nil(t, scope)
-	require.True(t, ok)
+	t.Nil(scope)
+	t.True(ok)
 }
 
-func (suite *ProviderSuite) Test_AccountSigningKeys() {
-	t := suite.T()
-	auth, err := authb.NewAuth(suite.Provider)
-	require.NoError(t, err)
+func (t *ProviderSuite) Test_AccountSigningKeys() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
 	operators := auth.Operators()
-	require.Empty(t, operators.List())
+	t.Empty(operators.List())
 
-	a := suite.MaybeCreate(auth, "O", "A")
-	require.NotNil(t, a)
+	a := t.MaybeCreate(auth, "O", "A")
+	t.NotNil(a)
 
 	var keys []string
 	k, err := a.ScopedSigningKeys().Add()
-	require.NoError(t, err)
-	require.NotEmpty(t, k)
+	t.NoError(err)
+	t.NotEmpty(k)
 	keys = append(keys, k)
 
 	sl, err := a.ScopedSigningKeys().AddScope("admin")
-	require.NoError(t, err)
-	require.NotNil(t, sl)
+	t.NoError(err)
+	t.NotNil(sl)
 	keys = append(keys, sl.Key())
 	keys2 := a.ScopedSigningKeys().List()
 	for _, k := range keys {
-		require.Contains(t, keys2, k)
+		t.Contains(keys2, k)
 	}
 
 	roles := a.ScopedSigningKeys().ListRoles()
-	t.Log(roles)
-	require.NotNil(t, roles)
-	require.Len(t, roles, 1)
-	require.Contains(t, roles, "admin")
+	t.NotNil(roles)
+	t.Len(roles, 1)
+	t.Contains(roles, "admin")
 }
 
-func (s *ProviderSuite) Test_AccountRevocationEmpty() {
-	auth, err := authb.NewAuth(s.Provider)
-	s.NoError(err)
+func (t *ProviderSuite) Test_AccountRevocationEmpty() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
-	a := s.MaybeCreate(auth, "O", "A")
-	s.NotNil(a)
+	a := t.MaybeCreate(auth, "O", "A")
+	t.NotNil(a)
 	r := a.Revocations()
-	s.NotNil(r)
-	s.Len(r.List(), 0)
+	t.NotNil(r)
+	t.Len(r.List(), 0)
 }
 
-func (s *ProviderSuite) Test_AccountRevokesRejectNonUserKey() {
-	auth, err := authb.NewAuth(s.Provider)
-	s.NoError(err)
+func (t *ProviderSuite) Test_AccountRevokesRejectNonUserKey() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
-	a := s.MaybeCreate(auth, "O", "A")
-	s.NotNil(a)
+	a := t.MaybeCreate(auth, "O", "A")
+	t.NotNil(a)
 	revocations := a.Revocations()
-	s.NotNil(revocations)
-	s.Len(revocations.List(), 0)
+	t.NotNil(revocations)
+	t.Len(revocations.List(), 0)
 
-	err = revocations.Add(s.AccountKey().Public, time.Now())
-	s.Error(err)
+	err = revocations.Add(t.AccountKey().Public, time.Now())
+	t.Error(err)
 }
 
-func (s *ProviderSuite) Test_AccountRevokeUser() {
-	auth, err := authb.NewAuth(s.Provider)
-	s.NoError(err)
+func (t *ProviderSuite) Test_AccountRevokeUser() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
-	a := s.MaybeCreate(auth, "O", "A")
-	s.NotNil(a)
+	a := t.MaybeCreate(auth, "O", "A")
+	t.NotNil(a)
 	revocations := a.Revocations()
-	s.NotNil(revocations)
-	s.Len(revocations.List(), 0)
+	t.NotNil(revocations)
+	t.Len(revocations.List(), 0)
 
-	uk := s.UserKey().Public
+	uk := t.UserKey().Public
 	err = revocations.Add(uk, time.Now())
-	s.NoError(err)
+	t.NoError(err)
 
 	revokes := revocations.List()
-	s.Len(revokes, 1)
-	s.Equal(uk, revokes[0].PublicKey())
+	t.Len(revokes, 1)
+	t.Equal(uk, revokes[0].PublicKey())
 
-	s.NoError(auth.Commit())
-	s.NoError(auth.Reload())
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
 
-	a = s.GetAccount(auth, "O", "A")
-	s.NotNil(a)
-	s.True(a.Revocations().Contains(uk))
+	a = t.GetAccount(auth, "O", "A")
+	t.NotNil(a)
+	t.True(a.Revocations().Contains(uk))
 
 	ok, err := a.Revocations().Delete(uk)
-	s.NoError(err)
-	s.True(ok)
+	t.NoError(err)
+	t.True(ok)
 
-	s.NoError(auth.Commit())
-	s.NoError(auth.Reload())
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
 
-	a = s.GetAccount(auth, "O", "A")
-	s.NotNil(a)
-	s.False(a.Revocations().Contains(uk))
+	a = t.GetAccount(auth, "O", "A")
+	t.NotNil(a)
+	t.False(a.Revocations().Contains(uk))
 }
 
-func (s *ProviderSuite) Test_AccountRevokeWildcard() {
-	auth, err := authb.NewAuth(s.Provider)
-	s.NoError(err)
+func (t *ProviderSuite) Test_AccountRevokeWildcard() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
 
-	a := s.MaybeCreate(auth, "O", "A")
-	s.NotNil(a)
+	a := t.MaybeCreate(auth, "O", "A")
+	t.NotNil(a)
 	revocations := a.Revocations()
-	s.NotNil(revocations)
-	s.Len(revocations.List(), 0)
+	t.NotNil(revocations)
+	t.Len(revocations.List(), 0)
 
 	err = revocations.Add("*", time.Now())
-	s.NoError(err)
+	t.NoError(err)
 
 	revokes := revocations.List()
-	s.Len(revokes, 1)
-	s.Equal("*", revokes[0].PublicKey())
+	t.Len(revokes, 1)
+	t.Equal("*", revokes[0].PublicKey())
 }

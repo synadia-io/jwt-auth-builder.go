@@ -2,6 +2,7 @@ package authb
 
 import (
 	"fmt"
+
 	"github.com/nats-io/nkeys"
 )
 

@@ -2,6 +2,7 @@ package authb
 
 import (
 	"fmt"
+
 	"github.com/nats-io/jwt/v2"
 )
 
@@ -12,6 +13,7 @@ type accountJsTieredLimits struct {
 func (a *accountJsTieredLimits) Get(tier int8) (JetStreamLimits, error) {
 	return a.getLimit(tier)
 }
+
 func (a *accountJsTieredLimits) Add(tier int8) (JetStreamLimits, error) {
 	exists, err := a.getLimit(tier)
 	if err != nil {
@@ -102,6 +104,7 @@ func (l *jsLimits) MaxMemoryStorage() (int64, error) {
 	}
 	return l.lim.MemoryStorage, nil
 }
+
 func (l *jsLimits) SetMaxMemoryStorage(max int64) error {
 	if err := l.checkDeleted(); err != nil {
 		return err
@@ -109,12 +112,14 @@ func (l *jsLimits) SetMaxMemoryStorage(max int64) error {
 	l.lim.MemoryStorage = max
 	return l.update()
 }
+
 func (l *jsLimits) MaxDiskStorage() (int64, error) {
 	if err := l.checkDeleted(); err != nil {
 		return 0, err
 	}
 	return l.lim.DiskStorage, nil
 }
+
 func (l *jsLimits) SetMaxDiskStorage(max int64) error {
 	if err := l.checkDeleted(); err != nil {
 		return err
@@ -122,12 +127,14 @@ func (l *jsLimits) SetMaxDiskStorage(max int64) error {
 	l.lim.DiskStorage = max
 	return l.update()
 }
+
 func (l *jsLimits) MaxMemoryStreamSize() (int64, error) {
 	if err := l.checkDeleted(); err != nil {
 		return 0, err
 	}
 	return l.lim.MemoryMaxStreamBytes, nil
 }
+
 func (l *jsLimits) SetMaxMemoryStreamSize(max int64) error {
 	if err := l.checkDeleted(); err != nil {
 		return err
@@ -135,12 +142,14 @@ func (l *jsLimits) SetMaxMemoryStreamSize(max int64) error {
 	l.lim.MemoryMaxStreamBytes = max
 	return l.update()
 }
+
 func (l *jsLimits) MaxDiskStreamSize() (int64, error) {
 	if err := l.checkDeleted(); err != nil {
 		return 0, err
 	}
 	return l.lim.DiskMaxStreamBytes, nil
 }
+
 func (l *jsLimits) SetMaxDiskStreamSize(max int64) error {
 	if err := l.checkDeleted(); err != nil {
 		return err
@@ -148,12 +157,14 @@ func (l *jsLimits) SetMaxDiskStreamSize(max int64) error {
 	l.lim.DiskMaxStreamBytes = max
 	return l.update()
 }
+
 func (l *jsLimits) MaxStreamSizeRequired() (bool, error) {
 	if err := l.checkDeleted(); err != nil {
 		return false, err
 	}
 	return l.lim.MaxBytesRequired, nil
 }
+
 func (l *jsLimits) SetMaxStreamSizeRequired(tf bool) error {
 	if err := l.checkDeleted(); err != nil {
 		return err
@@ -161,12 +172,14 @@ func (l *jsLimits) SetMaxStreamSizeRequired(tf bool) error {
 	l.lim.MaxBytesRequired = tf
 	return l.update()
 }
+
 func (l *jsLimits) MaxStreams() (int64, error) {
 	if err := l.checkDeleted(); err != nil {
 		return 0, err
 	}
 	return l.lim.Streams, nil
 }
+
 func (l *jsLimits) SetMaxStreams(max int64) error {
 	if err := l.checkDeleted(); err != nil {
 		return err
@@ -174,12 +187,14 @@ func (l *jsLimits) SetMaxStreams(max int64) error {
 	l.lim.Streams = max
 	return l.update()
 }
+
 func (l *jsLimits) MaxConsumers() (int64, error) {
 	if err := l.checkDeleted(); err != nil {
 		return 0, err
 	}
 	return l.lim.Consumer, nil
 }
+
 func (l *jsLimits) SetMaxConsumers(max int64) error {
 	if err := l.checkDeleted(); err != nil {
 		return err
@@ -187,12 +202,14 @@ func (l *jsLimits) SetMaxConsumers(max int64) error {
 	l.lim.Consumer = max
 	return l.update()
 }
+
 func (l *jsLimits) MaxAckPending() (int64, error) {
 	if err := l.checkDeleted(); err != nil {
 		return 0, err
 	}
 	return l.lim.MaxAckPending, nil
 }
+
 func (l *jsLimits) SetMaxAckPending(max int64) error {
 	if err := l.checkDeleted(); err != nil {
 		return err
@@ -200,6 +217,7 @@ func (l *jsLimits) SetMaxAckPending(max int64) error {
 	l.lim.MaxAckPending = max
 	return l.update()
 }
+
 func (l *jsLimits) IsUnlimited() (bool, error) {
 	if err := l.checkDeleted(); err != nil {
 		return false, err
@@ -215,7 +233,8 @@ func (l *jsLimits) SetUnlimited() error {
 		MemoryStorage: jwt.NoLimit,
 		DiskStorage:   jwt.NoLimit,
 		Streams:       jwt.NoLimit,
-		Consumer:      jwt.NoLimit}
+		Consumer:      jwt.NoLimit,
+	}
 	return l.update()
 }
 

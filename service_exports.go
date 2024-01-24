@@ -10,15 +10,15 @@ type serviceExports struct {
 	*AccountData
 }
 
-func (a *serviceExports) Get(subject string) ServiceExport {
-	return a.getService(subject)
+func (s *serviceExports) Get(subject string) ServiceExport {
+	return s.getService(subject)
 }
 
-func (a *serviceExports) GetByName(name string) ServiceExport {
-	for _, e := range a.Claim.Exports {
+func (s *serviceExports) GetByName(name string) ServiceExport {
+	for _, e := range s.Claim.Exports {
 		if e.IsService() && e.Name == name {
 			se := &ServiceExportImpl{}
-			se.data = a.AccountData
+			se.data = s.AccountData
 			se.export = e
 			return se
 		}
@@ -26,11 +26,11 @@ func (a *serviceExports) GetByName(name string) ServiceExport {
 	return nil
 }
 
-func (a *serviceExports) List() []ServiceExport {
-	return a.getServices()
+func (s *serviceExports) List() []ServiceExport {
+	return s.getServices()
 }
 
-func (a *serviceExports) AddWithConfig(e ServiceExport) error {
+func (s *serviceExports) AddWithConfig(e ServiceExport) error {
 	if e == nil {
 		return errors.New("invalid service export")
 	}
@@ -38,29 +38,29 @@ func (a *serviceExports) AddWithConfig(e ServiceExport) error {
 	if !ok {
 		return errors.New("invalid service export")
 	}
-	if err := a.addExport(be.export); err != nil {
+	if err := s.addExport(be.export); err != nil {
 		return err
 	}
-	return a.update()
+	return s.update()
 }
 
-func (a *serviceExports) Add(name string, subject string) (ServiceExport, error) {
-	err := a.newExport(name, subject, jwt.Service)
+func (s *serviceExports) Add(name string, subject string) (ServiceExport, error) {
+	err := s.newExport(name, subject, jwt.Service)
 	if err != nil {
 		return nil, err
 	}
 	// the pointer in the claim is changed by update, so we need to find it again
-	x := a.getService(subject)
+	x := s.getService(subject)
 	if x == nil {
 		return nil, errors.New("could not find service")
 	}
 	return x, nil
 }
 
-func (a *serviceExports) Set(exports ...ServiceExport) error {
+func (s *serviceExports) Set(exports ...ServiceExport) error {
 	var buf []*jwt.Export
 	// save existing streamExports
-	for _, e := range a.Claim.Exports {
+	for _, e := range s.Claim.Exports {
 		if e.IsStream() {
 			buf = append(buf, e)
 		}
@@ -72,10 +72,10 @@ func (a *serviceExports) Set(exports ...ServiceExport) error {
 			buf = append(buf, ee.export)
 		}
 	}
-	a.Claim.Exports = buf
-	return a.update()
+	s.Claim.Exports = buf
+	return s.update()
 }
 
-func (a *serviceExports) Delete(subject string) (bool, error) {
-	return a.deleteExport(subject, true)
+func (s *serviceExports) Delete(subject string) (bool, error) {
+	return s.deleteExport(subject, true)
 }

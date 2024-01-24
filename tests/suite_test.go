@@ -1,6 +1,8 @@
 package tests
 
 import (
+	"testing"
+
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 	"github.com/nats-io/nuid"
@@ -8,7 +10,6 @@ import (
 	nats_auth "github.com/synadia-io/jwt-auth-builder.go"
 	"github.com/synadia-io/jwt-auth-builder.go/providers/kv"
 	"github.com/synadia-io/jwt-auth-builder.go/providers/nsc"
-	"testing"
 )
 
 type ProviderType uint8
@@ -39,67 +40,67 @@ type ProviderSuite struct {
 	suite.Suite
 }
 
-func (suite *ProviderSuite) SetupTest() {
-	switch suite.Kind {
+func (t *ProviderSuite) SetupTest() {
+	switch t.Kind {
 	case NscProvider:
-		ts := NewNscStore(suite.T())
-		suite.Store = ts
-		suite.Provider = nsc.NewNscProvider(ts.StoresDir(), ts.KeysDir())
+		ts := NewNscStore(t.T())
+		t.Store = ts
+		t.Provider = nsc.NewNscProvider(ts.StoresDir(), ts.KeysDir())
 	case KvProvider:
-		ts := NewKvStore(suite.T())
-		suite.Store = ts
+		ts := NewKvStore(t.T())
+		t.Store = ts
 		k, err := kv.NewKvProvider(kv.NatsOptions("demo.nats.io:4222",
 			nil),
 			kv.Bucket(nuid.Next()),
 			kv.EncryptKey(""))
-		suite.Require().NoError(err)
-		suite.Provider = k
+		t.Require().NoError(err)
+		t.Provider = k
 		ts.provider = k
-		suite.cleanup = func(t *testing.T) {
+		t.cleanup = func(t *testing.T) {
 			ts.Cleanup()
 		}
 	default:
-		suite.FailNow("unknown provider type")
+		t.FailNow("unknown provider type")
 	}
 }
 
-func (suite *ProviderSuite) TearDownTest() {
-	if suite.cleanup != nil {
-		suite.cleanup(suite.T())
+func (t *ProviderSuite) TearDownTest() {
+	if t.cleanup != nil {
+		t.cleanup(t.T())
 	}
 }
 
-func (suite *ProviderSuite) GetAccount(auth nats_auth.Auth, operator string, account string) nats_auth.Account {
+func (t *ProviderSuite) GetAccount(auth nats_auth.Auth, operator string, account string) nats_auth.Account {
 	o := auth.Operators().Get(operator)
-	suite.NotNil(o)
+	t.NotNil(o)
 
 	a := o.Accounts().Get(account)
-	suite.NotNil(a)
+	t.NotNil(a)
 	return a
 }
 
-func (suite *ProviderSuite) MaybeCreate(auth nats_auth.Auth, operator string, account string) nats_auth.Account {
+func (t *ProviderSuite) MaybeCreate(auth nats_auth.Auth, operator string, account string) nats_auth.Account {
 	var err error
 	o := auth.Operators().Get(operator)
 	if o == nil {
 		o, err = auth.Operators().Add(operator)
-		suite.NoError(err)
+		t.NoError(err)
 	}
 	a, err := o.Accounts().Add(account)
-	suite.NoError(err)
-	suite.NotNil(a)
+	t.NoError(err)
+	t.NotNil(a)
 	return a
 }
 
-func (suite *ProviderSuite) UserKey() *nats_auth.Key {
+func (t *ProviderSuite) UserKey() *nats_auth.Key {
 	k, err := nats_auth.KeyFor(nkeys.PrefixByteUser)
-	suite.Require().NoError(err)
+	t.Require().NoError(err)
 	return k
 }
 
-func (suite *ProviderSuite) AccountKey() *nats_auth.Key {
+func (t *ProviderSuite) AccountKey() *nats_auth.Key {
 	k, err := nats_auth.KeyFor(nkeys.PrefixByteAccount)
-	suite.Require().NoError(err)
+	t.Require().NoError(err)
 	return k
 }
 

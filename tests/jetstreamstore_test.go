@@ -2,13 +2,13 @@ package tests
 
 import (
 	"errors"
+	"testing"
+
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/require"
 	"github.com/synadia-io/jwt-auth-builder.go"
 	"github.com/synadia-io/jwt-auth-builder.go/providers/kv"
-
-	"testing"
 )
 
 type KvStore struct {
@@ -110,7 +110,6 @@ func (ts *KvStore) UserExists(operator string, account string, name string) bool
 		}
 	}
 	return false
-
 }
 
 func (ts *KvStore) GetUser(operator string, account string, name string) *jwt.UserClaims {

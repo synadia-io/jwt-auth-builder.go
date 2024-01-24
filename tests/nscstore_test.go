@@ -2,15 +2,15 @@ package tests
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nsc/v2/cmd/store"
 	"github.com/nats-io/nsc/v2/home"
 	"github.com/stretchr/testify/require"
 	"github.com/synadia-io/jwt-auth-builder.go"
-
-	"os"
-	"path/filepath"
-	"testing"
 )
 
 type NscStore struct {
@@ -21,8 +21,8 @@ type NscStore struct {
 func NewNscStore(t *testing.T) *NscStore {
 	root := t.TempDir()
 	ts := &NscStore{root: root, t: t}
-	require.NoError(t, os.Mkdir(ts.StoresDir(), 0700))
-	require.NoError(t, os.Mkdir(ts.KeysDir(), 0700))
+	require.NoError(t, os.Mkdir(ts.StoresDir(), 0o700))
+	require.NoError(t, os.Mkdir(ts.KeysDir(), 0o700))
 	return ts
 }
 

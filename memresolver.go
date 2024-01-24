@@ -114,14 +114,14 @@ func JwtName(name string) string {
 
 func (cb *MemResolverConfigBuilder) writeFile(dir string, name string, token string) (string, error) {
 	fp := filepath.Join(dir, JwtName(name))
-	err := os.WriteFile(fp, []byte(token), 0666)
+	err := os.WriteFile(fp, []byte(token), 0o666)
 	return fp, err
 }
 
 func (cb *MemResolverConfigBuilder) GenerateDir() ([]byte, error) {
 	var buf bytes.Buffer
 
-	if err := os.MkdirAll(cb.dir, 0700); err != nil {
+	if err := os.MkdirAll(cb.dir, 0o700); err != nil {
 		return nil, err
 	}
 
@@ -164,7 +164,7 @@ func (cb *MemResolverConfigBuilder) GenerateDir() ([]byte, error) {
 	}
 	buf.WriteString("}\n")
 
-	err = os.WriteFile(filepath.Join(cb.dir, "resolver.conf"), buf.Bytes(), 0666)
+	err = os.WriteFile(filepath.Join(cb.dir, "resolver.conf"), buf.Bytes(), 0o666)
 	if err != nil {
 		return nil, err
 	}

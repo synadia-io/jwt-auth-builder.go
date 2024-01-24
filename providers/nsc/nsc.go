@@ -1,14 +1,14 @@
 package nsc
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 	"github.com/nats-io/nsc/v2/cmd/store"
 	"github.com/nats-io/nsc/v2/home"
 	"github.com/synadia-io/jwt-auth-builder.go"
-
-	"os"
-	"path/filepath"
 )
 
 // NscProvider is an AuthProvider that stores data using the nsc Store.
@@ -31,7 +31,7 @@ func NewNscProvider(storesDir string, keysDir string) *NscProvider {
 func (a *NscProvider) MaybeMakeDir(path string) error {
 	_, err := os.Stat(path)
 	if err != nil && os.IsNotExist(err) {
-		err = os.MkdirAll(path, 0700)
+		err = os.MkdirAll(path, 0o700)
 	}
 	return err
 }
@@ -253,7 +253,7 @@ func (a *NscProvider) Store(operators []*authb.OperatorData) error {
 
 		for _, account := range o.AccountDatas {
 			if account.Modified {
-				//if account.Claim.IssuedAt > account.Loaded || account.Modified {
+				// if account.Claim.IssuedAt > account.Loaded || account.Modified {
 				if err := s.StoreRaw([]byte(account.Token)); err != nil {
 					return err
 				}
