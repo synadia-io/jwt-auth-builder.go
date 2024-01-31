@@ -19,6 +19,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Set NATS Server Version
+        run: echo "NATS_VERSION=v2.10.9" >> $GITHUB_ENV
+
+      - name: Get nats-server
+        run: |
+          wget "https://github.com/nats-io/nats-server/releases/download/$NATS_VERSION/nats-server-$NATS_VERSION-linux-amd64.zip" -O tmp.zip
+          unzip tmp.zip
+          mv nats-server-$NATS_VERSION-linux-amd64 nats-server
+
       - name: Setup Go
         uses: actions/setup-go@v3
         with:

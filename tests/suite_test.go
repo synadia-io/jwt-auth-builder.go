@@ -35,6 +35,7 @@ type TestStore interface {
 type ProviderSuite struct {
 	Kind     ProviderType
 	Provider nats_auth.AuthProvider
+	NS       *NatsServer
 	Store    TestStore
 	cleanup  func(t *testing.T)
 	suite.Suite
@@ -47,17 +48,20 @@ func (t *ProviderSuite) SetupTest() {
 		t.Store = ts
 		t.Provider = nsc.NewNscProvider(ts.StoresDir(), ts.KeysDir())
 	case KvProvider:
+		t.NS = NewNatsServer(t.T(), nil)
 		ts := NewKvStore(t.T())
 		t.Store = ts
-		k, err := kv.NewKvProvider(kv.NatsOptions("demo.nats.io:4222",
-			nil),
+		k, err := kv.NewKvProvider(kv.NatsOptions(t.NS.Url),
 			kv.Bucket(nuid.Next()),
 			kv.EncryptKey(""))
 		t.Require().NoError(err)
 		t.Provider = k
 		ts.provider = k
-		t.cleanup = func(t *testing.T) {
+		t.cleanup = func(tt *testing.T) {
 			ts.Cleanup()
+			if t.NS != nil {
+				t.NS.Server.Shutdown()
+			}
 		}
 	default:
 		t.FailNow("unknown provider type")
