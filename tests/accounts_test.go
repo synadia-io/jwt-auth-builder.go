@@ -472,6 +472,35 @@ func (t *ProviderSuite) Test_SigningKeyRotation() {
 	t.Equal(key, u.Issuer())
 }
 
+func (t *ProviderSuite) Test_DeleteTier() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+	a := t.MaybeCreate(auth, "O", "A")
+	t.NotNil(a)
+
+	t.False(a.Limits().JetStream().IsJetStreamEnabled())
+
+	tier, err := a.Limits().JetStream().Add(3)
+	t.NoError(err)
+	t.False(a.Limits().JetStream().IsJetStreamEnabled())
+
+	t.NoError(tier.SetUnlimited())
+	t.True(a.Limits().JetStream().IsJetStreamEnabled())
+
+	ok, err := a.Limits().JetStream().Delete(3)
+	t.NoError(err)
+	t.True(ok)
+	t.False(a.Limits().JetStream().IsJetStreamEnabled())
+
+	tier, err = a.Limits().JetStream().Add(5)
+	t.NoError(err)
+	t.NoError(tier.SetUnlimited())
+	t.True(a.Limits().JetStream().IsJetStreamEnabled())
+
+	t.NoError(tier.Delete())
+	t.False(a.Limits().JetStream().IsJetStreamEnabled())
+}
+
 func (t *ProviderSuite) Test_AccountLimits() {
 	auth, err := authb.NewAuth(t.Provider)
 	t.NoError(err)

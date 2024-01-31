@@ -11,7 +11,7 @@ type streamExports struct {
 }
 
 func (s *streamExports) Get(subject string) StreamExport {
-	return s.getStream(subject)
+	return s.getStreamExport(subject)
 }
 
 func (s *streamExports) AddWithConfig(e StreamExport) error {
@@ -34,7 +34,7 @@ func (s *streamExports) Add(name string, subject string) (StreamExport, error) {
 		return nil, err
 	}
 	// the pointer in the claim is changed by update, so we need to find it again
-	x := s.getStream(subject)
+	x := s.getStreamExport(subject)
 	if x == nil {
 		return nil, errors.New("could not find stream")
 	}
@@ -49,13 +49,12 @@ func (s *streamExports) Set(exports ...StreamExport) error {
 			buf = append(buf, e)
 		}
 	}
+	s.Claim.Exports = buf
 	for _, e := range exports {
-		ee, ok := e.(*StreamExportImpl)
-		if ok {
-			buf = append(buf, ee.export)
+		if err := s.AddWithConfig(e); err != nil {
+			return err
 		}
 	}
-	s.Claim.Exports = buf
 	return s.update()
 }
 
@@ -76,5 +75,5 @@ func (s *streamExports) GetByName(name string) StreamExport {
 }
 
 func (s *streamExports) List() []StreamExport {
-	return s.getStreams()
+	return s.getStreamExports()
 }

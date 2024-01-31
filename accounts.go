@@ -123,23 +123,39 @@ func (a *AccountData) Limits() AccountLimits {
 	return &accountLimits{data: a}
 }
 
+type exports struct {
+	*AccountData
+}
+
 func (a *AccountData) Exports() Exports {
-	return a
+	return &exports{a}
 }
 
-func (a *AccountData) Services() ServiceExports {
-	return &serviceExports{a}
+func (e *exports) Services() ServiceExports {
+	return &serviceExports{e.AccountData}
 }
 
-func (a *AccountData) Streams() StreamExports {
-	return &streamExports{a}
+func (e *exports) Streams() StreamExports {
+	return &streamExports{e.AccountData}
+}
+
+type imports struct {
+	*AccountData
 }
 
 func (a *AccountData) Imports() Imports {
-	panic("not implemented")
+	return &imports{a}
 }
 
-func (a *AccountData) getServices() []ServiceExport {
+func (i *imports) Services() ServiceImports {
+	return &serviceImports{i.AccountData}
+}
+
+func (i *imports) Streams() StreamImports {
+	return &streamImports{i.AccountData}
+}
+
+func (a *AccountData) getServiceExports() []ServiceExport {
 	var buf []ServiceExport
 	for _, e := range a.Claim.Exports {
 		if e.IsService() {
@@ -175,7 +191,7 @@ func (a *AccountData) deleteExport(subject string, service bool) (bool, error) {
 	return false, nil
 }
 
-func (a *AccountData) getService(subject string) ServiceExport {
+func (a *AccountData) getServiceExport(subject string) *ServiceExportImpl {
 	for _, e := range a.Claim.Exports {
 		if e.IsService() && string(e.Subject) == subject {
 			se := &ServiceExportImpl{}
@@ -187,7 +203,7 @@ func (a *AccountData) getService(subject string) ServiceExport {
 	return nil
 }
 
-func (a *AccountData) getStreams() []StreamExport {
+func (a *AccountData) getStreamExports() []StreamExport {
 	var buf []StreamExport
 	for _, e := range a.Claim.Exports {
 		if e.IsStream() {
@@ -200,7 +216,7 @@ func (a *AccountData) getStreams() []StreamExport {
 	return buf
 }
 
-func (a *AccountData) getStream(subject string) StreamExport {
+func (a *AccountData) getStreamExport(subject string) *StreamExportImpl {
 	for _, e := range a.Claim.Exports {
 		if e.IsStream() && string(e.Subject) == subject {
 			se := &StreamExportImpl{}
@@ -225,17 +241,29 @@ func (a *AccountData) addExport(export *jwt.Export) error {
 	if export.Subject == "" {
 		return errors.New("export subject is not specified")
 	}
-
-	if export.IsService() {
-		if a.getService(string(export.Subject)) != nil {
-			return errors.New("service export already exists")
-		}
-	} else {
-		if a.getStream(string(export.Subject)) != nil {
-			return errors.New("stream export already exists")
-		}
-	}
 	a.Claim.Exports = append(a.Claim.Exports, export)
+	return nil
+}
+
+func (a *AccountData) addImport(in *jwt.Import) error {
+	if in == nil {
+		return errors.New("invalid export")
+	}
+	if in.Name == "" {
+		return errors.New("import name is not specified")
+	}
+	if in.Type == jwt.Unknown {
+		return errors.New("import type is not specified")
+	}
+	if in.Subject == "" {
+		return errors.New("export subject is not specified")
+	}
+	ak, err := KeyFrom(in.Account, nkeys.PrefixByteAccount)
+	if err != nil {
+		return err
+	}
+	in.Account = ak.Public
+	a.Claim.Imports = append(a.Claim.Imports, in)
 	return nil
 }
 
@@ -246,4 +274,91 @@ func (a *AccountData) newExport(name string, subject string, kind jwt.ExportType
 		Type:    kind,
 	}
 	return a.addExport(export)
+}
+
+func (a *AccountData) newImport(name string, account string, subject string, kind jwt.ExportType) error {
+	k, err := KeyFrom(account, nkeys.PrefixByteAccount)
+	if err != nil {
+		return err
+	}
+	ii := &jwt.Import{
+		Name:    name,
+		Subject: jwt.Subject(subject),
+		Account: k.Public,
+		Type:    kind,
+	}
+	return a.addImport(ii)
+}
+
+func (a *AccountData) getServiceImports() []ServiceImport {
+	var buf []ServiceImport
+	for _, e := range a.Claim.Imports {
+		if e.IsService() {
+			se := &ServiceImportImpl{}
+			se.data = a
+			se.in = e
+			buf = append(buf, se)
+		}
+	}
+	return buf
+}
+
+func (a *AccountData) getStreamImports() []StreamImport {
+	var buf []StreamImport
+	for _, e := range a.Claim.Imports {
+		if e.IsStream() {
+			se := &StreamImportImpl{}
+			se.data = a
+			se.in = e
+			buf = append(buf, se)
+		}
+	}
+	return buf
+}
+
+func (a *AccountData) getServiceImport(subject string) *ServiceImportImpl {
+	for _, e := range a.Claim.Imports {
+		if e.IsService() && string(e.Subject) == subject {
+			se := &ServiceImportImpl{}
+			se.data = a
+			se.in = e
+			return se
+		}
+	}
+	return nil
+}
+
+func (a *AccountData) getStreamImport(subject string) *StreamImportImpl {
+	for _, e := range a.Claim.Imports {
+		if e.IsStream() && string(e.Subject) == subject {
+			se := &StreamImportImpl{}
+			se.data = a
+			se.in = e
+			return se
+		}
+	}
+	return nil
+}
+
+func (a *AccountData) deleteImport(subject string, service bool) (bool, error) {
+	if subject == "" {
+		return false, errors.New("invalid subject")
+	}
+	if service {
+		for idx, e := range a.Claim.Imports {
+			if e.IsService() && e.Subject == jwt.Subject(subject) {
+				a.Claim.Imports = append(a.Claim.Imports[:idx], a.Claim.Imports[idx+1:]...)
+				return true, a.update()
+			}
+		}
+	} else {
+		for idx, e := range a.Claim.Imports {
+			if e.IsStream() && e.Subject == jwt.Subject(subject) {
+				a.Claim.Imports = append(a.Claim.Imports[:idx], a.Claim.Imports[idx+1:]...)
+				return true, a.update()
+			}
+		}
+	}
+
+	return false, nil
 }

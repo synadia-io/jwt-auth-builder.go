@@ -6,9 +6,6 @@ func (t *ProviderSuite) Test_ServiceRequiresName() {
 	auth, err := authb.NewAuth(t.Provider)
 	t.NoError(err)
 
-	operators := auth.Operators()
-	t.Empty(operators.List())
-
 	a := t.MaybeCreate(auth, "O", "A")
 	t.NotNil(a)
 
@@ -19,9 +16,6 @@ func (t *ProviderSuite) Test_ServiceRequiresName() {
 func (t *ProviderSuite) Test_StreamRequiresName() {
 	auth, err := authb.NewAuth(t.Provider)
 	t.NoError(err)
-
-	operators := auth.Operators()
-	t.Empty(operators.List())
 
 	a := t.MaybeCreate(auth, "O", "A")
 	t.NotNil(a)
@@ -34,15 +28,7 @@ func (t *ProviderSuite) Test_ServiceRequiresSubject() {
 	auth, err := authb.NewAuth(t.Provider)
 	t.NoError(err)
 
-	operators := auth.Operators()
-	t.Empty(operators.List())
-
-	o, err := operators.Add("O")
-	t.NoError(err)
-	t.NotNil(o)
-
-	a, err := o.Accounts().Add("A")
-	t.NoError(err)
+	a := t.MaybeCreate(auth, "O", "A")
 	t.NotNil(a)
 
 	_, err = a.Exports().Services().Add("name", "")
@@ -53,18 +39,22 @@ func (t *ProviderSuite) Test_StreamRequiresSubject() {
 	auth, err := authb.NewAuth(t.Provider)
 	t.NoError(err)
 
-	operators := auth.Operators()
-	t.Empty(operators.List())
-
-	o, err := operators.Add("O")
-	t.NoError(err)
-	t.NotNil(o)
-
-	a, err := o.Accounts().Add("A")
-	t.NoError(err)
+	a := t.MaybeCreate(auth, "O", "A")
 	t.NotNil(a)
 
 	_, err = a.Exports().Streams().Add("name", "")
+	t.Error(err)
+}
+
+func (t *ProviderSuite) Test_ServiceExportNoDuplicates() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	a := t.MaybeCreate(auth, "O", "A")
+	t.NotNil(a)
+	_, err = a.Exports().Services().Add("q", "q")
+	t.NoError(err)
+	_, err = a.Exports().Services().Add("qq", "q")
 	t.Error(err)
 }
 
@@ -218,4 +208,201 @@ func (t *ProviderSuite) Test_ExportAccountTokenPositionRequiresWildcards() {
 	stream, err := a.Exports().Streams().Add("s", "t.a")
 	t.NoError(err)
 	t.Error(stream.SetAccountTokenPosition(2))
+}
+
+func (t *ProviderSuite) Test_ServiceExportCrud() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	a := t.MaybeCreate(auth, "O", "A")
+	t.Len(a.Exports().Services().List(), 0)
+
+	_, err = a.Exports().Services().Add("q", "q.>")
+	t.NoError(err)
+	t.Len(a.Exports().Services().List(), 1)
+
+	service := a.Exports().Services().Get("q.>")
+	t.NotNil(service)
+
+	service = a.Exports().Services().GetByName("q")
+	t.NotNil(service)
+
+	x, err := authb.NewServiceExport("x", "x.>")
+	t.NoError(err)
+	t.NotNil(x)
+
+	y, err := authb.NewServiceExport("y", "y.>")
+	t.NoError(err)
+	t.NotNil(y)
+
+	_, err = a.Exports().Streams().Add("s", "s.>")
+	t.NoError(err)
+
+	t.NoError(a.Exports().Services().Set(x, y))
+	t.Len(a.Exports().Services().List(), 2)
+	t.Equal("x.>", a.Exports().Services().List()[0].Subject())
+	t.Equal("y.>", a.Exports().Services().List()[1].Subject())
+	t.Len(a.Exports().Streams().List(), 1)
+
+	ok, err := a.Exports().Services().Delete("x.>")
+	t.NoError(err)
+	t.True(ok)
+
+	ok, err = a.Exports().Services().Delete("x.>")
+	t.NoError(err)
+	t.False(ok)
+}
+
+func (t *ProviderSuite) Test_StreamExportCrud() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	a := t.MaybeCreate(auth, "O", "A")
+	t.Len(a.Exports().Streams().List(), 0)
+
+	_, err = a.Exports().Streams().Add("q", "q.>")
+	t.NoError(err)
+	t.Len(a.Exports().Streams().List(), 1)
+
+	stream := a.Exports().Streams().Get("q.>")
+	t.NotNil(stream)
+
+	stream = a.Exports().Streams().GetByName("q")
+	t.NotNil(stream)
+
+	x, err := authb.NewStreamExport("x", "x.>")
+	t.NoError(err)
+
+	y, err := authb.NewStreamExport("y", "y.>")
+	t.NoError(err)
+
+	t.NoError(a.Exports().Streams().Set(x, y))
+	t.Len(a.Exports().Streams().List(), 2)
+	t.Equal("x.>", a.Exports().Streams().List()[0].Subject())
+	t.Equal("y.>", a.Exports().Streams().List()[1].Subject())
+
+	ok, err := a.Exports().Streams().Delete("x.>")
+	t.NoError(err)
+	t.True(ok)
+
+	ok, err = a.Exports().Streams().Delete("x.>")
+	t.NoError(err)
+	t.False(ok)
+}
+
+func (t *ProviderSuite) Test_ServiceExportTracing() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	a := t.MaybeCreate(auth, "O", "A")
+	service, err := a.Exports().Services().Add("q", "q.>")
+	t.NoError(err)
+
+	t.Nil(service.Tracing())
+
+	t.NoError(service.SetTracing(&authb.TracingConfiguration{
+		SamplingRate: 100,
+		Subject:      "tracing.q",
+	}))
+
+	tc := service.Tracing()
+	t.NotNil(tc)
+	t.Equal(authb.SamplingRate(100), tc.SamplingRate)
+	t.Equal("tracing.q", tc.Subject)
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	a = t.GetAccount(auth, "O", "A")
+	service = a.Exports().Services().Get("q.>")
+
+	tc = service.Tracing()
+	t.NotNil(tc)
+	t.Equal(authb.SamplingRate(100), tc.SamplingRate)
+	t.Equal("tracing.q", tc.Subject)
+
+	t.NoError(service.SetTracing(nil))
+	t.Nil(service.Tracing())
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	a = t.GetAccount(auth, "O", "A")
+	service = a.Exports().Services().Get("q.>")
+	tc = service.Tracing()
+	t.Nil(tc)
+}
+
+func (t *ProviderSuite) Test_ServiceExportTracingRejectsBadOptions() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	a := t.MaybeCreate(auth, "O", "A")
+	service, err := a.Exports().Services().Add("q", "q.>")
+	t.NoError(err)
+
+	t.Nil(service.Tracing())
+
+	t.Error(service.SetTracing(&authb.TracingConfiguration{
+		SamplingRate: 0,
+		Subject:      "",
+	}))
+
+	t.Error(service.SetTracing(&authb.TracingConfiguration{
+		SamplingRate: 1,
+		Subject:      "",
+	}))
+
+	t.Error(service.SetTracing(&authb.TracingConfiguration{
+		SamplingRate: 101,
+		Subject:      "hello",
+	}))
+}
+
+func (t *ProviderSuite) Test_NewServiceExportNameRequired() {
+	se, err := authb.NewServiceExport("", "subject")
+	t.Error(err)
+	t.Nil(se)
+}
+
+func (t *ProviderSuite) Test_NewServiceExportSubjectRequired() {
+	se, err := authb.NewServiceExport("n", "")
+	t.Error(err)
+	t.Nil(se)
+}
+
+func (t *ProviderSuite) Test_NewStreamExportNameRequired() {
+	se, err := authb.NewStreamExport("", "subject")
+	t.Error(err)
+	t.Nil(se)
+}
+
+func (t *ProviderSuite) Test_NewStreamExportSubjectRequired() {
+	se, err := authb.NewStreamExport("n", "")
+	t.Error(err)
+	t.Nil(se)
+}
+
+func (t *ProviderSuite) Test_ServiceExportAdvertised() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	a := t.MaybeCreate(auth, "O", "A")
+	service, err := a.Exports().Services().Add("q", "q.>")
+	t.NoError(err)
+	t.False(service.IsAdvertised())
+	t.NoError(service.SetAdvertised(true))
+	t.True(service.IsAdvertised())
+}
+
+func (t *ProviderSuite) Test_StreamExportAdvertised() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	a := t.MaybeCreate(auth, "O", "A")
+	stream, err := a.Exports().Streams().Add("q", "q.>")
+	t.NoError(err)
+	t.False(stream.IsAdvertised())
+	t.NoError(stream.SetAdvertised(true))
+	t.True(stream.IsAdvertised())
 }

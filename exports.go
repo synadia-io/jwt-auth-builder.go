@@ -2,6 +2,7 @@ package authb
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
@@ -11,7 +12,7 @@ type ServiceExportImpl struct {
 	baseExportImpl
 }
 
-func NewService(name string, subject string) (ServiceExport, error) {
+func NewServiceExport(name string, subject string) (ServiceExport, error) {
 	if name == "" {
 		return nil, errors.New("name cannot be empty")
 	}
@@ -50,11 +51,19 @@ func (b *ServiceExportImpl) SetTracing(t *TracingConfiguration) error {
 	return b.update()
 }
 
+func (b *ServiceExportImpl) GenerateImport() (ServiceImport, error) {
+	return NewServiceImport(b.export.Name, b.data.Claim.Subject, string(b.export.Subject))
+}
+
 type StreamExportImpl struct {
 	baseExportImpl
 }
 
-func NewStream(name string, subject string) (StreamExport, error) {
+func (b *StreamExportImpl) GenerateImport() (StreamImport, error) {
+	return NewStreamImport(b.export.Name, b.data.Claim.Subject, string(b.export.Subject))
+}
+
+func NewStreamExport(name string, subject string) (StreamExport, error) {
 	if name == "" {
 		return nil, errors.New("name cannot be empty")
 	}
@@ -88,17 +97,17 @@ func (b *baseExportImpl) update() error {
 	}
 	// update regenerated the claim, reload the reference
 	if b.export.IsService() {
-		e := b.data.getService(string(b.export.Subject))
+		e := b.data.getServiceExport(string(b.export.Subject))
 		if e == nil {
 			return errors.New("could not find service")
 		}
-		b.export = e.(*ServiceExportImpl).export
+		b.export = e.export
 	} else if b.export.IsStream() {
-		e := b.data.getStream(string(b.export.Subject))
+		e := b.data.getStreamExport(string(b.export.Subject))
 		if e == nil {
 			return errors.New("could not find stream")
 		}
-		b.export = e.(*StreamExportImpl).export
+		b.export = e.export
 	} else {
 		return errors.New("not implemented")
 	}
@@ -172,4 +181,35 @@ func (b *baseExportImpl) getRevocationPrefix() nkeys.PrefixByte {
 
 func (b *baseExportImpl) Revocations() Revocations {
 	return &revocations{data: b}
+}
+
+func (b *baseExportImpl) IsAdvertised() bool {
+	return b.export.Advertise
+}
+
+func (b *baseExportImpl) SetAdvertised(tf bool) error {
+	b.export.Advertise = tf
+	return b.update()
+}
+
+func (b *baseExportImpl) GenerateActivation(account string, issuer string) (string, error) {
+	if !b.TokenRequired() {
+		return "", fmt.Errorf("export is public and doesn't require an activation")
+	}
+	key, err := KeyFrom(account, nkeys.PrefixByteAccount)
+	if err != nil {
+		return "", err
+	}
+	ac := jwt.NewActivationClaims(key.Public)
+	ac.ImportSubject = b.export.Subject
+	ac.ImportType = b.export.Type
+
+	k, signingKey, err := b.data.getKey(issuer)
+	if err != nil {
+		return "", err
+	}
+	if signingKey {
+		ac.IssuerAccount = b.data.Claim.Subject
+	}
+	return ac.Encode(k.Pair)
 }

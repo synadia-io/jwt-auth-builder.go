@@ -11,7 +11,7 @@ type serviceExports struct {
 }
 
 func (s *serviceExports) Get(subject string) ServiceExport {
-	return s.getService(subject)
+	return s.getServiceExport(subject)
 }
 
 func (s *serviceExports) GetByName(name string) ServiceExport {
@@ -27,7 +27,7 @@ func (s *serviceExports) GetByName(name string) ServiceExport {
 }
 
 func (s *serviceExports) List() []ServiceExport {
-	return s.getServices()
+	return s.getServiceExports()
 }
 
 func (s *serviceExports) AddWithConfig(e ServiceExport) error {
@@ -50,9 +50,12 @@ func (s *serviceExports) Add(name string, subject string) (ServiceExport, error)
 		return nil, err
 	}
 	// the pointer in the claim is changed by update, so we need to find it again
-	x := s.getService(subject)
+	x := s.getServiceExport(subject)
 	if x == nil {
-		return nil, errors.New("could not find service")
+		return nil, errors.New("could not find service export")
+	}
+	if err := x.update(); err != nil {
+		return nil, err
 	}
 	return x, nil
 }
@@ -65,14 +68,12 @@ func (s *serviceExports) Set(exports ...ServiceExport) error {
 			buf = append(buf, e)
 		}
 	}
-
+	s.Claim.Exports = buf
 	for _, e := range exports {
-		ee, ok := e.(*ServiceExportImpl)
-		if ok {
-			buf = append(buf, ee.export)
+		if err := s.AddWithConfig(e); err != nil {
+			return err
 		}
 	}
-	s.Claim.Exports = buf
 	return s.update()
 }
 
