@@ -352,9 +352,17 @@ type Imports interface {
 }
 
 type ServiceImports interface {
-	Add(name string, subject string) (ServiceImport, error)
+	// Add creates and adds a new import of a public service importing the
+	// specified subject from the specified account
+	Add(name string, account string, subject string) (ServiceImport, error)
+	// AddWithConfig adds a copy of the specified import configuration to the account
+	AddWithConfig(i ServiceImport) error
+	// Get returns imports that are exported by accounts under the specified subject
 	Get(subject string) ServiceImport
+	// GetByName returns an import stored under the specified name. Note that
+	// the first import is returned.
 	GetByName(name string) ServiceImport
+	Delete(subject string) (bool, error)
 	List() []ServiceImport
 	Set(imports ...ServiceImport) error
 }
@@ -363,7 +371,6 @@ type ServiceExports interface {
 	// Add creates and adds a new public service with the specified name and subject
 	Add(name string, subject string) (ServiceExport, error)
 	// AddWithConfig adds a copy of the specified configuration to the account
-	// note that adding a service with a duplicate subject is an error
 	AddWithConfig(e ServiceExport) error
 	// Get returns the ServiceExport matching the subject or nil if not found
 	Get(subject string) ServiceExport
@@ -379,9 +386,10 @@ type ServiceExports interface {
 }
 
 type StreamImports interface {
-	Add(name string, subject string) (StreamImport, error)
+	Add(name string, account string, subject string) (StreamImport, error)
 	Get(subject string) StreamImport
 	GetByName(name string) StreamImport
+	Delete(subject string) (bool, error)
 	List() []StreamImport
 	Set(imports ...StreamImport) error
 }
@@ -390,7 +398,6 @@ type StreamExports interface {
 	// Add creates and add a new public stream with the specified name and subject
 	Add(name string, subject string) (StreamExport, error)
 	// AddWithConfig adds a copy of the specified configuration to the account
-	// note that adding a stream with a duplicate subject is an error
 	AddWithConfig(e StreamExport) error
 	// Get returns the StreamExport matching the subject or nil if not found
 	Get(subject string) StreamExport
@@ -448,6 +455,14 @@ type Export interface {
 	SetInfoURL(u string) error
 	AccountTokenPosition() uint
 	SetAccountTokenPosition(n uint) error
+	// IsAdvertised returns true if the export is advertised - note that
+	// the notion of Advertised may not be implemented by the operator
+	IsAdvertised() bool
+	// SetAdvertised sets whether the export is advertised - note that
+	// the notion of Advertised may not be implemented by the operator
+	SetAdvertised(tf bool) error
+	// GenerateActivation an activation token for the specified account signed with the specified issuer
+	GenerateActivation(account string, issuer string) (string, error)
 }
 
 type SamplingRate int
@@ -463,27 +478,33 @@ type ServiceExport interface {
 	Tracing() *TracingConfiguration
 	// SetTracing enables tracing for the service, if nil, the tracing is disabled
 	SetTracing(config *TracingConfiguration) error
+	// GenerateImport generates an import that can be added to an Account
+	GenerateImport() (ServiceImport, error)
 }
 
 type StreamExport interface {
 	Export
+	GenerateImport() (StreamImport, error)
 }
 
-type baseImport interface {
+type Import interface {
 	NameSubject
-	Account() *Key
-	SetAccount(k *Key) error
+	Account() string
+	SetAccount(s string) error
 	Token() string
 	SetToken(t string) error
 	LocalSubject() string
-}
-
-type ServiceImport interface {
-	baseImport
+	SetLocalSubject(subject string) error
+	IsTraceable() bool
+	SetTraceable(tf bool) error
 }
 
 type StreamImport interface {
-	baseImport
+	Import
+}
+
+type ServiceImport interface {
+	Import
 }
 
 // SigningKeys is an interface for managing signing keys

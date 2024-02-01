@@ -4,6 +4,9 @@
 version: '3'
 
 tasks:
+  cover:
+    cmds:
+      - go tool cover -html=coverage.out
   test:
     deps:
     cmds:
