@@ -22,7 +22,6 @@ func (k *Key) MarshalJSON() ([]byte, error) {
 }
 
 func (k *Key) UnmarshalJSON(data []byte) error {
-	type Alias Key
 	var v struct {
 		Key string `json:"key"`
 	}
