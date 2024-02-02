@@ -1,6 +1,7 @@
 package authb
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/nats-io/nkeys"
@@ -10,6 +11,32 @@ type Key struct {
 	Pair   nkeys.KeyPair
 	Public string
 	Seed   []byte
+}
+
+func (k *Key) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Key string `json:"key"`
+	}{
+		Key: string(k.Seed),
+	})
+}
+
+func (k *Key) UnmarshalJSON(data []byte) error {
+	type Alias Key
+	var v struct {
+		Key string `json:"key"`
+	}
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	var err error
+	k.Seed = []byte(v.Key)
+	k.Pair, err = nkeys.FromSeed(k.Seed)
+	if err != nil {
+		return err
+	}
+	k.Public, err = k.Pair.PublicKey()
+	return err
 }
 
 func KeyFromNkey(kp nkeys.KeyPair, check ...nkeys.PrefixByte) (*Key, error) {
