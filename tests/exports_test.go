@@ -298,14 +298,14 @@ func (t *ProviderSuite) Test_ServiceExportTracing() {
 	service, err := a.Exports().Services().Add("q", "q.>")
 	t.NoError(err)
 
-	t.Nil(service.Tracing())
+	t.Nil(service.GetLatencyOptions())
 
-	t.NoError(service.SetTracing(&authb.TracingConfiguration{
+	t.NoError(service.SetLatencyOptions(&authb.LatencyOpts{
 		SamplingRate: 100,
 		Subject:      "tracing.q",
 	}))
 
-	tc := service.Tracing()
+	tc := service.GetLatencyOptions()
 	t.NotNil(tc)
 	t.Equal(authb.SamplingRate(100), tc.SamplingRate)
 	t.Equal("tracing.q", tc.Subject)
@@ -316,20 +316,20 @@ func (t *ProviderSuite) Test_ServiceExportTracing() {
 	a = t.GetAccount(auth, "O", "A")
 	service = a.Exports().Services().Get("q.>")
 
-	tc = service.Tracing()
+	tc = service.GetLatencyOptions()
 	t.NotNil(tc)
 	t.Equal(authb.SamplingRate(100), tc.SamplingRate)
 	t.Equal("tracing.q", tc.Subject)
 
-	t.NoError(service.SetTracing(nil))
-	t.Nil(service.Tracing())
+	t.NoError(service.SetLatencyOptions(nil))
+	t.Nil(service.GetLatencyOptions())
 
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
 	service = a.Exports().Services().Get("q.>")
-	tc = service.Tracing()
+	tc = service.GetLatencyOptions()
 	t.Nil(tc)
 }
 
@@ -341,19 +341,19 @@ func (t *ProviderSuite) Test_ServiceExportTracingRejectsBadOptions() {
 	service, err := a.Exports().Services().Add("q", "q.>")
 	t.NoError(err)
 
-	t.Nil(service.Tracing())
+	t.Nil(service.GetLatencyOptions())
 
-	t.Error(service.SetTracing(&authb.TracingConfiguration{
+	t.Error(service.SetLatencyOptions(&authb.LatencyOpts{
 		SamplingRate: 0,
 		Subject:      "",
 	}))
 
-	t.Error(service.SetTracing(&authb.TracingConfiguration{
+	t.Error(service.SetLatencyOptions(&authb.LatencyOpts{
 		SamplingRate: 1,
 		Subject:      "",
 	}))
 
-	t.Error(service.SetTracing(&authb.TracingConfiguration{
+	t.Error(service.SetLatencyOptions(&authb.LatencyOpts{
 		SamplingRate: 101,
 		Subject:      "hello",
 	}))

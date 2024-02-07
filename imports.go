@@ -146,11 +146,11 @@ func (b *baseImportImpl) Type() jwt.ExportType {
 	return b.in.Type
 }
 
-func (b *baseImportImpl) IsTraceable() bool {
+func (b *baseImportImpl) IsShareConnectionInfo() bool {
 	return b.in.Share
 }
 
-func (b *baseImportImpl) SetTraceable(t bool) error {
+func (b *baseImportImpl) SetShareConnectionInfo(t bool) error {
 	b.in.Share = t
 	return b.update()
 }

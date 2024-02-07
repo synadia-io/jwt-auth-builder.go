@@ -220,9 +220,9 @@ func (t *ProviderSuite) Test_ServiceImportTraceable() {
 	akp := t.AccountKey()
 	service, err := a.Imports().Services().Add("q", akp.Public, "q.>")
 	t.NoError(err)
-	t.False(service.IsTraceable())
-	t.NoError(service.SetTraceable(true))
-	t.True(service.IsTraceable())
+	t.False(service.IsShareConnectionInfo())
+	t.NoError(service.SetShareConnectionInfo(true))
+	t.True(service.IsShareConnectionInfo())
 }
 
 func (t *ProviderSuite) Test_StreamImportTraceable() {
@@ -233,9 +233,9 @@ func (t *ProviderSuite) Test_StreamImportTraceable() {
 	akp := t.AccountKey()
 	stream, err := a.Imports().Streams().Add("q", akp.Public, "q.>")
 	t.NoError(err)
-	t.False(stream.IsTraceable())
+	t.False(stream.IsShareConnectionInfo())
 	// FIXME: current JWT doesn't allow traceable outside of services
-	t.Error(stream.SetTraceable(true))
+	t.Error(stream.SetShareConnectionInfo(true))
 }
 
 func (t *ProviderSuite) Test_NewServiceImportNameRequired() {
