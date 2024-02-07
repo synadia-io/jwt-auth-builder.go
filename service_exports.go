@@ -11,7 +11,12 @@ type serviceExports struct {
 }
 
 func (s *serviceExports) Get(subject string) ServiceExport {
-	return s.getServiceExport(subject)
+	se := s.getServiceExport(subject)
+	if se == nil {
+		return nil
+	}
+
+	return se
 }
 
 func (s *serviceExports) GetByName(name string) ServiceExport {
