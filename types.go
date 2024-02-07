@@ -467,17 +467,17 @@ type Export interface {
 
 type SamplingRate int
 
-type TracingConfiguration struct {
+type LatencyOpts struct {
 	SamplingRate SamplingRate
 	Subject      string
 }
 
 type ServiceExport interface {
 	Export
-	// Tracing returns the TracingConfiguration if enabled otherwise nil
-	Tracing() *TracingConfiguration
-	// SetTracing enables tracing for the service, if nil, the tracing is disabled
-	SetTracing(config *TracingConfiguration) error
+	// GetLatencyOptions returns the LatencyOpts if enabled otherwise nil
+	GetLatencyOptions() *LatencyOpts
+	// SetLatencyOptions enables latency tracing for a service, if nil, the latency tracing is disabled
+	SetLatencyOptions(config *LatencyOpts) error
 	// GenerateImport generates an import that can be added to an Account
 	GenerateImport() (ServiceImport, error)
 }
@@ -495,8 +495,8 @@ type Import interface {
 	SetToken(t string) error
 	LocalSubject() string
 	SetLocalSubject(subject string) error
-	IsTraceable() bool
-	SetTraceable(tf bool) error
+	IsShareConnectionInfo() bool
+	SetShareConnectionInfo(tf bool) error
 }
 
 type StreamImport interface {

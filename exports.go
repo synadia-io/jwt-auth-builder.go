@@ -28,18 +28,18 @@ func NewServiceExport(name string, subject string) (ServiceExport, error) {
 	}, nil
 }
 
-func (b *ServiceExportImpl) Tracing() *TracingConfiguration {
+func (b *ServiceExportImpl) GetLatencyOptions() *LatencyOpts {
 	lat := b.export.Latency
 	if lat == nil {
 		return nil
 	}
-	return &TracingConfiguration{
+	return &LatencyOpts{
 		SamplingRate: SamplingRate(lat.Sampling),
 		Subject:      string(lat.Results),
 	}
 }
 
-func (b *ServiceExportImpl) SetTracing(t *TracingConfiguration) error {
+func (b *ServiceExportImpl) SetLatencyOptions(t *LatencyOpts) error {
 	if t == nil {
 		b.export.Latency = nil
 	} else {
