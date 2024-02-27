@@ -152,6 +152,18 @@ type Accounts interface {
 	List() []Account
 }
 
+type TracingContext struct {
+	Destination string
+	Sampling    int
+}
+
+func (t *TracingContext) toTrace() *jwt.MsgTrace {
+	return &jwt.MsgTrace{
+		Destination: jwt.Subject(t.Destination),
+		Sampling:    t.Sampling,
+	}
+}
+
 // Account is an interface for editing an account
 type Account interface {
 	// Name returns the name of the account
@@ -180,6 +192,10 @@ type Account interface {
 	JWT() string
 	// Revocations manage user revocations
 	Revocations() Revocations
+	// GetTracingContext returns the TracingContext or nil if not set
+	GetTracingContext() *TracingContext
+	// SetTracingContext sets the TracingContext - if null the tracing context is removed
+	SetTracingContext(opts *TracingContext) error
 }
 
 // Users is an interface for managing users
@@ -480,6 +496,10 @@ type ServiceExport interface {
 	SetLatencyOptions(config *LatencyOpts) error
 	// GenerateImport generates an import that can be added to an Account
 	GenerateImport() (ServiceImport, error)
+	// AllowTracing returns true if the service export allows tracing
+	AllowTracing() bool
+	// SetAllowTracing enables tracing messages to follow the service implementation
+	SetAllowTracing(tf bool) error
 }
 
 type StreamExport interface {

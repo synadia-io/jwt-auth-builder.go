@@ -55,6 +55,15 @@ func (b *ServiceExportImpl) GenerateImport() (ServiceImport, error) {
 	return NewServiceImport(b.export.Name, b.data.Claim.Subject, string(b.export.Subject))
 }
 
+func (b *ServiceExportImpl) AllowTracing() bool {
+	return b.export.AllowTrace
+}
+
+func (b *ServiceExportImpl) SetAllowTracing(tf bool) error {
+	b.export.AllowTrace = tf
+	return b.update()
+}
+
 type StreamExportImpl struct {
 	baseExportImpl
 }

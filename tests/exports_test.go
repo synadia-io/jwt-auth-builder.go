@@ -371,6 +371,18 @@ func (t *ProviderSuite) Test_NewServiceExportSubjectRequired() {
 	t.Nil(se)
 }
 
+func (t *ProviderSuite) Test_ServiceAllowTracing() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	a := t.MaybeCreate(auth, "O", "A")
+	service, err := a.Exports().Services().Add("q", "q.>")
+	t.NoError(err)
+	t.False(service.AllowTracing())
+	t.NoError(service.SetAllowTracing(true))
+	t.True(service.AllowTracing())
+}
+
 func (t *ProviderSuite) Test_NewStreamExportNameRequired() {
 	se, err := authb.NewStreamExport("", "subject")
 	t.Error(err)
