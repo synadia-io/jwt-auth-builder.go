@@ -521,6 +521,10 @@ type Import interface {
 
 type StreamImport interface {
 	Import
+	// AllowTracing returns true if the service export allows tracing
+	AllowTracing() bool
+	// SetAllowTracing enables tracing messages to follow the service implementation
+	SetAllowTracing(tf bool) error
 }
 
 type ServiceImport interface {

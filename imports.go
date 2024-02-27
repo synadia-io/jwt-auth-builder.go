@@ -66,6 +66,15 @@ type StreamImportImpl struct {
 	baseImportImpl
 }
 
+func (b *StreamImportImpl) AllowTracing() bool {
+	return b.baseImportImpl.in.AllowTrace
+}
+
+func (b *StreamImportImpl) SetAllowTracing(tf bool) error {
+	b.baseImportImpl.in.AllowTrace = tf
+	return b.update()
+}
+
 func (b *baseImportImpl) update() error {
 	if b.data == nil {
 		// this is an unbounded export
