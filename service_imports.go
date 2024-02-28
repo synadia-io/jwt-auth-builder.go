@@ -47,16 +47,16 @@ func (s *serviceImports) Get(subject string) (ServiceImport, bool) {
 	return si, true
 }
 
-func (s *serviceImports) GetByName(name string) ServiceImport {
+func (s *serviceImports) GetByName(name string) (ServiceImport, bool) {
 	for _, e := range s.Claim.Imports {
 		if e.IsService() && e.Name == name {
 			se := &ServiceImportImpl{}
 			se.data = s.AccountData
 			se.in = e
-			return se
+			return se, true
 		}
 	}
-	return nil
+	return nil, false
 }
 
 func (s *serviceImports) Delete(subject string) (bool, error) {

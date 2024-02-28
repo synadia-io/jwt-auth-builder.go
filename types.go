@@ -378,7 +378,7 @@ type ServiceImports interface {
 	Get(subject string) (ServiceImport, bool)
 	// GetByName returns an import stored under the specified name. Note that
 	// the first import is returned.
-	GetByName(name string) ServiceImport
+	GetByName(name string) (ServiceImport, bool)
 	Delete(subject string) (bool, error)
 	List() []ServiceImport
 	Set(imports ...ServiceImport) error

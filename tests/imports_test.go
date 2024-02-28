@@ -78,9 +78,12 @@ func (t *ProviderSuite) Test_ImportNameSubject() {
 
 	_, ok := a.Imports().Services().Get("q.>")
 	t.False(ok)
-	t.Nil(a.Imports().Services().GetByName("q"))
-	t.NotNil(a.Imports().Services().Get("qq.>"))
-	t.NotNil(a.Imports().Services().GetByName("xx"))
+	_, ok = a.Imports().Services().GetByName("q")
+	t.False(ok)
+	_, ok = a.Imports().Services().Get("qq.>")
+	t.True(ok)
+	_, ok = a.Imports().Services().GetByName("xx")
+	t.True(ok)
 
 	s, err := a.Imports().Streams().Add("s", ak.Public, "t.>")
 	t.NoError(err)
@@ -148,8 +151,8 @@ func (t *ProviderSuite) Test_ServiceImportCrud() {
 	_, ok := a.Imports().Services().Get("q.>")
 	t.True(ok)
 
-	service := a.Imports().Services().GetByName("q")
-	t.NotNil(service)
+	_, ok = a.Imports().Services().GetByName("q")
+	t.True(ok)
 
 	x, err := authb.NewServiceImport("x", ak.Public, "x.>")
 	t.NoError(err)
