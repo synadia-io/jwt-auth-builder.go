@@ -381,6 +381,13 @@ func (t *ProviderSuite) Test_ServiceAllowTracing() {
 	t.False(service.AllowTracing())
 	t.NoError(service.SetAllowTracing(true))
 	t.True(service.AllowTracing())
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	se := a.Exports().Services().Get("q.>")
+	t.NotNil(se)
+	t.True(se.AllowTracing())
 }
 
 func (t *ProviderSuite) Test_NewStreamExportNameRequired() {

@@ -361,20 +361,27 @@ func (t *ProviderSuite) Test_NewStreamImportSkToken() {
 	t.NoError(si.SetToken(token))
 }
 
-func (t *ProviderSuite) Test_NewStreamImportAllowTracing() {
+func (t *ProviderSuite) Test_StreamImportAllowTracing() {
 	auth, err := authb.NewAuth(t.Provider)
 	t.NoError(err)
 
-	s := t.MaybeCreate(auth, "O", "A")
+	a := t.MaybeCreate(auth, "O", "A")
 	t.NoError(err)
 
 	ak, err := authb.KeyFor(nkeys.PrefixByteAccount)
 	t.NoError(err)
-	si, err := s.Imports().Streams().Add("X", ak.Public, "foo.>")
+	si, err := a.Imports().Streams().Add("X", ak.Public, "foo.>")
 	t.NoError(err)
 
 	t.False(si.AllowTracing())
 	t.NoError(si.SetAllowTracing(true))
+	t.True(si.AllowTracing())
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	si = a.Imports().Streams().Get("foo.>")
+	t.NotNil(si)
 	t.True(si.AllowTracing())
 }
 
