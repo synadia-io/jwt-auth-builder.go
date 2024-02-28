@@ -30,8 +30,8 @@ func (t *ProviderSuite) Test_UserBasics() {
 	t.True(ok)
 	a, ok = o.Accounts().Get("A")
 	t.True(ok)
-	u = a.Users().Get("U")
-	t.NotNil(u)
+	u, ok = a.Users().Get("U")
+	t.True(ok)
 	t.Equal(id, u.Subject())
 	key = t.Store.GetKey(u.Subject())
 	t.NotNil(key)
@@ -121,8 +121,8 @@ func (t *ProviderSuite) Test_ScopedUserSetMaxSubscriptions() {
 	t.True(ok)
 	a, ok := o.Accounts().Get("A")
 	t.True(ok)
-	u = a.Users().Get("U")
-	t.NoError(err)
+	u, ok = a.Users().Get("U")
+	t.True(ok)
 	t.Equal(int64(100), u.MaxSubscriptions())
 }
 
@@ -150,8 +150,8 @@ func (t *ProviderSuite) Test_ScopedUserSetMaxPayload() {
 	t.True(ok)
 	a, ok := o.Accounts().Get("A")
 	t.True(ok)
-	u = a.Users().Get("U")
-	t.NoError(err)
+	u, ok = a.Users().Get("U")
+	t.True(ok)
 	t.Equal(int64(100), u.MaxPayload())
 }
 
@@ -179,7 +179,8 @@ func (t *ProviderSuite) Test_ScopedUserSetMaxData() {
 	t.True(ok)
 	a, ok := o.Accounts().Get("A")
 	t.True(ok)
-	u = a.Users().Get("U")
+	u, ok = a.Users().Get("U")
+	t.True(ok)
 	t.Equal(int64(100), u.MaxData())
 }
 
@@ -347,8 +348,8 @@ func (t *ProviderSuite) Test_UsersAddedSave() {
 	t.True(ok)
 	a, ok = o.Accounts().Get("A")
 	t.True(ok)
-	u = a.Users().Get("U")
-	t.NotNil(u)
+	_, ok = a.Users().Get("U")
+	t.True(ok)
 }
 
 func (t *ProviderSuite) Test_UsersAddedPermsSave() {
@@ -386,8 +387,8 @@ func (t *ProviderSuite) Test_UsersAddedPermsSave() {
 	t.True(ok)
 	a, ok = o.Accounts().Get("A")
 	t.True(ok)
-	u = a.Users().Get("U")
-	t.NotNil(u)
+	u, ok = a.Users().Get("U")
+	t.True(ok)
 
 	t.Contains(u.SubPermissions().Allow(), "_inbox.me")
 	t.Contains(u.PubPermissions().Allow(), "foo")

@@ -210,7 +210,7 @@ type Users interface {
 	// Delete the user by matching its name or subject
 	Delete(name string) error
 	// Get returns the user by matching its name or subject
-	Get(name string) User
+	Get(name string) (User, bool)
 	// List returns a list of User from the account
 	List() []User
 }
