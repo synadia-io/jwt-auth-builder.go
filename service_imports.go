@@ -41,10 +41,10 @@ func (s *serviceImports) AddWithConfig(i ServiceImport) error {
 
 func (s *serviceImports) Get(subject string) (ServiceImport, bool) {
 	si := s.getServiceImport(subject)
-	if si == nil {
-		return nil, false
+	if si != nil {
+		return si, true
 	}
-	return si, true
+	return nil, false
 }
 
 func (s *serviceImports) GetByName(name string) (ServiceImport, bool) {
