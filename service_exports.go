@@ -18,16 +18,16 @@ func (s *serviceExports) Get(subject string) (ServiceExport, bool) {
 	return se, true
 }
 
-func (s *serviceExports) GetByName(name string) ServiceExport {
+func (s *serviceExports) GetByName(name string) (ServiceExport, bool) {
 	for _, e := range s.Claim.Exports {
 		if e.IsService() && e.Name == name {
 			se := &ServiceExportImpl{}
 			se.data = s.AccountData
 			se.export = e
-			return se
+			return se, true
 		}
 	}
-	return nil
+	return nil, false
 }
 
 func (s *serviceExports) List() []ServiceExport {

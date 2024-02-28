@@ -99,10 +99,12 @@ func (t *ProviderSuite) Test_ExportNameSubject() {
 
 	_, ok := a.Exports().Services().Get("q.>")
 	t.False(ok)
-	t.Nil(a.Exports().Services().GetByName("q"))
+	_, ok = a.Exports().Services().GetByName("q")
+	t.False(ok)
 	_, ok = a.Exports().Services().Get("qq.>")
 	t.True(ok)
-	t.NotNil(a.Exports().Services().GetByName("qq"))
+	_, ok = a.Exports().Services().GetByName("qq")
+	t.True(ok)
 
 	stream, err := a.Exports().Streams().Add("s", "t.>")
 	t.NoError(err)
@@ -223,11 +225,11 @@ func (t *ProviderSuite) Test_ServiceExportCrud() {
 	t.NoError(err)
 	t.Len(a.Exports().Services().List(), 1)
 
-	service, ok := a.Exports().Services().Get("q.>")
+	_, ok := a.Exports().Services().Get("q.>")
 	t.True(ok)
 
-	service = a.Exports().Services().GetByName("q")
-	t.NotNil(service)
+	_, ok = a.Exports().Services().GetByName("q")
+	t.True(ok)
 
 	x, err := authb.NewServiceExport("x", "x.>")
 	t.NoError(err)
