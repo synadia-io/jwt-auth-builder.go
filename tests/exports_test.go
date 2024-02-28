@@ -76,8 +76,8 @@ func (t *ProviderSuite) Test_ExportTokenRequired() {
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
-	service = a.Exports().Services().Get("q.>")
-	t.NotNil(service)
+	service, ok := a.Exports().Services().Get("q.>")
+	t.True(ok)
 	t.True(service.TokenRequired())
 
 	stream = a.Exports().Streams().Get("t.>")
@@ -97,9 +97,11 @@ func (t *ProviderSuite) Test_ExportNameSubject() {
 	t.NoError(service.SetName("qq"))
 	t.NoError(service.SetSubject("qq.>"))
 
-	t.Nil(a.Exports().Services().Get("q.>"))
+	_, ok := a.Exports().Services().Get("q.>")
+	t.False(ok)
 	t.Nil(a.Exports().Services().GetByName("q"))
-	t.NotNil(a.Exports().Services().Get("qq.>"))
+	_, ok = a.Exports().Services().Get("qq.>")
+	t.True(ok)
 	t.NotNil(a.Exports().Services().GetByName("qq"))
 
 	stream, err := a.Exports().Streams().Add("s", "t.>")
@@ -134,8 +136,8 @@ func (t *ProviderSuite) Test_ExportDescription() {
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
-	service = a.Exports().Services().Get("q.>")
-	t.NotNil(service)
+	service, ok := a.Exports().Services().Get("q.>")
+	t.True(ok)
 	t.Equal("desc", service.Description())
 
 	stream = a.Exports().Streams().Get("t.>")
@@ -161,8 +163,8 @@ func (t *ProviderSuite) Test_ExportInfoURL() {
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
-	service = a.Exports().Services().Get("q.>")
-	t.NotNil(service)
+	service, ok := a.Exports().Services().Get("q.>")
+	t.True(ok)
 	t.Equal("https://service.com", service.InfoURL())
 
 	stream = a.Exports().Streams().Get("t.>")
@@ -188,8 +190,8 @@ func (t *ProviderSuite) Test_ExportAccountTokenPosition() {
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
-	service = a.Exports().Services().Get("q.*")
-	t.NotNil(service)
+	service, ok := a.Exports().Services().Get("q.*")
+	t.True(ok)
 	t.Equal(uint(2), service.AccountTokenPosition())
 
 	stream = a.Exports().Streams().Get("t.*")
@@ -221,8 +223,8 @@ func (t *ProviderSuite) Test_ServiceExportCrud() {
 	t.NoError(err)
 	t.Len(a.Exports().Services().List(), 1)
 
-	service := a.Exports().Services().Get("q.>")
-	t.NotNil(service)
+	service, ok := a.Exports().Services().Get("q.>")
+	t.True(ok)
 
 	service = a.Exports().Services().GetByName("q")
 	t.NotNil(service)
@@ -244,7 +246,7 @@ func (t *ProviderSuite) Test_ServiceExportCrud() {
 	t.Equal("y.>", a.Exports().Services().List()[1].Subject())
 	t.Len(a.Exports().Streams().List(), 1)
 
-	ok, err := a.Exports().Services().Delete("x.>")
+	ok, err = a.Exports().Services().Delete("x.>")
 	t.NoError(err)
 	t.True(ok)
 
@@ -314,7 +316,8 @@ func (t *ProviderSuite) Test_ServiceExportTracing() {
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
-	service = a.Exports().Services().Get("q.>")
+	service, ok := a.Exports().Services().Get("q.>")
+	t.True(ok)
 
 	tc = service.GetLatencyOptions()
 	t.NotNil(tc)
@@ -328,7 +331,7 @@ func (t *ProviderSuite) Test_ServiceExportTracing() {
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
-	service = a.Exports().Services().Get("q.>")
+	service, _ = a.Exports().Services().Get("q.>")
 	tc = service.GetLatencyOptions()
 	t.Nil(tc)
 }
@@ -385,8 +388,8 @@ func (t *ProviderSuite) Test_ServiceAllowTracing() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	se := a.Exports().Services().Get("q.>")
-	t.NotNil(se)
+	se, ok := a.Exports().Services().Get("q.>")
+	t.True(ok)
 	t.True(se.AllowTracing())
 }
 

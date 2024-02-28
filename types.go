@@ -390,7 +390,7 @@ type ServiceExports interface {
 	// AddWithConfig adds a copy of the specified configuration to the account
 	AddWithConfig(e ServiceExport) error
 	// Get returns the ServiceExport matching the subject or nil if not found
-	Get(subject string) ServiceExport
+	Get(subject string) (ServiceExport, bool)
 	// Delete deletes the ServiceExport matching the subject
 	Delete(subject string) (bool, error)
 	// GetByName returns the ServiceExport matching the specified name,
