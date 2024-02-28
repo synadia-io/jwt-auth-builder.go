@@ -39,8 +39,12 @@ func (s *serviceImports) AddWithConfig(i ServiceImport) error {
 	return s.update()
 }
 
-func (s *serviceImports) Get(subject string) ServiceImport {
-	return s.getServiceImport(subject)
+func (s *serviceImports) Get(subject string) (ServiceImport, bool) {
+	si := s.getServiceImport(subject)
+	if si == nil {
+		return nil, false
+	}
+	return si, true
 }
 
 func (s *serviceImports) GetByName(name string) ServiceImport {

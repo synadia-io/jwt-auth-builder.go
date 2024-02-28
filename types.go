@@ -375,7 +375,7 @@ type ServiceImports interface {
 	// AddWithConfig adds a copy of the specified import configuration to the account
 	AddWithConfig(i ServiceImport) error
 	// Get returns imports that are exported by accounts under the specified subject
-	Get(subject string) ServiceImport
+	Get(subject string) (ServiceImport, bool)
 	// GetByName returns an import stored under the specified name. Note that
 	// the first import is returned.
 	GetByName(name string) ServiceImport
