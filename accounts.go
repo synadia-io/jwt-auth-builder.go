@@ -94,6 +94,25 @@ func (a *AccountData) Revocations() Revocations {
 	return &revocations{data: a}
 }
 
+func (a *AccountData) GetTracingContext() *TracingContext {
+	if a.Claim.Trace == nil {
+		return nil
+	}
+	return &TracingContext{
+		Destination: string(a.Claim.Trace.Destination),
+		Sampling:    a.Claim.Trace.Sampling,
+	}
+}
+
+func (a *AccountData) SetTracingContext(opts *TracingContext) error {
+	if opts == nil || *opts == (TracingContext{}) {
+		a.Claim.Trace = nil
+	} else {
+		a.Claim.Trace = opts.toTrace()
+	}
+	return a.update()
+}
+
 func (a *AccountData) SetExpiry(exp int64) error {
 	a.Claim.Expires = exp
 	return a.update()

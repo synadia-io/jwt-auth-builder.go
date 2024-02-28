@@ -1,6 +1,9 @@
 package tests
 
-import authb "github.com/synadia-io/jwt-auth-builder.go"
+import (
+	"github.com/nats-io/nkeys"
+	authb "github.com/synadia-io/jwt-auth-builder.go"
+)
 
 func (t *ProviderSuite) Test_ImportServiceRequiresName() {
 	auth, err := authb.NewAuth(t.Provider)
@@ -356,6 +359,30 @@ func (t *ProviderSuite) Test_NewStreamImportSkToken() {
 	t.NoError(err)
 	t.NotEmpty(token)
 	t.NoError(si.SetToken(token))
+}
+
+func (t *ProviderSuite) Test_StreamImportAllowTracing() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	a := t.MaybeCreate(auth, "O", "A")
+	t.NoError(err)
+
+	ak, err := authb.KeyFor(nkeys.PrefixByteAccount)
+	t.NoError(err)
+	si, err := a.Imports().Streams().Add("X", ak.Public, "foo.>")
+	t.NoError(err)
+
+	t.False(si.AllowTracing())
+	t.NoError(si.SetAllowTracing(true))
+	t.True(si.AllowTracing())
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	si = a.Imports().Streams().Get("foo.>")
+	t.NotNil(si)
+	t.True(si.AllowTracing())
 }
 
 func (t *ProviderSuite) Test_NewServiceImportToken() {

@@ -817,3 +817,24 @@ func (t *ProviderSuite) Test_AccountRevokeWildcard() {
 	t.Len(revokes, 1)
 	t.Equal("*", revokes[0].PublicKey())
 }
+
+func (t *ProviderSuite) Test_TracingContext() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	a := t.MaybeCreate(auth, "O", "A")
+	t.NotNil(a)
+
+	t.Nil(a.GetTracingContext())
+	t.NoError(a.SetTracingContext(&authb.TracingContext{
+		Destination: "tracing.here",
+		Sampling:    100,
+	}))
+	tc := a.GetTracingContext()
+	t.NotNil(tc)
+	t.Equal("tracing.here", tc.Destination)
+	t.Equal(100, tc.Sampling)
+
+	t.NoError(a.SetTracingContext(nil))
+	t.Nil(a.GetTracingContext())
+}
