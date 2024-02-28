@@ -13,10 +13,10 @@ func (t *ProviderSuite) Test_OperatorBasics() {
 	operators := auth.Operators()
 	t.Empty(operators.List())
 
-	o, ok := auth.Operators().Get("O")
+	_, ok := auth.Operators().Get("O")
 	t.False(ok)
 
-	o, err = operators.Add("O")
+	o, err := operators.Add("O")
 	t.NoError(err)
 	t.NotNil(o)
 
@@ -44,9 +44,9 @@ func (t *ProviderSuite) Test_SkUpdate() {
 	operators := auth.Operators()
 	t.Empty(operators.List())
 
-	o, ok := auth.Operators().Get("O")
+	_, ok := auth.Operators().Get("O")
 	t.False(ok)
-	o, err = operators.Add("O")
+	o, err := operators.Add("O")
 	t.NoError(err)
 	t.NotNil(o)
 
@@ -88,7 +88,7 @@ func (t *ProviderSuite) Test_OperatorLoads() {
 
 	auth, err = authb.NewAuth(t.Provider)
 	t.NoError(err)
-	o, ok := auth.Operators().Get("O")
+	_, ok := auth.Operators().Get("O")
 	t.True(ok)
 }
 
@@ -221,15 +221,18 @@ func (t *ProviderSuite) Test_OperatorSystemAccount() {
 	t.NoError(err)
 	o, err := auth.Operators().Add("O")
 	t.NoError(err)
-	t.Nil(o.SystemAccount())
+	_, ok := o.SystemAccount()
+	t.False(ok)
 	a, err := o.Accounts().Add("SYS")
 	t.NoError(err)
 	t.NoError(o.SetSystemAccount(a))
-	t.NotNil(o.SystemAccount())
+	_, ok = o.SystemAccount()
+	t.True(ok)
 
 	t.Error(o.Accounts().Delete("SYS"))
 	t.NoError(o.SetSystemAccount(nil))
-	t.Nil(o.SystemAccount())
+	_, ok = o.SystemAccount()
+	t.False(ok)
 	t.NoError(o.Accounts().Delete("SYS"))
 }
 

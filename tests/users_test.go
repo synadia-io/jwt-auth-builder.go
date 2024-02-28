@@ -28,8 +28,8 @@ func (t *ProviderSuite) Test_UserBasics() {
 	t.NoError(auth.Reload())
 	o, ok := auth.Operators().Get("O")
 	t.True(ok)
-	a = o.Accounts().Get("A")
-	t.NoError(err)
+	a, ok = o.Accounts().Get("A")
+	t.True(ok)
 	u = a.Users().Get("U")
 	t.NotNil(u)
 	t.Equal(id, u.Subject())
@@ -119,8 +119,8 @@ func (t *ProviderSuite) Test_ScopedUserSetMaxSubscriptions() {
 
 	o, ok := auth.Operators().Get("O")
 	t.True(ok)
-	a := o.Accounts().Get("A")
-	t.NoError(err)
+	a, ok := o.Accounts().Get("A")
+	t.True(ok)
 	u = a.Users().Get("U")
 	t.NoError(err)
 	t.Equal(int64(100), u.MaxSubscriptions())
@@ -148,8 +148,8 @@ func (t *ProviderSuite) Test_ScopedUserSetMaxPayload() {
 
 	o, ok := auth.Operators().Get("O")
 	t.True(ok)
-	a := o.Accounts().Get("A")
-	t.NoError(err)
+	a, ok := o.Accounts().Get("A")
+	t.True(ok)
 	u = a.Users().Get("U")
 	t.NoError(err)
 	t.Equal(int64(100), u.MaxPayload())
@@ -177,7 +177,8 @@ func (t *ProviderSuite) Test_ScopedUserSetMaxData() {
 
 	o, ok := auth.Operators().Get("O")
 	t.True(ok)
-	a := o.Accounts().Get("A")
+	a, ok := o.Accounts().Get("A")
+	t.True(ok)
 	u = a.Users().Get("U")
 	t.Equal(int64(100), u.MaxData())
 }
@@ -332,8 +333,8 @@ func (t *ProviderSuite) Test_UsersAddedSave() {
 
 	o, ok := auth.Operators().Get("O")
 	t.True(ok)
-	a = o.Accounts().Get("A")
-	t.NotNil(a)
+	a, ok = o.Accounts().Get("A")
+	t.True(ok)
 
 	u, err := a.Users().Add("U", "")
 	t.NoError(err)
@@ -344,8 +345,8 @@ func (t *ProviderSuite) Test_UsersAddedSave() {
 
 	o, ok = auth.Operators().Get("O")
 	t.True(ok)
-	a = o.Accounts().Get("A")
-	t.NotNil(a)
+	a, ok = o.Accounts().Get("A")
+	t.True(ok)
 	u = a.Users().Get("U")
 	t.NotNil(u)
 }
@@ -365,7 +366,8 @@ func (t *ProviderSuite) Test_UsersAddedPermsSave() {
 
 	o, ok := auth.Operators().Get("O")
 	t.True(ok)
-	a = o.Accounts().Get("A")
+	a, ok = o.Accounts().Get("A")
+	t.True(ok)
 
 	u, err := a.Users().Add("U", "")
 	t.NoError(err)
@@ -382,8 +384,8 @@ func (t *ProviderSuite) Test_UsersAddedPermsSave() {
 
 	o, ok = auth.Operators().Get("O")
 	t.True(ok)
-	a = o.Accounts().Get("A")
-	t.NotNil(a)
+	a, ok = o.Accounts().Get("A")
+	t.True(ok)
 	u = a.Users().Get("U")
 	t.NotNil(u)
 
