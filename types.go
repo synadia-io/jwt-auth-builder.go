@@ -99,7 +99,7 @@ type Operators interface {
 	// Add creates a new Operator with the specified name
 	Add(name string) (Operator, error)
 	// Get returns an Operator by name or matching the specified ID
-	Get(name string) Operator
+	Get(name string) (Operator, bool)
 	// Delete an Operator by name or matching the specified ID
 	Delete(name string) error
 	// Import an Operator from JWT bytes and keys

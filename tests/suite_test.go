@@ -75,8 +75,8 @@ func (t *ProviderSuite) TearDownTest() {
 }
 
 func (t *ProviderSuite) GetAccount(auth nats_auth.Auth, operator string, account string) nats_auth.Account {
-	o := auth.Operators().Get(operator)
-	t.NotNil(o)
+	o, ok := auth.Operators().Get(operator)
+	t.True(ok)
 
 	a := o.Accounts().Get(account)
 	t.NotNil(a)
@@ -85,8 +85,8 @@ func (t *ProviderSuite) GetAccount(auth nats_auth.Auth, operator string, account
 
 func (t *ProviderSuite) MaybeCreate(auth nats_auth.Auth, operator string, account string) nats_auth.Account {
 	var err error
-	o := auth.Operators().Get(operator)
-	if o == nil {
+	o, ok := auth.Operators().Get(operator)
+	if ok == false {
 		o, err = auth.Operators().Add(operator)
 		t.NoError(err)
 	}

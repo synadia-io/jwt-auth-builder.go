@@ -187,9 +187,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsMaxSubs() {
 
 	t.NoError(auth.Reload())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
-	t.NotNil(o)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 
 	a = o.Accounts().Get("A")
 	t.NoError(err)
@@ -210,9 +209,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsMaxPayload() {
 
 	t.NoError(auth.Reload())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
-	t.NotNil(o)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 
 	a = o.Accounts().Get("A")
 	t.NoError(err)
@@ -233,9 +231,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsMaxData() {
 
 	t.NoError(auth.Reload())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
-	t.NotNil(o)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 
 	a = o.Accounts().Get("A")
 	t.NoError(err)
@@ -256,9 +253,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsBearerToken() {
 
 	t.NoError(auth.Reload())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
-	t.NotNil(o)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 
 	a = o.Accounts().Get("A")
 	t.NoError(err)
@@ -280,9 +276,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsConnectionTypes() {
 
 	t.NoError(auth.Reload())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
-	t.NotNil(o)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 
 	a = o.Accounts().Get("A")
 	t.NoError(err)
@@ -305,9 +300,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsConnectionSources() {
 
 	t.NoError(auth.Reload())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
-	t.NotNil(o)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 
 	a = o.Accounts().Get("A")
 	t.NoError(err)
@@ -330,9 +324,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsConnectionTimes() {
 
 	t.NoError(auth.Reload())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
-	t.NotNil(o)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 
 	a = o.Accounts().Get("A")
 	t.NoError(err)
@@ -355,9 +348,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsLocale() {
 
 	t.NoError(auth.Reload())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
-	t.NotNil(o)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 
 	a = o.Accounts().Get("A")
 	t.NoError(err)
@@ -685,8 +677,8 @@ func (t *ProviderSuite) Test_AccountSkUpdate() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o = operators.Get("O")
-	t.NotNil(o)
+	o, ok := operators.Get("O")
+	t.True(ok)
 
 	a = o.Accounts().Get("A")
 	t.NotNil(a)
@@ -698,8 +690,8 @@ func (t *ProviderSuite) Test_AccountSkUpdate() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o = operators.Get("O")
-	t.NotNil(o)
+	o, ok = operators.Get("O")
+	t.True(ok)
 	a = o.Accounts().Get("A")
 	t.NotNil(a)
 	scope, ok := a.ScopedSigningKeys().GetScope(k)

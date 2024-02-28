@@ -13,9 +13,9 @@ func (t *ProviderSuite) Test_OperatorBasics() {
 	operators := auth.Operators()
 	t.Empty(operators.List())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
-	t.Nil(o)
+	o, ok := auth.Operators().Get("O")
+	t.False(ok)
+
 	o, err = operators.Add("O")
 	t.NoError(err)
 	t.NotNil(o)
@@ -44,9 +44,8 @@ func (t *ProviderSuite) Test_SkUpdate() {
 	operators := auth.Operators()
 	t.Empty(operators.List())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
-	t.Nil(o)
+	o, ok := auth.Operators().Get("O")
+	t.False(ok)
 	o, err = operators.Add("O")
 	t.NoError(err)
 	t.NotNil(o)
@@ -54,8 +53,8 @@ func (t *ProviderSuite) Test_SkUpdate() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o = operators.Get("O")
-	t.NotNil(o)
+	o, ok = operators.Get("O")
+	t.True(ok)
 
 	k, err := o.SigningKeys().Add()
 	t.NoError(err)
@@ -64,8 +63,8 @@ func (t *ProviderSuite) Test_SkUpdate() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o = operators.Get("O")
-	t.NotNil(o)
+	o, ok = operators.Get("O")
+	t.True(ok)
 	keys := o.SigningKeys().List()
 	t.Len(keys, 1)
 	t.Contains(keys, k)
@@ -89,9 +88,8 @@ func (t *ProviderSuite) Test_OperatorLoads() {
 
 	auth, err = authb.NewAuth(t.Provider)
 	t.NoError(err)
-	o = auth.Operators().Get("O")
-	t.NoError(err)
-	t.NotNil(o)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 }
 
 func (t *ProviderSuite) Test_OperatorSigningKeys() {
@@ -247,7 +245,8 @@ func (t *ProviderSuite) Test_MemResolver() {
 	auth, err = authb.NewAuth(t.Provider)
 	t.NoError(err)
 
-	o := auth.Operators().Get("O")
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 
 	_, err = o.MemResolver()
 	t.NoError(err)
@@ -277,7 +276,8 @@ func (t *ProviderSuite) Test_OperatorImport() {
 
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
-	o = auth.Operators().Get("O")
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 	t.NotNil(o)
 	t.Equal(kp.Public, o.Subject())
 	t.Equal(skp.Public, o.SigningKeys().List()[0])

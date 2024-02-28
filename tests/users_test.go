@@ -26,8 +26,8 @@ func (t *ProviderSuite) Test_UserBasics() {
 	t.NotNil(key)
 
 	t.NoError(auth.Reload())
-	o = auth.Operators().Get("O")
-	t.NoError(err)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 	a = o.Accounts().Get("A")
 	t.NoError(err)
 	u = a.Users().Get("U")
@@ -117,8 +117,8 @@ func (t *ProviderSuite) Test_ScopedUserSetMaxSubscriptions() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 	a := o.Accounts().Get("A")
 	t.NoError(err)
 	u = a.Users().Get("U")
@@ -146,8 +146,8 @@ func (t *ProviderSuite) Test_ScopedUserSetMaxPayload() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 	a := o.Accounts().Get("A")
 	t.NoError(err)
 	u = a.Users().Get("U")
@@ -175,12 +175,10 @@ func (t *ProviderSuite) Test_ScopedUserSetMaxData() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 	a := o.Accounts().Get("A")
-	t.NoError(err)
 	u = a.Users().Get("U")
-	t.NoError(err)
 	t.Equal(int64(100), u.MaxData())
 }
 
@@ -332,8 +330,8 @@ func (t *ProviderSuite) Test_UsersAddedSave() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o = auth.Operators().Get("O")
-	t.NotNil(o)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 	a = o.Accounts().Get("A")
 	t.NotNil(a)
 
@@ -344,8 +342,8 @@ func (t *ProviderSuite) Test_UsersAddedSave() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o = auth.Operators().Get("O")
-	t.NotNil(o)
+	o, ok = auth.Operators().Get("O")
+	t.True(ok)
 	a = o.Accounts().Get("A")
 	t.NotNil(a)
 	u = a.Users().Get("U")
@@ -365,10 +363,9 @@ func (t *ProviderSuite) Test_UsersAddedPermsSave() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o = auth.Operators().Get("O")
-	t.NotNil(o)
+	o, ok := auth.Operators().Get("O")
+	t.True(ok)
 	a = o.Accounts().Get("A")
-	t.NotNil(a)
 
 	u, err := a.Users().Add("U", "")
 	t.NoError(err)
@@ -383,8 +380,8 @@ func (t *ProviderSuite) Test_UsersAddedPermsSave() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o = auth.Operators().Get("O")
-	t.NotNil(o)
+	o, ok = auth.Operators().Get("O")
+	t.True(ok)
 	a = o.Accounts().Get("A")
 	t.NotNil(a)
 	u = a.Users().Get("U")

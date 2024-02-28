@@ -39,13 +39,13 @@ func (a *OperatorsImpl) List() []Operator {
 	return v
 }
 
-func (a *OperatorsImpl) Get(name string) Operator {
+func (a *OperatorsImpl) Get(name string) (Operator, bool) {
 	for _, o := range a.auth.operators {
 		if o.EntityName == name || o.Subject() == name {
-			return o
+			return o, true
 		}
 	}
-	return nil
+	return nil, false
 }
 
 func (a *OperatorsImpl) Add(name string) (Operator, error) {
