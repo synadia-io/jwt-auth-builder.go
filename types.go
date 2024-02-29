@@ -417,7 +417,7 @@ type StreamExports interface {
 	// AddWithConfig adds a copy of the specified configuration to the account
 	AddWithConfig(e StreamExport) error
 	// Get returns the StreamExport matching the subject or nil if not found
-	Get(subject string) StreamExport
+	Get(subject string) (StreamExport, bool)
 	// Delete deletes the StreamExport matching the subject
 	Delete(subject string) (bool, error)
 	// GetByName returns the StreamExport matching the specified name,

@@ -80,8 +80,8 @@ func (t *ProviderSuite) Test_ExportTokenRequired() {
 	t.True(ok)
 	t.True(service.TokenRequired())
 
-	stream = a.Exports().Streams().Get("t.>")
-	t.NotNil(stream)
+	stream, ok = a.Exports().Streams().Get("t.>")
+	t.True(ok)
 	t.True(stream.TokenRequired())
 }
 
@@ -114,9 +114,11 @@ func (t *ProviderSuite) Test_ExportNameSubject() {
 	t.NoError(stream.SetName("ss"))
 	t.NoError(stream.SetSubject("st.>"))
 
-	t.Nil(a.Exports().Streams().Get("t.>"))
+	_, ok = a.Exports().Streams().Get("t.>")
+	t.False(ok)
 	t.Nil(a.Exports().Streams().GetByName("s"))
-	t.NotNil(a.Exports().Streams().Get("st.>"))
+	_, ok = a.Exports().Streams().Get("st.>")
+	t.True(ok)
 	t.NotNil(a.Exports().Streams().GetByName("ss"))
 }
 
@@ -142,8 +144,8 @@ func (t *ProviderSuite) Test_ExportDescription() {
 	t.True(ok)
 	t.Equal("desc", service.Description())
 
-	stream = a.Exports().Streams().Get("t.>")
-	t.NotNil(stream)
+	stream, ok = a.Exports().Streams().Get("t.>")
+	t.True(ok)
 	t.Equal("desc", stream.Description())
 }
 
@@ -169,8 +171,8 @@ func (t *ProviderSuite) Test_ExportInfoURL() {
 	t.True(ok)
 	t.Equal("https://service.com", service.InfoURL())
 
-	stream = a.Exports().Streams().Get("t.>")
-	t.NotNil(stream)
+	stream, ok = a.Exports().Streams().Get("t.>")
+	t.True(ok)
 	t.Equal("https://stream.com", stream.InfoURL())
 }
 
@@ -196,8 +198,8 @@ func (t *ProviderSuite) Test_ExportAccountTokenPosition() {
 	t.True(ok)
 	t.Equal(uint(2), service.AccountTokenPosition())
 
-	stream = a.Exports().Streams().Get("t.*")
-	t.NotNil(stream)
+	stream, ok = a.Exports().Streams().Get("t.*")
+	t.True(ok)
 	t.Equal(uint(2), stream.AccountTokenPosition())
 }
 
@@ -268,10 +270,10 @@ func (t *ProviderSuite) Test_StreamExportCrud() {
 	t.NoError(err)
 	t.Len(a.Exports().Streams().List(), 1)
 
-	stream := a.Exports().Streams().Get("q.>")
-	t.NotNil(stream)
+	_, ok := a.Exports().Streams().Get("q.>")
+	t.True(ok)
 
-	stream = a.Exports().Streams().GetByName("q")
+	stream := a.Exports().Streams().GetByName("q")
 	t.NotNil(stream)
 
 	x, err := authb.NewStreamExport("x", "x.>")
@@ -285,7 +287,7 @@ func (t *ProviderSuite) Test_StreamExportCrud() {
 	t.Equal("x.>", a.Exports().Streams().List()[0].Subject())
 	t.Equal("y.>", a.Exports().Streams().List()[1].Subject())
 
-	ok, err := a.Exports().Streams().Delete("x.>")
+	ok, err = a.Exports().Streams().Delete("x.>")
 	t.NoError(err)
 	t.True(ok)
 
