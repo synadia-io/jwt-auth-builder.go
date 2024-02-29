@@ -116,10 +116,12 @@ func (t *ProviderSuite) Test_ExportNameSubject() {
 
 	_, ok = a.Exports().Streams().Get("t.>")
 	t.False(ok)
-	t.Nil(a.Exports().Streams().GetByName("s"))
+	_, ok = a.Exports().Streams().GetByName("s")
+	t.False(ok)
 	_, ok = a.Exports().Streams().Get("st.>")
 	t.True(ok)
-	t.NotNil(a.Exports().Streams().GetByName("ss"))
+	_, ok = a.Exports().Streams().GetByName("ss")
+	t.True(ok)
 }
 
 func (t *ProviderSuite) Test_ExportDescription() {
@@ -273,8 +275,8 @@ func (t *ProviderSuite) Test_StreamExportCrud() {
 	_, ok := a.Exports().Streams().Get("q.>")
 	t.True(ok)
 
-	stream := a.Exports().Streams().GetByName("q")
-	t.NotNil(stream)
+	_, ok = a.Exports().Streams().GetByName("q")
+	t.True(ok)
 
 	x, err := authb.NewStreamExport("x", "x.>")
 	t.NoError(err)
