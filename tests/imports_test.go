@@ -98,9 +98,12 @@ func (t *ProviderSuite) Test_ImportNameSubject() {
 
 	_, ok = a.Imports().Streams().Get("t.>")
 	t.False(ok)
-	t.Nil(a.Imports().Streams().GetByName("s"))
-	t.NotNil(a.Imports().Streams().Get("tt.>"))
-	t.NotNil(a.Imports().Streams().GetByName("ss"))
+	_, ok = a.Imports().Streams().GetByName("s")
+	t.False(ok)
+	_, ok = a.Imports().Streams().Get("tt.>")
+	t.True(ok)
+	_, ok = a.Imports().Streams().GetByName("ss")
+	t.True(ok)
 }
 
 func (t *ProviderSuite) Test_ImportLocalSubject() {
@@ -193,8 +196,8 @@ func (t *ProviderSuite) Test_StreamImportCrud() {
 	_, ok := a.Imports().Streams().Get("q.>")
 	t.True(ok)
 
-	service := a.Imports().Streams().GetByName("q")
-	t.NotNil(service)
+	_, ok = a.Imports().Streams().GetByName("q")
+	t.True(ok)
 
 	x, err := authb.NewStreamImport("x", ak.Public, "x.>")
 	t.NoError(err)

@@ -405,7 +405,7 @@ type ServiceExports interface {
 type StreamImports interface {
 	Add(name string, account string, subject string) (StreamImport, error)
 	Get(subject string) (StreamImport, bool)
-	GetByName(name string) StreamImport
+	GetByName(name string) (StreamImport, bool)
 	Delete(subject string) (bool, error)
 	List() []StreamImport
 	Set(imports ...StreamImport) error
