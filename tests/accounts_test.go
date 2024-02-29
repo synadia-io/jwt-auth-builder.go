@@ -193,8 +193,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsMaxSubs() {
 	a, ok = o.Accounts().Get("A")
 	t.True(ok)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.NotNil(s)
+	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.True(ok)
 	t.Equal(int64(10), s.MaxSubscriptions())
 }
 
@@ -214,8 +214,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsMaxPayload() {
 	a, ok = o.Accounts().Get("A")
 	t.True(ok)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.NotNil(s)
+	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.True(ok)
 	t.Equal(int64(101), s.MaxPayload())
 }
 
@@ -236,8 +236,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsMaxData() {
 	t.True(ok)
 	t.NotNil(a)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.NotNil(s)
+	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.True(ok)
 	t.Equal(int64(4123), s.MaxData())
 }
 
@@ -257,8 +257,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsBearerToken() {
 	a, ok = o.Accounts().Get("A")
 	t.True(ok)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.NotNil(s)
+	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.True(ok)
 	t.True(s.BearerToken())
 }
 
@@ -279,8 +279,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsConnectionTypes() {
 	a, ok = o.Accounts().Get("A")
 	t.True(ok)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.NotNil(s)
+	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.True(ok)
 	types = s.ConnectionTypes()
 	t.Contains(types.Types(), "websocket")
 }
@@ -302,8 +302,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsConnectionSources() {
 	a, ok = o.Accounts().Get("A")
 	t.True(ok)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.NotNil(s)
+	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.True(ok)
 	sources = s.ConnectionSources()
 	t.Contains(sources.Sources(), "192.0.2.0/24")
 }
@@ -325,8 +325,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsConnectionTimes() {
 	a, ok = o.Accounts().Get("A")
 	t.True(ok)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.NotNil(s)
+	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.True(ok)
 	times = s.ConnectionTimes()
 	t.Len(times.List(), 1)
 	t.Equal(times.List()[0].Start, "08:00:00")
@@ -348,8 +348,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsLocale() {
 	a, ok = o.Accounts().Get("A")
 	t.True(ok)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.NotNil(s)
+	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.True(ok)
 	t.Equal("en_US", s.Locale())
 }
 
@@ -374,8 +374,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsSubject() {
 
 	t.NoError(auth.Reload())
 
-	admin = a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.NotNil(admin)
+	admin, ok := a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.True(ok)
 
 	t.Contains(admin.PubPermissions().Allow(), "foo")
 	t.Contains(admin.PubPermissions().Allow(), "bar")

@@ -70,16 +70,16 @@ func (as *accountSigningKeys) GetScope(key string) (ScopeLimits, bool) {
 	return nil, ok
 }
 
-func (as *accountSigningKeys) GetScopeByRole(role string) ScopeLimits {
+func (as *accountSigningKeys) GetScopeByRole(role string) (ScopeLimits, bool) {
 	for _, v := range as.data.Claim.SigningKeys {
 		if v != nil {
 			scope, ok := v.(*jwt.UserScope)
 			if ok && scope.Role == role {
-				return toScopeLimits(as.data, scope)
+				return toScopeLimits(as.data, scope), true
 			}
 		}
 	}
-	return nil
+	return nil, false
 }
 
 func (as *accountSigningKeys) Delete(key string) (bool, error) {
