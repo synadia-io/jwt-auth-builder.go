@@ -78,8 +78,8 @@ func (t *ProviderSuite) GetAccount(auth nats_auth.Auth, operator string, account
 	o, err := auth.Operators().Get(operator)
 	t.NoError(err)
 
-	a, ok := o.Accounts().Get(account)
-	t.True(ok)
+	a, err := o.Accounts().Get(account)
+	t.NoError(err)
 	return a
 }
 

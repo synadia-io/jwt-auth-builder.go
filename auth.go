@@ -2,6 +2,7 @@ package authb
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
@@ -138,4 +139,8 @@ func (a *AuthImpl) Reload() error {
 
 func (b *BaseData) JWT() string {
 	return b.Token
+}
+
+func isNil(i interface{}) bool {
+	return i == nil || reflect.ValueOf(i).IsNil()
 }

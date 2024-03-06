@@ -129,7 +129,7 @@ type Operator interface {
 	OperatorServiceURLs() []string
 	// SystemAccount returns the system account. If the system account is
 	// not found or not set, the bool argument is set to false
-	SystemAccount() (Account, bool)
+	SystemAccount() (Account, error)
 	// SetSystemAccount sets the system account
 	SetSystemAccount(account Account) error
 	// MemResolver generates a mem resolver server configuration
@@ -151,7 +151,7 @@ type Accounts interface {
 	// Delete an Account by matching its name or subject
 	Delete(name string) error
 	// Get returns an Account by matching its name or subject
-	Get(name string) (Account, bool)
+	Get(name string) (Account, error)
 	// List returns a list of Account
 	List() []Account
 }
