@@ -1,10 +1,13 @@
 package authb
 
 import (
+	"errors"
 	"time"
 
 	"github.com/nats-io/jwt/v2"
 )
+
+var ErrNotFound = errors.New("not found")
 
 // Auth is the interface for managing the auth store. Auth is created
 // using the NewAuth function
@@ -99,7 +102,7 @@ type Operators interface {
 	// Add creates a new Operator with the specified name
 	Add(name string) (Operator, error)
 	// Get returns an Operator by name or matching the specified ID
-	Get(name string) (Operator, bool)
+	Get(name string) (Operator, error)
 	// Delete an Operator by name or matching the specified ID
 	Delete(name string) error
 	// Import an Operator from JWT bytes and keys

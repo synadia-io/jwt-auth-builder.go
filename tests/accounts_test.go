@@ -15,7 +15,7 @@ func (t *ProviderSuite) Test_AccountsCrud() {
 	t.NoError(err)
 
 	accounts := o.Accounts().List()
-	t.Nil(err)
+	t.NoError(err)
 	t.Equal(0, len(accounts))
 
 	a, err := o.Accounts().Add("A")
@@ -33,14 +33,14 @@ func (t *ProviderSuite) Test_AccountsCrud() {
 	t.Equal("A", x.Name())
 
 	accounts = o.Accounts().List()
-	t.Nil(err)
+	t.NoError(err)
 	t.Equal(2, len(accounts))
 	t.Contains(accounts, a)
 	t.Contains(accounts, b)
 
 	t.NoError(o.Accounts().Delete("A"))
 	accounts = o.Accounts().List()
-	t.Nil(err)
+	t.NoError(err)
 	t.Equal(1, len(accounts))
 	t.Contains(accounts, b)
 
@@ -187,10 +187,10 @@ func (t *ProviderSuite) Test_ScopedPermissionsMaxSubs() {
 
 	t.NoError(auth.Reload())
 
-	o, ok := auth.Operators().Get("O")
-	t.True(ok)
+	o, err := auth.Operators().Get("O")
+	t.NoError(err)
 
-	a, ok = o.Accounts().Get("A")
+	a, ok := o.Accounts().Get("A")
 	t.True(ok)
 
 	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
@@ -208,10 +208,10 @@ func (t *ProviderSuite) Test_ScopedPermissionsMaxPayload() {
 
 	t.NoError(auth.Reload())
 
-	o, ok := auth.Operators().Get("O")
-	t.True(ok)
+	o, err := auth.Operators().Get("O")
+	t.NoError(err)
 
-	a, ok = o.Accounts().Get("A")
+	a, ok := o.Accounts().Get("A")
 	t.True(ok)
 
 	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
@@ -229,10 +229,10 @@ func (t *ProviderSuite) Test_ScopedPermissionsMaxData() {
 
 	t.NoError(auth.Reload())
 
-	o, ok := auth.Operators().Get("O")
-	t.True(ok)
+	o, err := auth.Operators().Get("O")
+	t.NoError(err)
 
-	a, ok = o.Accounts().Get("A")
+	a, ok := o.Accounts().Get("A")
 	t.True(ok)
 	t.NotNil(a)
 
@@ -251,10 +251,10 @@ func (t *ProviderSuite) Test_ScopedPermissionsBearerToken() {
 
 	t.NoError(auth.Reload())
 
-	o, ok := auth.Operators().Get("O")
-	t.True(ok)
+	o, err := auth.Operators().Get("O")
+	t.NoError(err)
 
-	a, ok = o.Accounts().Get("A")
+	a, ok := o.Accounts().Get("A")
 	t.True(ok)
 
 	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
@@ -273,10 +273,10 @@ func (t *ProviderSuite) Test_ScopedPermissionsConnectionTypes() {
 
 	t.NoError(auth.Reload())
 
-	o, ok := auth.Operators().Get("O")
-	t.True(ok)
+	o, err := auth.Operators().Get("O")
+	t.NoError(err)
 
-	a, ok = o.Accounts().Get("A")
+	a, ok := o.Accounts().Get("A")
 	t.True(ok)
 
 	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
@@ -296,10 +296,10 @@ func (t *ProviderSuite) Test_ScopedPermissionsConnectionSources() {
 
 	t.NoError(auth.Reload())
 
-	o, ok := auth.Operators().Get("O")
-	t.True(ok)
+	o, err := auth.Operators().Get("O")
+	t.NoError(err)
 
-	a, ok = o.Accounts().Get("A")
+	a, ok := o.Accounts().Get("A")
 	t.True(ok)
 
 	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
@@ -319,10 +319,10 @@ func (t *ProviderSuite) Test_ScopedPermissionsConnectionTimes() {
 
 	t.NoError(auth.Reload())
 
-	o, ok := auth.Operators().Get("O")
-	t.True(ok)
+	o, err := auth.Operators().Get("O")
+	t.NoError(err)
 
-	a, ok = o.Accounts().Get("A")
+	a, ok := o.Accounts().Get("A")
 	t.True(ok)
 
 	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
@@ -342,10 +342,10 @@ func (t *ProviderSuite) Test_ScopedPermissionsLocale() {
 
 	t.NoError(auth.Reload())
 
-	o, ok := auth.Operators().Get("O")
-	t.True(ok)
+	o, err := auth.Operators().Get("O")
+	t.NoError(err)
 
-	a, ok = o.Accounts().Get("A")
+	a, ok := o.Accounts().Get("A")
 	t.True(ok)
 
 	s, ok = a.ScopedSigningKeys().GetScopeByRole("admin")
@@ -670,10 +670,10 @@ func (t *ProviderSuite) Test_AccountSkUpdate() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o, ok := operators.Get("O")
-	t.True(ok)
+	o, err = operators.Get("O")
+	t.NoError(err)
 
-	a, ok = o.Accounts().Get("A")
+	a, ok := o.Accounts().Get("A")
 	t.True(ok)
 
 	k, err := a.ScopedSigningKeys().Add()
@@ -683,8 +683,8 @@ func (t *ProviderSuite) Test_AccountSkUpdate() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o, ok = operators.Get("O")
-	t.True(ok)
+	o, err = operators.Get("O")
+	t.NoError(err)
 	a, ok = o.Accounts().Get("A")
 	t.True(ok)
 	scope, ok := a.ScopedSigningKeys().GetScope(k)

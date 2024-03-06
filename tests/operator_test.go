@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"errors"
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 	authb "github.com/synadia-io/jwt-auth-builder.go"
@@ -13,8 +14,8 @@ func (t *ProviderSuite) Test_OperatorBasics() {
 	operators := auth.Operators()
 	t.Empty(operators.List())
 
-	_, ok := auth.Operators().Get("O")
-	t.False(ok)
+	_, err = auth.Operators().Get("O")
+	t.ErrorIs(err, authb.ErrNotFound)
 
 	o, err := operators.Add("O")
 	t.NoError(err)
@@ -44,8 +45,8 @@ func (t *ProviderSuite) Test_SkUpdate() {
 	operators := auth.Operators()
 	t.Empty(operators.List())
 
-	_, ok := auth.Operators().Get("O")
-	t.False(ok)
+	_, err = auth.Operators().Get("O")
+	t.True(errors.Is(err, authb.ErrNotFound))
 	o, err := operators.Add("O")
 	t.NoError(err)
 	t.NotNil(o)
@@ -53,8 +54,8 @@ func (t *ProviderSuite) Test_SkUpdate() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o, ok = operators.Get("O")
-	t.True(ok)
+	o, err = operators.Get("O")
+	t.NoError(err)
 
 	k, err := o.SigningKeys().Add()
 	t.NoError(err)
@@ -63,8 +64,8 @@ func (t *ProviderSuite) Test_SkUpdate() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o, ok = operators.Get("O")
-	t.True(ok)
+	o, err = operators.Get("O")
+	t.NoError(err)
 	keys := o.SigningKeys().List()
 	t.Len(keys, 1)
 	t.Contains(keys, k)
@@ -88,8 +89,8 @@ func (t *ProviderSuite) Test_OperatorLoads() {
 
 	auth, err = authb.NewAuth(t.Provider)
 	t.NoError(err)
-	_, ok := auth.Operators().Get("O")
-	t.True(ok)
+	_, err = auth.Operators().Get("O")
+	t.NoError(err)
 }
 
 func (t *ProviderSuite) Test_OperatorSigningKeys() {
@@ -248,8 +249,8 @@ func (t *ProviderSuite) Test_MemResolver() {
 	auth, err = authb.NewAuth(t.Provider)
 	t.NoError(err)
 
-	o, ok := auth.Operators().Get("O")
-	t.True(ok)
+	o, err := auth.Operators().Get("O")
+	t.NoError(err)
 
 	_, err = o.MemResolver()
 	t.NoError(err)
@@ -279,8 +280,8 @@ func (t *ProviderSuite) Test_OperatorImport() {
 
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
-	o, ok := auth.Operators().Get("O")
-	t.True(ok)
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
 	t.NotNil(o)
 	t.Equal(kp.Public, o.Subject())
 	t.Equal(skp.Public, o.SigningKeys().List()[0])
