@@ -44,6 +44,11 @@ func (as *accountSigningKeys) ListRoles() []string {
 	return roles
 }
 
+func (as *accountSigningKeys) Contains(sk string) (bool, bool) {
+	scope, ok := as.data.Claim.SigningKeys.GetScope(sk)
+	return ok, scope != nil
+}
+
 func (as *accountSigningKeys) AddScope(role string) (ScopeLimits, error) {
 	k, err := KeyFor(nkeys.PrefixByteAccount)
 	if err != nil {
@@ -61,25 +66,25 @@ func (as *accountSigningKeys) AddScope(role string) (ScopeLimits, error) {
 	return toScopeLimits(as.data, conf), nil
 }
 
-func (as *accountSigningKeys) GetScope(key string) (ScopeLimits, bool) {
+func (as *accountSigningKeys) GetScope(key string) (ScopeLimits, error) {
 	scope, ok := as.data.Claim.SigningKeys.GetScope(key)
 	if ok && scope != nil {
 		us := scope.(*jwt.UserScope)
-		return toScopeLimits(as.data, us), ok
+		return toScopeLimits(as.data, us), nil
 	}
-	return nil, ok
+	return nil, ErrNotFound
 }
 
-func (as *accountSigningKeys) GetScopeByRole(role string) (ScopeLimits, bool) {
+func (as *accountSigningKeys) GetScopeByRole(role string) (ScopeLimits, error) {
 	for _, v := range as.data.Claim.SigningKeys {
 		if v != nil {
 			scope, ok := v.(*jwt.UserScope)
 			if ok && scope.Role == role {
-				return toScopeLimits(as.data, scope), true
+				return toScopeLimits(as.data, scope), nil
 			}
 		}
 	}
-	return nil, false
+	return nil, ErrNotFound
 }
 
 func (as *accountSigningKeys) Delete(key string) (bool, error) {

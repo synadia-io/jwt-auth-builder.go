@@ -102,7 +102,7 @@ func (t *ProviderSuite) Test_ExportNameSubject() {
 	_, err = a.Exports().Services().GetByName("q")
 	t.ErrorIs(err, authb.ErrNotFound)
 	_, err = a.Exports().Services().Get("qq.>")
-	t.NoError(nil)
+	t.NoError(err)
 	_, err = a.Exports().Services().GetByName("qq")
 	t.NoError(err)
 

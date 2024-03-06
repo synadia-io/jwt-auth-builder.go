@@ -193,8 +193,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsMaxSubs() {
 	a, err = o.Accounts().Get("A")
 	t.NoError(err)
 
-	s, ok := a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.True(ok)
+	s, err = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.NoError(err)
 	t.Equal(int64(10), s.MaxSubscriptions())
 }
 
@@ -214,8 +214,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsMaxPayload() {
 	a, err = o.Accounts().Get("A")
 	t.NoError(err)
 
-	s, ok := a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.True(ok)
+	s, err = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.NoError(err)
 	t.Equal(int64(101), s.MaxPayload())
 }
 
@@ -236,8 +236,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsMaxData() {
 	t.NoError(err)
 	t.NotNil(a)
 
-	s, ok := a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.True(ok)
+	s, err = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.NoError(err)
 	t.Equal(int64(4123), s.MaxData())
 }
 
@@ -257,8 +257,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsBearerToken() {
 	a, err = o.Accounts().Get("A")
 	t.NoError(err)
 
-	s, ok := a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.True(ok)
+	s, err = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.NoError(err)
 	t.True(s.BearerToken())
 }
 
@@ -279,8 +279,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsConnectionTypes() {
 	a, err = o.Accounts().Get("A")
 	t.NoError(err)
 
-	s, ok := a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.True(ok)
+	s, err = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.NoError(err)
 	types = s.ConnectionTypes()
 	t.Contains(types.Types(), "websocket")
 }
@@ -302,8 +302,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsConnectionSources() {
 	a, err = o.Accounts().Get("A")
 	t.NoError(err)
 
-	s, ok := a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.True(ok)
+	s, err = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.NoError(err)
 	sources = s.ConnectionSources()
 	t.Contains(sources.Sources(), "192.0.2.0/24")
 }
@@ -325,8 +325,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsConnectionTimes() {
 	a, err = o.Accounts().Get("A")
 	t.NoError(err)
 
-	s, ok := a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.True(ok)
+	s, err = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.NoError(err)
 	times = s.ConnectionTimes()
 	t.Len(times.List(), 1)
 	t.Equal(times.List()[0].Start, "08:00:00")
@@ -348,8 +348,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsLocale() {
 	a, err = o.Accounts().Get("A")
 	t.NoError(err)
 
-	s, ok := a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.True(ok)
+	s, err = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.NoError(err)
 	t.Equal("en_US", s.Locale())
 }
 
@@ -374,8 +374,8 @@ func (t *ProviderSuite) Test_ScopedPermissionsSubject() {
 
 	t.NoError(auth.Reload())
 
-	admin, ok := a.ScopedSigningKeys().GetScopeByRole("admin")
-	t.True(ok)
+	admin, err = a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.NoError(err)
 
 	t.Contains(admin.PubPermissions().Allow(), "foo")
 	t.Contains(admin.PubPermissions().Allow(), "bar")
@@ -403,28 +403,28 @@ func (t *ProviderSuite) Test_ScopeRotation() {
 	scope, err := a.ScopedSigningKeys().AddScope("admin")
 	t.NoError(err)
 	t.NotNil(scope)
-	scope2, ok := a.ScopedSigningKeys().GetScope(scope.Key())
-	t.True(ok)
+	scope2, err := a.ScopedSigningKeys().GetScope(scope.Key())
+	t.NoError(err)
 	t.NotNil(scope2)
 
 	key, err := a.ScopedSigningKeys().Rotate(scope.Key())
 	t.NoError(err)
 	t.NotEmpty(key)
 
-	scope2, ok = a.ScopedSigningKeys().GetScope(scope.Key())
-	t.False(ok)
+	scope2, err = a.ScopedSigningKeys().GetScope(scope.Key())
+	t.ErrorIs(err, authb.ErrNotFound)
 	t.Nil(scope2)
 
-	scope2, ok = a.ScopedSigningKeys().GetScope(key)
-	t.True(ok)
+	scope2, err = a.ScopedSigningKeys().GetScope(key)
+	t.NoError(err)
 	t.NotNil(scope2)
 
-	ok, err = a.ScopedSigningKeys().Delete(key)
+	ok, err := a.ScopedSigningKeys().Delete(key)
 	t.NoError(err)
 	t.True(ok)
 
-	scope2, ok = a.ScopedSigningKeys().GetScope(key)
-	t.False(ok)
+	scope2, err = a.ScopedSigningKeys().GetScope(key)
+	t.ErrorIs(err, authb.ErrNotFound)
 	t.Nil(scope2)
 }
 
@@ -440,8 +440,9 @@ func (t *ProviderSuite) Test_SigningKeyRotation() {
 	sk, err := a.ScopedSigningKeys().Add()
 	t.NoError(err)
 	t.NotEmpty(sk)
-	scope, ok := a.ScopedSigningKeys().GetScope(sk)
-	t.True(ok)
+
+	scope, err := a.ScopedSigningKeys().GetScope(sk)
+	t.ErrorIs(err, authb.ErrNotFound)
 	t.Nil(scope)
 
 	u, err := a.Users().Add("U", sk)
@@ -687,9 +688,9 @@ func (t *ProviderSuite) Test_AccountSkUpdate() {
 	t.NoError(err)
 	a, err = o.Accounts().Get("A")
 	t.NoError(err)
-	scope, ok := a.ScopedSigningKeys().GetScope(k)
-	t.Nil(scope)
-	t.True(ok)
+	exists, isScope := a.ScopedSigningKeys().Contains(k)
+	t.True(exists)
+	t.False(isScope)
 }
 
 func (t *ProviderSuite) Test_AccountSigningKeys() {
