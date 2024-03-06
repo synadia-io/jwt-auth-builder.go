@@ -58,8 +58,8 @@ func (t *ProviderSuite) Test_ExportRevocationRequiresAccountToken() {
 	t.Len(revocations, 1)
 	t.Equal(ak.Public, revocations[0].PublicKey())
 
-	stream, ok := a.Exports().Streams().Get("t.>")
-	t.True(ok)
+	stream, err = a.Exports().Streams().Get("t.>")
+	t.NoError(err)
 	revocations = stream.Revocations().List()
 	t.Len(revocations, 1)
 	t.Equal(ak.Public, revocations[0].PublicKey())
@@ -91,8 +91,8 @@ func (t *ProviderSuite) Test_ExportRevocationWildCardIsAllowed() {
 	t.Len(revocations, 1)
 	t.Equal("*", revocations[0].PublicKey())
 
-	stream, ok := a.Exports().Streams().Get("t.>")
-	t.True(ok)
+	stream, err = a.Exports().Streams().Get("t.>")
+	t.NoError(err)
 	revocations = stream.Revocations().List()
 	t.Len(revocations, 1)
 	t.Equal("*", revocations[0].PublicKey())

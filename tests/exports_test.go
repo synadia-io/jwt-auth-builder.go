@@ -80,8 +80,8 @@ func (t *ProviderSuite) Test_ExportTokenRequired() {
 	t.NoError(err)
 	t.True(service.TokenRequired())
 
-	stream, ok := a.Exports().Streams().Get("t.>")
-	t.True(ok)
+	stream, err = a.Exports().Streams().Get("t.>")
+	t.NoError(err)
 	t.True(stream.TokenRequired())
 }
 
@@ -114,12 +114,12 @@ func (t *ProviderSuite) Test_ExportNameSubject() {
 	t.NoError(stream.SetName("ss"))
 	t.NoError(stream.SetSubject("st.>"))
 
-	_, ok := a.Exports().Streams().Get("t.>")
+	_, err = a.Exports().Streams().Get("t.>")
+	t.ErrorIs(err, authb.ErrNotFound)
+	_, ok := a.Exports().Streams().GetByName("s")
 	t.False(ok)
-	_, ok = a.Exports().Streams().GetByName("s")
-	t.False(ok)
-	_, ok = a.Exports().Streams().Get("st.>")
-	t.True(ok)
+	_, err = a.Exports().Streams().Get("st.>")
+	t.NoError(err)
 	_, ok = a.Exports().Streams().GetByName("ss")
 	t.True(ok)
 }
@@ -146,8 +146,8 @@ func (t *ProviderSuite) Test_ExportDescription() {
 	t.NoError(err)
 	t.Equal("desc", service.Description())
 
-	stream, ok := a.Exports().Streams().Get("t.>")
-	t.True(ok)
+	stream, err = a.Exports().Streams().Get("t.>")
+	t.NoError(err)
 	t.Equal("desc", stream.Description())
 }
 
@@ -173,8 +173,8 @@ func (t *ProviderSuite) Test_ExportInfoURL() {
 	t.NoError(err)
 	t.Equal("https://service.com", service.InfoURL())
 
-	stream, ok := a.Exports().Streams().Get("t.>")
-	t.True(ok)
+	stream, err = a.Exports().Streams().Get("t.>")
+	t.NoError(err)
 	t.Equal("https://stream.com", stream.InfoURL())
 }
 
@@ -200,8 +200,8 @@ func (t *ProviderSuite) Test_ExportAccountTokenPosition() {
 	t.NoError(err)
 	t.Equal(uint(2), service.AccountTokenPosition())
 
-	stream, ok := a.Exports().Streams().Get("t.*")
-	t.True(ok)
+	stream, err = a.Exports().Streams().Get("t.*")
+	t.NoError(err)
 	t.Equal(uint(2), stream.AccountTokenPosition())
 }
 
@@ -272,10 +272,10 @@ func (t *ProviderSuite) Test_StreamExportCrud() {
 	t.NoError(err)
 	t.Len(a.Exports().Streams().List(), 1)
 
-	_, ok := a.Exports().Streams().Get("q.>")
-	t.True(ok)
+	_, err = a.Exports().Streams().Get("q.>")
+	t.NoError(err)
 
-	_, ok = a.Exports().Streams().GetByName("q")
+	_, ok := a.Exports().Streams().GetByName("q")
 	t.True(ok)
 
 	x, err := authb.NewStreamExport("x", "x.>")

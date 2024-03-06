@@ -10,12 +10,12 @@ type streamExports struct {
 	*AccountData
 }
 
-func (s *streamExports) Get(subject string) (StreamExport, bool) {
+func (s *streamExports) Get(subject string) (StreamExport, error) {
 	se := s.getStreamExport(subject)
 	if se != nil {
-		return se, true
+		return se, nil
 	}
-	return nil, false
+	return nil, ErrNotFound
 }
 
 func (s *streamExports) AddWithConfig(e StreamExport) error {
