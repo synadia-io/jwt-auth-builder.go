@@ -398,7 +398,7 @@ type ServiceExports interface {
 	Delete(subject string) (bool, error)
 	// GetByName returns the ServiceExport matching the specified name,
 	// note that the first service is returned
-	GetByName(name string) (ServiceExport, bool)
+	GetByName(name string) (ServiceExport, error)
 	// List returns a list of ServiceExport in the account
 	List() []ServiceExport
 	// Set replaces all serviceExports with the specified ones

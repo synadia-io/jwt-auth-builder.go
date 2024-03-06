@@ -99,12 +99,12 @@ func (t *ProviderSuite) Test_ExportNameSubject() {
 
 	_, err = a.Exports().Services().Get("q.>")
 	t.ErrorIs(err, authb.ErrNotFound)
-	_, ok := a.Exports().Services().GetByName("q")
-	t.False(ok)
+	_, err = a.Exports().Services().GetByName("q")
+	t.ErrorIs(err, authb.ErrNotFound)
 	_, err = a.Exports().Services().Get("qq.>")
 	t.NoError(nil)
-	_, ok = a.Exports().Services().GetByName("qq")
-	t.True(ok)
+	_, err = a.Exports().Services().GetByName("qq")
+	t.NoError(err)
 
 	stream, err := a.Exports().Streams().Add("s", "t.>")
 	t.NoError(err)
@@ -114,7 +114,7 @@ func (t *ProviderSuite) Test_ExportNameSubject() {
 	t.NoError(stream.SetName("ss"))
 	t.NoError(stream.SetSubject("st.>"))
 
-	_, ok = a.Exports().Streams().Get("t.>")
+	_, ok := a.Exports().Streams().Get("t.>")
 	t.False(ok)
 	_, ok = a.Exports().Streams().GetByName("s")
 	t.False(ok)
@@ -232,8 +232,8 @@ func (t *ProviderSuite) Test_ServiceExportCrud() {
 	_, err = a.Exports().Services().Get("q.>")
 	t.NoError(err)
 
-	_, ok := a.Exports().Services().GetByName("q")
-	t.True(ok)
+	_, err = a.Exports().Services().GetByName("q")
+	t.NoError(err)
 
 	x, err := authb.NewServiceExport("x", "x.>")
 	t.NoError(err)
@@ -252,7 +252,7 @@ func (t *ProviderSuite) Test_ServiceExportCrud() {
 	t.Equal("y.>", a.Exports().Services().List()[1].Subject())
 	t.Len(a.Exports().Streams().List(), 1)
 
-	ok, err = a.Exports().Services().Delete("x.>")
+	ok, err := a.Exports().Services().Delete("x.>")
 	t.NoError(err)
 	t.True(ok)
 
