@@ -425,7 +425,7 @@ type StreamExports interface {
 	Delete(subject string) (bool, error)
 	// GetByName returns the StreamExport matching the specified name,
 	// note that the first stream is returned
-	GetByName(name string) (StreamExport, bool)
+	GetByName(name string) (StreamExport, error)
 	// List returns a list of StreamExport in the account
 	List() []StreamExport
 	// Set replaces all streamExports with the specified ones

@@ -66,16 +66,16 @@ func (s *streamExports) Delete(subject string) (bool, error) {
 	return s.deleteExport(subject, false)
 }
 
-func (s *streamExports) GetByName(name string) (StreamExport, bool) {
+func (s *streamExports) GetByName(name string) (StreamExport, error) {
 	for _, e := range s.Claim.Exports {
 		if e.IsStream() && e.Name == name {
 			se := &StreamExportImpl{}
 			se.data = s.AccountData
 			se.export = e
-			return se, true
+			return se, nil
 		}
 	}
-	return nil, false
+	return nil, ErrNotFound
 }
 
 func (s *streamExports) List() []StreamExport {
