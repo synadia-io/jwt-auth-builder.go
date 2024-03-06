@@ -1,8 +1,8 @@
 package tests
 
 import (
-	"errors"
 	"encoding/json"
+	"errors"
 
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
@@ -321,7 +321,10 @@ func (t *ProviderSuite) Test_Export() {
 	t.NoError(auth2.Commit())
 	t.NoError(auth2.Reload())
 
-	t.NotNil(auth2.Operators().Get("O"))
-	t.NotNil(auth2.Operators().Get("O").Accounts().Get("A"))
-	t.NotNil(auth2.Operators().Get("O").Accounts().Get("A").Users().Get("U"))
+	o, err := auth2.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+	_, err = a.Users().Get("U")
+	t.NoError(err)
 }

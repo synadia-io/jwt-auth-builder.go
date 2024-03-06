@@ -1,8 +1,8 @@
 package authb
 
 import (
-	"errors"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/nats-io/jwt/v2"
