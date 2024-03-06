@@ -98,12 +98,12 @@ func (t *ProviderSuite) Test_ImportNameSubject() {
 
 	_, err = a.Imports().Streams().Get("t.>")
 	t.ErrorIs(err, authb.ErrNotFound)
-	_, ok = a.Imports().Streams().GetByName("s")
-	t.False(ok)
+	_, err = a.Imports().Streams().GetByName("s")
+	t.ErrorIs(err, authb.ErrNotFound)
 	_, err = a.Imports().Streams().Get("tt.>")
 	t.NoError(err)
-	_, ok = a.Imports().Streams().GetByName("ss")
-	t.True(ok)
+	_, err = a.Imports().Streams().GetByName("ss")
+	t.NoError(err)
 }
 
 func (t *ProviderSuite) Test_ImportLocalSubject() {
@@ -196,8 +196,8 @@ func (t *ProviderSuite) Test_StreamImportCrud() {
 	_, err = a.Imports().Streams().Get("q.>")
 	t.NoError(err)
 
-	_, ok := a.Imports().Streams().GetByName("q")
-	t.True(ok)
+	_, err = a.Imports().Streams().GetByName("q")
+	t.NoError(err)
 
 	x, err := authb.NewStreamImport("x", ak.Public, "x.>")
 	t.NoError(err)
@@ -216,7 +216,7 @@ func (t *ProviderSuite) Test_StreamImportCrud() {
 	t.Equal("y.>", a.Imports().Streams().List()[1].Subject())
 	t.Len(a.Imports().Services().List(), 1)
 
-	ok, err = a.Imports().Streams().Delete("x.>")
+	ok, err := a.Imports().Streams().Delete("x.>")
 	t.NoError(err)
 	t.True(ok)
 

@@ -62,16 +62,16 @@ func (s *streamImports) Delete(subject string) (bool, error) {
 	return s.deleteImport(subject, false)
 }
 
-func (a *AccountData) GetByName(name string) (StreamImport, bool) {
+func (a *AccountData) GetByName(name string) (StreamImport, error) {
 	for _, e := range a.Claim.Imports {
 		if e.IsStream() && e.Name == name {
 			se := &StreamImportImpl{}
 			se.data = a
 			se.in = e
-			return se, true
+			return se, nil
 		}
 	}
-	return nil, false
+	return nil, ErrNotFound
 }
 
 func (s *streamImports) List() []StreamImport {
