@@ -96,12 +96,12 @@ func (t *ProviderSuite) Test_ImportNameSubject() {
 	t.NoError(s.SetSubject("tt.>"))
 	t.NoError(s.SetAccount(akk.Public))
 
-	_, ok = a.Imports().Streams().Get("t.>")
-	t.False(ok)
+	_, err = a.Imports().Streams().Get("t.>")
+	t.ErrorIs(err, authb.ErrNotFound)
 	_, ok = a.Imports().Streams().GetByName("s")
 	t.False(ok)
-	_, ok = a.Imports().Streams().Get("tt.>")
-	t.True(ok)
+	_, err = a.Imports().Streams().Get("tt.>")
+	t.NoError(err)
 	_, ok = a.Imports().Streams().GetByName("ss")
 	t.True(ok)
 }
@@ -136,8 +136,8 @@ func (t *ProviderSuite) Test_ImportLocalSubject() {
 	t.True(ok)
 	t.Equal("myq", im.LocalSubject())
 
-	s, ok = a.Imports().Streams().Get("t.>")
-	t.True(ok)
+	s, err = a.Imports().Streams().Get("t.>")
+	t.NoError(err)
 	t.Equal("ss.>", s.LocalSubject())
 }
 
@@ -193,10 +193,10 @@ func (t *ProviderSuite) Test_StreamImportCrud() {
 	t.NoError(err)
 	t.NotNil(im)
 
-	_, ok := a.Imports().Streams().Get("q.>")
-	t.True(ok)
+	_, err = a.Imports().Streams().Get("q.>")
+	t.NoError(err)
 
-	_, ok = a.Imports().Streams().GetByName("q")
+	_, ok := a.Imports().Streams().GetByName("q")
 	t.True(ok)
 
 	x, err := authb.NewStreamImport("x", ak.Public, "x.>")
@@ -390,8 +390,8 @@ func (t *ProviderSuite) Test_StreamImportAllowTracing() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	si, ok := a.Imports().Streams().Get("foo.>")
-	t.True(ok)
+	si, err = a.Imports().Streams().Get("foo.>")
+	t.NoError(err)
 	t.True(si.AllowTracing())
 }
 

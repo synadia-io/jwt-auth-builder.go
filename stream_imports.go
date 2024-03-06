@@ -9,12 +9,12 @@ type streamImports struct {
 	*AccountData
 }
 
-func (s *streamImports) Get(subject string) (StreamImport, bool) {
+func (s *streamImports) Get(subject string) (StreamImport, error) {
 	si := s.getStreamImport(subject)
 	if si != nil {
-		return si, true
+		return si, nil
 	}
-	return nil, false
+	return nil, ErrNotFound
 }
 
 func (s *streamImports) AddWithConfig(i StreamImport) error {
