@@ -45,13 +45,13 @@ func (a *UsersImpl) Add(name string, key string) (User, error) {
 	return d, nil
 }
 
-func (a *UsersImpl) Get(name string) (User, bool) {
+func (a *UsersImpl) Get(name string) (User, error) {
 	for _, u := range a.accountData.UserDatas {
 		if u.EntityName == name || u.Claim.Subject == name {
-			return u, true
+			return u, nil
 		}
 	}
-	return nil, false
+	return nil, ErrNotFound
 }
 
 func (a *UsersImpl) List() []User {

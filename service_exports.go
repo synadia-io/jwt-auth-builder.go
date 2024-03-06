@@ -10,12 +10,12 @@ type serviceExports struct {
 	*AccountData
 }
 
-func (s *serviceExports) Get(subject string) (ServiceExport, bool) {
+func (s *serviceExports) Get(subject string) (ServiceExport, error) {
 	se := s.getServiceExport(subject)
 	if se == nil {
-		return nil, false
+		return nil, ErrNotFound
 	}
-	return se, true
+	return se, nil
 }
 
 func (s *serviceExports) GetByName(name string) (ServiceExport, bool) {

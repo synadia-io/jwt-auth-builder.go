@@ -76,11 +76,11 @@ func (t *ProviderSuite) Test_ExportTokenRequired() {
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
-	service, ok := a.Exports().Services().Get("q.>")
-	t.True(ok)
+	service, err = a.Exports().Services().Get("q.>")
+	t.NoError(err)
 	t.True(service.TokenRequired())
 
-	stream, ok = a.Exports().Streams().Get("t.>")
+	stream, ok := a.Exports().Streams().Get("t.>")
 	t.True(ok)
 	t.True(stream.TokenRequired())
 }
@@ -97,12 +97,12 @@ func (t *ProviderSuite) Test_ExportNameSubject() {
 	t.NoError(service.SetName("qq"))
 	t.NoError(service.SetSubject("qq.>"))
 
-	_, ok := a.Exports().Services().Get("q.>")
+	_, err = a.Exports().Services().Get("q.>")
+	t.ErrorIs(err, authb.ErrNotFound)
+	_, ok := a.Exports().Services().GetByName("q")
 	t.False(ok)
-	_, ok = a.Exports().Services().GetByName("q")
-	t.False(ok)
-	_, ok = a.Exports().Services().Get("qq.>")
-	t.True(ok)
+	_, err = a.Exports().Services().Get("qq.>")
+	t.NoError(nil)
 	_, ok = a.Exports().Services().GetByName("qq")
 	t.True(ok)
 
@@ -142,11 +142,11 @@ func (t *ProviderSuite) Test_ExportDescription() {
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
-	service, ok := a.Exports().Services().Get("q.>")
-	t.True(ok)
+	service, err = a.Exports().Services().Get("q.>")
+	t.NoError(err)
 	t.Equal("desc", service.Description())
 
-	stream, ok = a.Exports().Streams().Get("t.>")
+	stream, ok := a.Exports().Streams().Get("t.>")
 	t.True(ok)
 	t.Equal("desc", stream.Description())
 }
@@ -169,11 +169,11 @@ func (t *ProviderSuite) Test_ExportInfoURL() {
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
-	service, ok := a.Exports().Services().Get("q.>")
-	t.True(ok)
+	service, err = a.Exports().Services().Get("q.>")
+	t.NoError(err)
 	t.Equal("https://service.com", service.InfoURL())
 
-	stream, ok = a.Exports().Streams().Get("t.>")
+	stream, ok := a.Exports().Streams().Get("t.>")
 	t.True(ok)
 	t.Equal("https://stream.com", stream.InfoURL())
 }
@@ -196,11 +196,11 @@ func (t *ProviderSuite) Test_ExportAccountTokenPosition() {
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
-	service, ok := a.Exports().Services().Get("q.*")
-	t.True(ok)
+	service, err = a.Exports().Services().Get("q.*")
+	t.NoError(err)
 	t.Equal(uint(2), service.AccountTokenPosition())
 
-	stream, ok = a.Exports().Streams().Get("t.*")
+	stream, ok := a.Exports().Streams().Get("t.*")
 	t.True(ok)
 	t.Equal(uint(2), stream.AccountTokenPosition())
 }
@@ -229,10 +229,10 @@ func (t *ProviderSuite) Test_ServiceExportCrud() {
 	t.NoError(err)
 	t.Len(a.Exports().Services().List(), 1)
 
-	_, ok := a.Exports().Services().Get("q.>")
-	t.True(ok)
+	_, err = a.Exports().Services().Get("q.>")
+	t.NoError(err)
 
-	_, ok = a.Exports().Services().GetByName("q")
+	_, ok := a.Exports().Services().GetByName("q")
 	t.True(ok)
 
 	x, err := authb.NewServiceExport("x", "x.>")
@@ -322,8 +322,8 @@ func (t *ProviderSuite) Test_ServiceExportTracing() {
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
-	service, ok := a.Exports().Services().Get("q.>")
-	t.True(ok)
+	service, err = a.Exports().Services().Get("q.>")
+	t.NoError(err)
 
 	tc = service.GetLatencyOptions()
 	t.NotNil(tc)
@@ -394,8 +394,8 @@ func (t *ProviderSuite) Test_ServiceAllowTracing() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	se, ok := a.Exports().Services().Get("q.>")
-	t.True(ok)
+	se, err := a.Exports().Services().Get("q.>")
+	t.NoError(err)
 	t.True(se.AllowTracing())
 }
 
