@@ -2,9 +2,13 @@ package tests
 
 import (
 	"errors"
+	"encoding/json"
+
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 	authb "github.com/synadia-io/jwt-auth-builder.go"
+	"github.com/synadia-io/jwt-auth-builder.go/providers/nsc"
+	"os"
 )
 
 func (t *ProviderSuite) Test_OperatorBasics() {
@@ -288,4 +292,36 @@ func (t *ProviderSuite) Test_OperatorImport() {
 	t.NotNil(o)
 	t.Equal(kp.Public, o.Subject())
 	t.Equal(skp.Public, o.SigningKeys().List()[0])
+}
+
+func (t *ProviderSuite) Test_Export() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+	a := t.MaybeCreate(auth, "O", "A")
+	u, err := a.Users().Add("U", a.Subject())
+	t.NoError(err)
+	t.NotNil(u)
+
+	data, err := json.MarshalIndent(auth, "", "  ")
+	t.NoError(err)
+	t.T().Log(string(data))
+
+	sdir, err := os.MkdirTemp("/tmp", "stores")
+	t.NoError(err)
+	defer os.RemoveAll(sdir)
+
+	kdir, err := os.MkdirTemp("/tmp", "keys")
+	t.NoError(err)
+	defer os.RemoveAll(kdir)
+
+	auth2, err := authb.NewAuth(nsc.NewNscProvider(sdir, kdir))
+	t.NoError(err)
+
+	t.NoError(json.Unmarshal(data, &auth2))
+	t.NoError(auth2.Commit())
+	t.NoError(auth2.Reload())
+
+	t.NotNil(auth2.Operators().Get("O"))
+	t.NotNil(auth2.Operators().Get("O").Accounts().Get("A"))
+	t.NotNil(auth2.Operators().Get("O").Accounts().Get("A").Users().Get("U"))
 }

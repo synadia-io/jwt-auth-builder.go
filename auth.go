@@ -1,6 +1,7 @@
 package authb
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -26,6 +27,25 @@ func NewAuth(provider AuthProvider) (*AuthImpl, error) {
 
 type OperatorsImpl struct {
 	auth *AuthImpl
+}
+
+func (a *AuthImpl) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Operators []*OperatorData `json:"operators"`
+	}{
+		Operators: a.operators,
+	})
+}
+
+func (a *AuthImpl) UnmarshalJSON(data []byte) error {
+	var v struct {
+		Operators []*OperatorData `json:"operators"`
+	}
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	a.operators = v.Operators
+	return nil
 }
 
 func (a *AuthImpl) Operators() Operators {

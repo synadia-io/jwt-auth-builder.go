@@ -2,6 +2,7 @@ package authb
 
 import (
 	"errors"
+	"encoding/json"
 	"time"
 
 	"github.com/nats-io/jwt/v2"
@@ -36,18 +37,18 @@ type BaseData struct {
 	// stores claims that have been modified and have
 	// an issue time greater than this value or have been Modified. On Store(),
 	// it should be set to the tokens issue time.
-	Loaded int64
+	Loaded int64 `json:"-"`
 	// Modified is true if the entity has been modified since it was loaded
-	Modified bool
+	Modified bool `json:"-"`
 	// EntityName is the name for the entity - in some cases NSC
 	// will display simple name which differs from the actual name
 	// of the entity stored in the JWT.
-	EntityName string
+	EntityName string `json:"name"`
 	// Key is the main identity key for the entity.
-	Key *Key
+	Key *Key `json:"key"`
 	// Token is the JWT for the entity, always kept up-to-date
 	// by the APIs
-	Token string
+	Token string `json:"token"`
 
 	readOnly bool
 }
@@ -56,20 +57,66 @@ type OperatorData struct {
 	BaseData
 	// OperatorSigningKeys is the list of all current signing keys for
 	// the operator. All keys should be reachable by the APIs.
-	OperatorSigningKeys []*Key
+	OperatorSigningKeys []*Key `json:"signingKeys,omitempty"`
 	// Claim is the currently decoded version of the JWT. Always up-to-date by
 	// the APIs.
 	Claim *jwt.OperatorClaims
 	// AccountDatas The list of all Accounts for the operator
-	AccountDatas []*AccountData
+	AccountDatas []*AccountData `json:"accounts"`
 	// DeletedAccounts is a list of all accounts that were deleted using
 	// the API. On calling Commit() the AuthProvider will remove them
 	// and set this to nil.
-	DeletedAccounts []*AccountData
+	DeletedAccounts []*AccountData `json:"-"`
 	// AddedKeys is a list of added keys related to the operator entity tree
-	AddedKeys []*Key
+	AddedKeys []*Key `json:"-"`
 	// List of deleted keys related to the operator entity tree
-	DeletedKeys []string
+	DeletedKeys []string `json:"-"`
+}
+
+func (o *OperatorData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		BaseData
+		OperatorSigningKeys []*Key         `json:"signingKeys"`
+		Accounts            []*AccountData `json:"accounts"`
+	}{
+		BaseData:            o.BaseData,
+		OperatorSigningKeys: o.OperatorSigningKeys,
+		Accounts:            o.AccountDatas,
+	})
+}
+
+func (o *OperatorData) UnmarshalJSON(data []byte) error {
+	var v struct {
+		BaseData
+		OperatorSigningKeys []*Key         `json:"signingKeys"`
+		Accounts            []*AccountData `json:"accounts"`
+	}
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	o.BaseData = v.BaseData
+	o.OperatorSigningKeys = v.OperatorSigningKeys
+	o.AccountDatas = v.Accounts
+	if len(o.OperatorSigningKeys) > 0 {
+		o.AddedKeys = append(o.AddedKeys, o.OperatorSigningKeys...)
+	}
+	for _, ad := range o.AccountDatas {
+		ad.Operator = o
+		o.AddedKeys = append(o.AddedKeys, ad.Key)
+		if len(ad.AccountSigningKeys) > 0 {
+			o.AddedKeys = append(o.AddedKeys, ad.AccountSigningKeys...)
+		}
+		for _, ud := range ad.UserDatas {
+			o.AddedKeys = append(o.AddedKeys, ud.Key)
+		}
+	}
+	oc, err := jwt.DecodeOperatorClaims(o.Token)
+	if err != nil {
+		return err
+	}
+	o.Claim = oc
+	o.Modified = true
+	return nil
 }
 
 type AccountData struct {
@@ -78,14 +125,50 @@ type AccountData struct {
 	Operator *OperatorData
 	// AccountSigningKeys is the list of all current signing keys for
 	// the account. All keys should be reachable by the API
-	AccountSigningKeys []*Key
+	AccountSigningKeys []*Key `json:"signingKeys,omitempty"`
 	// Claim is the currently decoded version of the JWT. Always up-to-date by
 	// the APIs
 	Claim *jwt.AccountClaims
 	// UserData is the list of account users
-	UserDatas []*UserData
+	UserDatas []*UserData `json:"users"`
 	// DeletedUsers is a list of users that will be deleted on the next commit
 	DeletedUsers []*UserData
+}
+
+func (a *AccountData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		BaseData
+		AccountsSigningKeys []*Key      `json:"signingKeys"`
+		Users               []*UserData `json:"users"`
+	}{
+		BaseData:            a.BaseData,
+		AccountsSigningKeys: a.AccountSigningKeys,
+		Users:               a.UserDatas,
+	})
+}
+
+func (a *AccountData) UnmarshalJSON(data []byte) error {
+	var v struct {
+		BaseData
+		AccountsSigningKeys []*Key      `json:"signingKeys"`
+		Users               []*UserData `json:"users"`
+	}
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	a.BaseData = v.BaseData
+	a.Modified = true
+	a.AccountSigningKeys = v.AccountsSigningKeys
+	a.UserDatas = v.Users
+	for _, ud := range a.UserDatas {
+		ud.AccountData = a
+	}
+	ac, err := jwt.DecodeAccountClaims(a.Token)
+	if err != nil {
+		return err
+	}
+	a.Claim = ac
+	return nil
 }
 
 type UserData struct {
@@ -93,6 +176,31 @@ type UserData struct {
 	AccountData *AccountData
 	RejectEdits bool
 	Claim       *jwt.UserClaims
+}
+
+func (u *UserData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		BaseData
+	}{
+		BaseData: u.BaseData,
+	})
+}
+
+func (u *UserData) UnmarshalJSON(data []byte) error {
+	var v struct {
+		BaseData
+	}
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	u.BaseData = v.BaseData
+	uc, err := jwt.DecodeUserClaims(u.Token)
+	if err != nil {
+		return err
+	}
+	u.Claim = uc
+	u.Modified = true
+	return nil
 }
 
 // Operators is an interface for managing operators
