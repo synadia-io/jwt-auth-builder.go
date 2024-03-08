@@ -161,6 +161,6 @@ func (b *BaseData) JWT() string {
 	return b.Token
 }
 
-func isNil(i interface{}) bool {
-	return i == nil || reflect.ValueOf(i).IsNil()
+func isNil(T any) bool {
+	return T == nil || reflect.ValueOf(T).IsNil()
 }

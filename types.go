@@ -834,16 +834,16 @@ type ScopedKeys interface {
 	// a new signing key.
 	AddScope(role string) (ScopeLimits, error)
 	// GetScope returns the scope associated with the specified key.
-	// This function returns error if the key is not found
+	// Note that if the signing key is not scoped, it returns a not found error
 	GetScope(string) (ScopeLimits, error)
 	// GetScopeByRole returns the first scope that matches the specified role.
-	// Note that the search must be an exact match
+	// Note that the search must be an exact match of the scope role, and
 	GetScopeByRole(string) (ScopeLimits, error)
 	// List returns a list of signing keys
 	List() []string
 	// ListRoles returns the names of roles associated with the account
 	ListRoles() []string
-	// Contains returns true if the signing key is known, and true on the second
-	// return value if the signing key is scoped.
-	Contains(sk string) (bool, bool)
+	// Contains returns found as true if the signing key was found, and isScoped as true
+	// if the signing key is scoped.
+	Contains(sk string) (found bool, isScoped bool)
 }
