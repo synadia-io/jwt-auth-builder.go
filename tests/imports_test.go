@@ -76,14 +76,14 @@ func (t *ProviderSuite) Test_ImportNameSubject() {
 	t.NoError(im.SetSubject("qq.>"))
 	t.NoError(im.SetAccount(akk.Public))
 
-	_, ok := a.Imports().Services().Get("q.>")
-	t.False(ok)
-	_, ok = a.Imports().Services().GetByName("q")
-	t.False(ok)
-	_, ok = a.Imports().Services().Get("qq.>")
-	t.True(ok)
-	_, ok = a.Imports().Services().GetByName("xx")
-	t.True(ok)
+	_, err = a.Imports().Services().Get("q.>")
+	t.ErrorIs(err, authb.ErrNotFound)
+	_, err = a.Imports().Services().GetByName("q")
+	t.ErrorIs(err, authb.ErrNotFound)
+	_, err = a.Imports().Services().Get("qq.>")
+	t.NoError(err)
+	_, err = a.Imports().Services().GetByName("xx")
+	t.NoError(err)
 
 	s, err := a.Imports().Streams().Add("s", ak.Public, "t.>")
 	t.NoError(err)
@@ -132,8 +132,8 @@ func (t *ProviderSuite) Test_ImportLocalSubject() {
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
-	im, ok := a.Imports().Services().Get("q")
-	t.True(ok)
+	im, err = a.Imports().Services().Get("q")
+	t.NoError(err)
 	t.Equal("myq", im.LocalSubject())
 
 	s, err = a.Imports().Streams().Get("t.>")
@@ -153,11 +153,11 @@ func (t *ProviderSuite) Test_ServiceImportCrud() {
 	t.NoError(err)
 	t.NotNil(im)
 
-	_, ok := a.Imports().Services().Get("q.>")
-	t.True(ok)
+	_, err = a.Imports().Services().Get("q.>")
+	t.NoError(err)
 
-	_, ok = a.Imports().Services().GetByName("q")
-	t.True(ok)
+	_, err = a.Imports().Services().GetByName("q")
+	t.NoError(err)
 
 	x, err := authb.NewServiceImport("x", ak.Public, "x.>")
 	t.NoError(err)
@@ -172,7 +172,7 @@ func (t *ProviderSuite) Test_ServiceImportCrud() {
 	t.Equal("x.>", a.Imports().Services().List()[0].Subject())
 	t.Equal("y.>", a.Imports().Services().List()[1].Subject())
 
-	ok, err = a.Imports().Services().Delete("x.>")
+	ok, err := a.Imports().Services().Delete("x.>")
 	t.NoError(err)
 	t.True(ok)
 
