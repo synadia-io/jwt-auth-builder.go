@@ -62,10 +62,10 @@ func (o *OperatorData) OperatorServiceURLs() []string {
 	return o.Claim.OperatorServiceURLs
 }
 
-func (o *OperatorData) SystemAccount() Account {
+func (o *OperatorData) SystemAccount() (Account, error) {
 	id := o.Claim.SystemAccount
 	if id == "" {
-		return nil
+		return nil, nil
 	}
 	return o.Accounts().Get(id)
 }
@@ -113,13 +113,13 @@ func (o *OperatorData) Delete(name string) error {
 	return nil
 }
 
-func (o *OperatorData) Get(name string) Account {
+func (o *OperatorData) Get(name string) (Account, error) {
 	for _, a := range o.AccountDatas {
 		if a.EntityName == name || a.Subject() == name {
-			return a
+			return a, nil
 		}
 	}
-	return nil
+	return nil, ErrNotFound
 }
 
 func (o *OperatorData) List() []Account {
@@ -162,8 +162,11 @@ func (o *OperatorData) MemResolver() ([]byte, error) {
 	if err := builder.Add([]byte(o.Token)); err != nil {
 		return nil, err
 	}
-	sys := o.SystemAccount()
-	if sys != nil {
+	sys, err := o.SystemAccount()
+	if err != nil {
+		return nil, err
+	}
+	if !isNil(sys) {
 		if err := builder.SetSystemAccount(sys.Subject()); err != nil {
 			return nil, err
 		}

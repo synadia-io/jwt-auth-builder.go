@@ -2,9 +2,10 @@ package tests
 
 import (
 	"encoding/json"
+	"errors"
+
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
-
 	authb "github.com/synadia-io/jwt-auth-builder.go"
 	"github.com/synadia-io/jwt-auth-builder.go/providers/nsc"
 	"os"
@@ -17,10 +18,10 @@ func (t *ProviderSuite) Test_OperatorBasics() {
 	operators := auth.Operators()
 	t.Empty(operators.List())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
-	t.Nil(o)
-	o, err = operators.Add("O")
+	_, err = auth.Operators().Get("O")
+	t.ErrorIs(err, authb.ErrNotFound)
+
+	o, err := operators.Add("O")
 	t.NoError(err)
 	t.NotNil(o)
 
@@ -48,18 +49,17 @@ func (t *ProviderSuite) Test_SkUpdate() {
 	operators := auth.Operators()
 	t.Empty(operators.List())
 
-	o := auth.Operators().Get("O")
-	t.NoError(err)
-	t.Nil(o)
-	o, err = operators.Add("O")
+	_, err = auth.Operators().Get("O")
+	t.True(errors.Is(err, authb.ErrNotFound))
+	o, err := operators.Add("O")
 	t.NoError(err)
 	t.NotNil(o)
 
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o = operators.Get("O")
-	t.NotNil(o)
+	o, err = operators.Get("O")
+	t.NoError(err)
 
 	k, err := o.SigningKeys().Add()
 	t.NoError(err)
@@ -68,8 +68,8 @@ func (t *ProviderSuite) Test_SkUpdate() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	o = operators.Get("O")
-	t.NotNil(o)
+	o, err = operators.Get("O")
+	t.NoError(err)
 	keys := o.SigningKeys().List()
 	t.Len(keys, 1)
 	t.Contains(keys, k)
@@ -93,9 +93,8 @@ func (t *ProviderSuite) Test_OperatorLoads() {
 
 	auth, err = authb.NewAuth(t.Provider)
 	t.NoError(err)
-	o = auth.Operators().Get("O")
+	_, err = auth.Operators().Get("O")
 	t.NoError(err)
-	t.NotNil(o)
 }
 
 func (t *ProviderSuite) Test_OperatorSigningKeys() {
@@ -227,15 +226,21 @@ func (t *ProviderSuite) Test_OperatorSystemAccount() {
 	t.NoError(err)
 	o, err := auth.Operators().Add("O")
 	t.NoError(err)
-	t.Nil(o.SystemAccount())
-	a, err := o.Accounts().Add("SYS")
+	a, err := o.SystemAccount()
+	t.Nil(err)
+	t.Nil(a)
+	a, err = o.Accounts().Add("SYS")
 	t.NoError(err)
 	t.NoError(o.SetSystemAccount(a))
-	t.NotNil(o.SystemAccount())
+	a, err = o.SystemAccount()
+	t.NoError(err)
+	t.NotNil(a)
 
 	t.Error(o.Accounts().Delete("SYS"))
 	t.NoError(o.SetSystemAccount(nil))
-	t.Nil(o.SystemAccount())
+	sa, err := o.SystemAccount()
+	t.Nil(err)
+	t.Nil(sa)
 	t.NoError(o.Accounts().Delete("SYS"))
 }
 
@@ -251,7 +256,8 @@ func (t *ProviderSuite) Test_MemResolver() {
 	auth, err = authb.NewAuth(t.Provider)
 	t.NoError(err)
 
-	o := auth.Operators().Get("O")
+	o, err := auth.Operators().Get("O")
+	t.NoError(err)
 
 	_, err = o.MemResolver()
 	t.NoError(err)
@@ -281,7 +287,8 @@ func (t *ProviderSuite) Test_OperatorImport() {
 
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
-	o = auth.Operators().Get("O")
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
 	t.NotNil(o)
 	t.Equal(kp.Public, o.Subject())
 	t.Equal(skp.Public, o.SigningKeys().List()[0])
@@ -314,7 +321,10 @@ func (t *ProviderSuite) Test_Export() {
 	t.NoError(auth2.Commit())
 	t.NoError(auth2.Reload())
 
-	t.NotNil(auth2.Operators().Get("O"))
-	t.NotNil(auth2.Operators().Get("O").Accounts().Get("A"))
-	t.NotNil(auth2.Operators().Get("O").Accounts().Get("A").Users().Get("U"))
+	o, err := auth2.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+	_, err = a.Users().Get("U")
+	t.NoError(err)
 }

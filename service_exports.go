@@ -10,25 +10,24 @@ type serviceExports struct {
 	*AccountData
 }
 
-func (s *serviceExports) Get(subject string) ServiceExport {
+func (s *serviceExports) Get(subject string) (ServiceExport, error) {
 	se := s.getServiceExport(subject)
 	if se == nil {
-		return nil
+		return nil, ErrNotFound
 	}
-
-	return se
+	return se, nil
 }
 
-func (s *serviceExports) GetByName(name string) ServiceExport {
+func (s *serviceExports) GetByName(name string) (ServiceExport, error) {
 	for _, e := range s.Claim.Exports {
 		if e.IsService() && e.Name == name {
 			se := &ServiceExportImpl{}
 			se.data = s.AccountData
 			se.export = e
-			return se
+			return se, nil
 		}
 	}
-	return nil
+	return nil, ErrNotFound
 }
 
 func (s *serviceExports) List() []ServiceExport {

@@ -52,14 +52,14 @@ func (t *ProviderSuite) Test_ExportRevocationRequiresAccountToken() {
 
 	a = t.GetAccount(auth, "O", "A")
 
-	service = a.Exports().Services().Get("q.>")
-	t.NotNil(service)
+	service, err = a.Exports().Services().Get("q.>")
+	t.NoError(err)
 	revocations := service.Revocations().List()
 	t.Len(revocations, 1)
 	t.Equal(ak.Public, revocations[0].PublicKey())
 
-	stream = a.Exports().Streams().Get("t.>")
-	t.NotNil(stream)
+	stream, err = a.Exports().Streams().Get("t.>")
+	t.NoError(err)
 	revocations = stream.Revocations().List()
 	t.Len(revocations, 1)
 	t.Equal(ak.Public, revocations[0].PublicKey())
@@ -85,14 +85,14 @@ func (t *ProviderSuite) Test_ExportRevocationWildCardIsAllowed() {
 
 	a = t.GetAccount(auth, "O", "A")
 
-	service = a.Exports().Services().Get("q.>")
-	t.NotNil(service)
+	service, err = a.Exports().Services().Get("q.>")
+	t.NoError(err)
 	revocations := service.Revocations().List()
 	t.Len(revocations, 1)
 	t.Equal("*", revocations[0].PublicKey())
 
-	stream = a.Exports().Streams().Get("t.>")
-	t.NotNil(stream)
+	stream, err = a.Exports().Streams().Get("t.>")
+	t.NoError(err)
 	revocations = stream.Revocations().List()
 	t.Len(revocations, 1)
 	t.Equal("*", revocations[0].PublicKey())

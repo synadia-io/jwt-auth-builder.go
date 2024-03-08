@@ -9,8 +9,12 @@ type streamImports struct {
 	*AccountData
 }
 
-func (s *streamImports) Get(subject string) StreamImport {
-	return s.getStreamImport(subject)
+func (s *streamImports) Get(subject string) (StreamImport, error) {
+	si := s.getStreamImport(subject)
+	if si != nil {
+		return si, nil
+	}
+	return nil, ErrNotFound
 }
 
 func (s *streamImports) AddWithConfig(i StreamImport) error {
@@ -58,16 +62,16 @@ func (s *streamImports) Delete(subject string) (bool, error) {
 	return s.deleteImport(subject, false)
 }
 
-func (a *AccountData) GetByName(name string) StreamImport {
+func (a *AccountData) GetByName(name string) (StreamImport, error) {
 	for _, e := range a.Claim.Imports {
 		if e.IsStream() && e.Name == name {
 			se := &StreamImportImpl{}
 			se.data = a
 			se.in = e
-			return se
+			return se, nil
 		}
 	}
-	return nil
+	return nil, ErrNotFound
 }
 
 func (s *streamImports) List() []StreamImport {

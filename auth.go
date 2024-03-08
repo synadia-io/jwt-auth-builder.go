@@ -3,6 +3,8 @@ package authb
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 )
@@ -58,13 +60,13 @@ func (a *OperatorsImpl) List() []Operator {
 	return v
 }
 
-func (a *OperatorsImpl) Get(name string) Operator {
+func (a *OperatorsImpl) Get(name string) (Operator, error) {
 	for _, o := range a.auth.operators {
 		if o.EntityName == name || o.Subject() == name {
-			return o
+			return o, nil
 		}
 	}
-	return nil
+	return nil, ErrNotFound
 }
 
 func (a *OperatorsImpl) Add(name string) (Operator, error) {
@@ -157,4 +159,8 @@ func (a *AuthImpl) Reload() error {
 
 func (b *BaseData) JWT() string {
 	return b.Token
+}
+
+func isNil(T any) bool {
+	return T == nil || reflect.ValueOf(T).IsNil()
 }

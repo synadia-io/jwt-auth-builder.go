@@ -10,8 +10,12 @@ type streamExports struct {
 	*AccountData
 }
 
-func (s *streamExports) Get(subject string) StreamExport {
-	return s.getStreamExport(subject)
+func (s *streamExports) Get(subject string) (StreamExport, error) {
+	se := s.getStreamExport(subject)
+	if se != nil {
+		return se, nil
+	}
+	return nil, ErrNotFound
 }
 
 func (s *streamExports) AddWithConfig(e StreamExport) error {
@@ -62,16 +66,16 @@ func (s *streamExports) Delete(subject string) (bool, error) {
 	return s.deleteExport(subject, false)
 }
 
-func (s *streamExports) GetByName(name string) StreamExport {
+func (s *streamExports) GetByName(name string) (StreamExport, error) {
 	for _, e := range s.Claim.Exports {
 		if e.IsStream() && e.Name == name {
 			se := &StreamExportImpl{}
 			se.data = s.AccountData
 			se.export = e
-			return se
+			return se, nil
 		}
 	}
-	return nil
+	return nil, ErrNotFound
 }
 
 func (s *streamExports) List() []StreamExport {

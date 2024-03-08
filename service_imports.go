@@ -39,20 +39,24 @@ func (s *serviceImports) AddWithConfig(i ServiceImport) error {
 	return s.update()
 }
 
-func (s *serviceImports) Get(subject string) ServiceImport {
-	return s.getServiceImport(subject)
+func (s *serviceImports) Get(subject string) (ServiceImport, error) {
+	si := s.getServiceImport(subject)
+	if si != nil {
+		return si, nil
+	}
+	return nil, ErrNotFound
 }
 
-func (s *serviceImports) GetByName(name string) ServiceImport {
+func (s *serviceImports) GetByName(name string) (ServiceImport, error) {
 	for _, e := range s.Claim.Imports {
 		if e.IsService() && e.Name == name {
 			se := &ServiceImportImpl{}
 			se.data = s.AccountData
 			se.in = e
-			return se
+			return se, nil
 		}
 	}
-	return nil
+	return nil, ErrNotFound
 }
 
 func (s *serviceImports) Delete(subject string) (bool, error) {

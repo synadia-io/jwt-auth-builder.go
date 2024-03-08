@@ -2,10 +2,13 @@ package authb
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/nats-io/jwt/v2"
 )
+
+var ErrNotFound = errors.New("not found")
 
 // Auth is the interface for managing the auth store. Auth is created
 // using the NewAuth function
@@ -207,7 +210,7 @@ type Operators interface {
 	// Add creates a new Operator with the specified name
 	Add(name string) (Operator, error)
 	// Get returns an Operator by name or matching the specified ID
-	Get(name string) Operator
+	Get(name string) (Operator, error)
 	// Delete an Operator by name or matching the specified ID
 	Delete(name string) error
 	// Import an Operator from JWT bytes and keys
@@ -232,8 +235,9 @@ type Operator interface {
 	SetOperatorServiceURL(url ...string) error
 	// OperatorServiceURLs returns the operator service URLs
 	OperatorServiceURLs() []string
-	// SystemAccount returns the system account
-	SystemAccount() Account
+	// SystemAccount returns the system account. If the system account is
+	// not found or not set, the bool argument is set to false
+	SystemAccount() (Account, error)
 	// SetSystemAccount sets the system account
 	SetSystemAccount(account Account) error
 	// MemResolver generates a mem resolver server configuration
@@ -255,7 +259,7 @@ type Accounts interface {
 	// Delete an Account by matching its name or subject
 	Delete(name string) error
 	// Get returns an Account by matching its name or subject
-	Get(name string) Account
+	Get(name string) (Account, error)
 	// List returns a list of Account
 	List() []Account
 }
@@ -317,7 +321,7 @@ type Users interface {
 	// Delete the user by matching its name or subject
 	Delete(name string) error
 	// Get returns the user by matching its name or subject
-	Get(name string) User
+	Get(name string) (User, error)
 	// List returns a list of User from the account
 	List() []User
 }
@@ -482,10 +486,10 @@ type ServiceImports interface {
 	// AddWithConfig adds a copy of the specified import configuration to the account
 	AddWithConfig(i ServiceImport) error
 	// Get returns imports that are exported by accounts under the specified subject
-	Get(subject string) ServiceImport
+	Get(subject string) (ServiceImport, error)
 	// GetByName returns an import stored under the specified name. Note that
 	// the first import is returned.
-	GetByName(name string) ServiceImport
+	GetByName(name string) (ServiceImport, error)
 	Delete(subject string) (bool, error)
 	List() []ServiceImport
 	Set(imports ...ServiceImport) error
@@ -496,13 +500,13 @@ type ServiceExports interface {
 	Add(name string, subject string) (ServiceExport, error)
 	// AddWithConfig adds a copy of the specified configuration to the account
 	AddWithConfig(e ServiceExport) error
-	// Get returns the ServiceExport matching the subject or nil if not found
-	Get(subject string) ServiceExport
+	// Get returns the ServiceExport matching the subject
+	Get(subject string) (ServiceExport, error)
 	// Delete deletes the ServiceExport matching the subject
 	Delete(subject string) (bool, error)
 	// GetByName returns the ServiceExport matching the specified name,
 	// note that the first service is returned
-	GetByName(name string) ServiceExport
+	GetByName(name string) (ServiceExport, error)
 	// List returns a list of ServiceExport in the account
 	List() []ServiceExport
 	// Set replaces all serviceExports with the specified ones
@@ -511,8 +515,8 @@ type ServiceExports interface {
 
 type StreamImports interface {
 	Add(name string, account string, subject string) (StreamImport, error)
-	Get(subject string) StreamImport
-	GetByName(name string) StreamImport
+	Get(subject string) (StreamImport, error)
+	GetByName(name string) (StreamImport, error)
 	Delete(subject string) (bool, error)
 	List() []StreamImport
 	Set(imports ...StreamImport) error
@@ -524,12 +528,12 @@ type StreamExports interface {
 	// AddWithConfig adds a copy of the specified configuration to the account
 	AddWithConfig(e StreamExport) error
 	// Get returns the StreamExport matching the subject or nil if not found
-	Get(subject string) StreamExport
+	Get(subject string) (StreamExport, error)
 	// Delete deletes the StreamExport matching the subject
 	Delete(subject string) (bool, error)
 	// GetByName returns the StreamExport matching the specified name,
 	// note that the first stream is returned
-	GetByName(name string) StreamExport
+	GetByName(name string) (StreamExport, error)
 	// List returns a list of StreamExport in the account
 	List() []StreamExport
 	// Set replaces all streamExports with the specified ones
@@ -830,14 +834,16 @@ type ScopedKeys interface {
 	// a new signing key.
 	AddScope(role string) (ScopeLimits, error)
 	// GetScope returns the scope associated with the specified key.
-	// This function returns nil for the scope if no scope is found.
-	// This function returns true if the signing key entry was found.
-	GetScope(string) (ScopeLimits, bool)
+	// Note that if the signing key is not scoped, it returns a not found error
+	GetScope(string) (ScopeLimits, error)
 	// GetScopeByRole returns the first scope that matches the specified role.
-	// Note that the search must be an exact match
-	GetScopeByRole(string) ScopeLimits
+	// Note that the search must be an exact match of the scope role, and
+	GetScopeByRole(string) (ScopeLimits, error)
 	// List returns a list of signing keys
 	List() []string
 	// ListRoles returns the names of roles associated with the account
 	ListRoles() []string
+	// Contains returns found as true if the signing key was found, and isScoped as true
+	// if the signing key is scoped.
+	Contains(sk string) (found bool, isScoped bool)
 }

@@ -76,10 +76,14 @@ func (t *ProviderSuite) Test_ImportNameSubject() {
 	t.NoError(im.SetSubject("qq.>"))
 	t.NoError(im.SetAccount(akk.Public))
 
-	t.Nil(a.Imports().Services().Get("q.>"))
-	t.Nil(a.Imports().Services().GetByName("q"))
-	t.NotNil(a.Imports().Services().Get("qq.>"))
-	t.NotNil(a.Imports().Services().GetByName("xx"))
+	_, err = a.Imports().Services().Get("q.>")
+	t.ErrorIs(err, authb.ErrNotFound)
+	_, err = a.Imports().Services().GetByName("q")
+	t.ErrorIs(err, authb.ErrNotFound)
+	_, err = a.Imports().Services().Get("qq.>")
+	t.NoError(err)
+	_, err = a.Imports().Services().GetByName("xx")
+	t.NoError(err)
 
 	s, err := a.Imports().Streams().Add("s", ak.Public, "t.>")
 	t.NoError(err)
@@ -92,10 +96,14 @@ func (t *ProviderSuite) Test_ImportNameSubject() {
 	t.NoError(s.SetSubject("tt.>"))
 	t.NoError(s.SetAccount(akk.Public))
 
-	t.Nil(a.Imports().Streams().Get("t.>"))
-	t.Nil(a.Imports().Streams().GetByName("s"))
-	t.NotNil(a.Imports().Streams().Get("tt.>"))
-	t.NotNil(a.Imports().Streams().GetByName("ss"))
+	_, err = a.Imports().Streams().Get("t.>")
+	t.ErrorIs(err, authb.ErrNotFound)
+	_, err = a.Imports().Streams().GetByName("s")
+	t.ErrorIs(err, authb.ErrNotFound)
+	_, err = a.Imports().Streams().Get("tt.>")
+	t.NoError(err)
+	_, err = a.Imports().Streams().GetByName("ss")
+	t.NoError(err)
 }
 
 func (t *ProviderSuite) Test_ImportLocalSubject() {
@@ -124,10 +132,12 @@ func (t *ProviderSuite) Test_ImportLocalSubject() {
 	t.NoError(auth.Reload())
 
 	a = t.GetAccount(auth, "O", "A")
-	im = a.Imports().Services().Get("q")
+	im, err = a.Imports().Services().Get("q")
+	t.NoError(err)
 	t.Equal("myq", im.LocalSubject())
 
-	s = a.Imports().Streams().Get("t.>")
+	s, err = a.Imports().Streams().Get("t.>")
+	t.NoError(err)
 	t.Equal("ss.>", s.LocalSubject())
 }
 
@@ -143,11 +153,11 @@ func (t *ProviderSuite) Test_ServiceImportCrud() {
 	t.NoError(err)
 	t.NotNil(im)
 
-	service := a.Imports().Services().Get("q.>")
-	t.NotNil(service)
+	_, err = a.Imports().Services().Get("q.>")
+	t.NoError(err)
 
-	service = a.Imports().Services().GetByName("q")
-	t.NotNil(service)
+	_, err = a.Imports().Services().GetByName("q")
+	t.NoError(err)
 
 	x, err := authb.NewServiceImport("x", ak.Public, "x.>")
 	t.NoError(err)
@@ -183,11 +193,11 @@ func (t *ProviderSuite) Test_StreamImportCrud() {
 	t.NoError(err)
 	t.NotNil(im)
 
-	service := a.Imports().Streams().Get("q.>")
-	t.NotNil(service)
+	_, err = a.Imports().Streams().Get("q.>")
+	t.NoError(err)
 
-	service = a.Imports().Streams().GetByName("q")
-	t.NotNil(service)
+	_, err = a.Imports().Streams().GetByName("q")
+	t.NoError(err)
 
 	x, err := authb.NewStreamImport("x", ak.Public, "x.>")
 	t.NoError(err)
@@ -380,8 +390,8 @@ func (t *ProviderSuite) Test_StreamImportAllowTracing() {
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
 
-	si = a.Imports().Streams().Get("foo.>")
-	t.NotNil(si)
+	si, err = a.Imports().Streams().Get("foo.>")
+	t.NoError(err)
 	t.True(si.AllowTracing())
 }
 
