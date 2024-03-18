@@ -520,6 +520,7 @@ type StreamImports interface {
 	Delete(subject string) (bool, error)
 	List() []StreamImport
 	Set(imports ...StreamImport) error
+	AddWithConfig(i StreamImport) error
 }
 
 type StreamExports interface {
