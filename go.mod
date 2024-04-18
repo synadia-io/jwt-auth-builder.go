@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/nats-io/jsm.go v0.1.1-0.20240314150821-1c7f0e424978
-	github.com/nats-io/jwt/v2 v2.5.5
+	github.com/nats-io/jwt/v2 v2.5.6
 	github.com/nats-io/nats-server/v2 v2.11.0-dev.0.20240313175812-f1cd3ed141b0
 	github.com/nats-io/nats.go v1.33.1
 	github.com/nats-io/nkeys v0.4.7
@@ -20,9 +20,9 @@ require (
 	github.com/minio/highwayhash v1.0.2 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/crypto v0.21.0 // indirect
+	golang.org/x/crypto v0.22.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

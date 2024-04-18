@@ -2,6 +2,7 @@ package authb
 
 import (
 	"errors"
+
 	"github.com/nats-io/jwt/v2"
 )
 
