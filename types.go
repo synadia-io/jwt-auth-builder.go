@@ -687,6 +687,10 @@ type ScopeLimits interface {
 	// SetRole sets the role associated with the scope. The role is simply a name
 	// that you can use to identify the scope. It is not used by the server.
 	SetRole(name string) error
+	// Description returns an user-assigned description associated with the scope.
+	Description() string
+	// SetDescription sets an user-assigned description associated with the scope.
+	SetDescription(description string) error
 }
 
 // ConnectionTypes is an interface for managing connection types that the connection
@@ -839,10 +843,12 @@ type ScopedKeys interface {
 	GetScope(string) (ScopeLimits, error)
 	// GetScopeByRole returns the first scope that matches the specified role.
 	// Note that the search must be an exact match of the scope role, and
-	GetScopeByRole(string) (ScopeLimits, error)
+	GetScopeByRole(string) ([]ScopeLimits, error)
 	// List returns a list of signing keys
 	List() []string
 	// ListRoles returns the names of roles associated with the account
+	// Note that role names can be duplicated, and this name of roles
+	// will not contain duplicates so long as roles have the same capitalization, etc.
 	ListRoles() []string
 	// Contains returns found as true if the signing key was found, and isScoped as true
 	// if the signing key is scoped.

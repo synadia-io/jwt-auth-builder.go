@@ -3,12 +3,12 @@ package tests
 import (
 	"encoding/json"
 	"errors"
+	"os"
 
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 	authb "github.com/synadia-io/jwt-auth-builder.go"
 	"github.com/synadia-io/jwt-auth-builder.go/providers/nsc"
-	"os"
 )
 
 func (t *ProviderSuite) Test_OperatorBasics() {
