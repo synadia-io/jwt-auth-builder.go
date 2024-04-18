@@ -332,6 +332,15 @@ func (s *ScopeImpl) SetRole(name string) error {
 	return s.update()
 }
 
+func (s *ScopeImpl) Description() string {
+	return s.scope.Description
+}
+
+func (s *ScopeImpl) SetDescription(description string) error {
+	s.scope.Description = description
+	return s.update()
+}
+
 func (s *ScopeImpl) update() error {
 	s.accountData.Claim.SigningKeys[s.scope.Key] = s.scope
 	return s.accountData.update()

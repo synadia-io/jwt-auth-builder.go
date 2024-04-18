@@ -95,9 +95,9 @@ func (suite *ProviderSuite) Test_ScopedPermissionsMaxSubs() {
 	require.NoError(t, err)
 	require.NotNil(t, a)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
-	require.Equal(t, int64(10), s.MaxSubscriptions())
+	scopes := a.ScopedSigningKeys().GetScopeByRole("admin")
+	require.Len(t, scopes, 1)
+	require.Equal(t, int64(10), scopes[0].MaxSubscriptions())
 }
 
 func (suite *ProviderSuite) Test_ScopedPermissionsMaxPayload() {
@@ -119,9 +119,9 @@ func (suite *ProviderSuite) Test_ScopedPermissionsMaxPayload() {
 	require.NoError(t, err)
 	require.NotNil(t, a)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
-	require.Equal(t, int64(101), s.MaxPayload())
+	scopes := a.ScopedSigningKeys().GetScopeByRole("admin")
+	require.Len(t, scopes, 1)
+	require.Equal(t, int64(101), scopes[0].MaxPayload())
 }
 
 func (suite *ProviderSuite) Test_ScopedPermissionsMaxData() {
@@ -143,8 +143,8 @@ func (suite *ProviderSuite) Test_ScopedPermissionsMaxData() {
 	require.NoError(t, err)
 	require.NotNil(t, a)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
+	scopes := a.ScopedSigningKeys().GetScopeByRole("admin")
+	require.Len(t, scopes, 1)
 	require.Equal(t, int64(4123), s.MaxData())
 }
 
@@ -167,9 +167,9 @@ func (suite *ProviderSuite) Test_ScopedPermissionsBearerToken() {
 	require.NoError(t, err)
 	require.NotNil(t, a)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
-	require.True(t, s.BearerToken())
+	scopes := a.ScopedSigningKeys().GetScopeByRole("admin")
+	require.Len(t, scopes, 1)
+	require.True(t, scopes[0].BearerToken())
 }
 
 func (suite *ProviderSuite) Test_ScopedPermissionsConnectionTypes() {
@@ -192,9 +192,9 @@ func (suite *ProviderSuite) Test_ScopedPermissionsConnectionTypes() {
 	require.NoError(t, err)
 	require.NotNil(t, a)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
-	types = s.ConnectionTypes()
+	scopes := a.ScopedSigningKeys().GetScopeByRole("admin")
+	require.Len(t, scopes, 1)
+	types = scopes[0].ConnectionTypes()
 	require.Contains(t, types.Types(), "websocket")
 }
 
@@ -218,9 +218,9 @@ func (suite *ProviderSuite) Test_ScopedPermissionsConnectionSources() {
 	require.NoError(t, err)
 	require.NotNil(t, a)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
-	sources = s.ConnectionSources()
+	scopes := a.ScopedSigningKeys().GetScopeByRole("admin")
+	require.Len(t, scopes, 1)
+	sources = scopes[0].ConnectionSources()
 	require.Contains(t, sources.Sources(), "192.0.2.0/24")
 }
 
@@ -244,9 +244,9 @@ func (suite *ProviderSuite) Test_ScopedPermissionsConnectionTimes() {
 	require.NoError(t, err)
 	require.NotNil(t, a)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
-	times = s.ConnectionTimes()
+	scopes := a.ScopedSigningKeys().GetScopeByRole("admin")
+	require.Len(t, scopes, 1)
+	times = scopes[0].ConnectionTimes()
 	require.Len(t, times.List(), 1)
 	require.Equal(t, times.List()[0].Start, "08:00:00")
 	require.Equal(t, times.List()[0].End, "12:00:00")
@@ -270,9 +270,9 @@ func (suite *ProviderSuite) Test_ScopedPermissionsLocale() {
 	require.NoError(t, err)
 	require.NotNil(t, a)
 
-	s = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, s)
-	require.Equal(t, "en_US", s.Locale())
+	scopes := a.ScopedSigningKeys().GetScopeByRole("admin")
+	require.Len(t, scopes, 1)
+	require.Equal(t, "en_US", scopes[0].Locale())
 }
 
 func (suite *ProviderSuite) Test_ScopedPermissionsSubject() {
@@ -297,8 +297,9 @@ func (suite *ProviderSuite) Test_ScopedPermissionsSubject() {
 
 	require.NoError(t, auth.Reload())
 
-	admin = a.ScopedSigningKeys().GetScopeByRole("admin")
-	require.NotNil(t, admin)
+	scopes := a.ScopedSigningKeys().GetScopeByRole("admin")
+	require.Len(t, scopes, 1)
+	admin = scopes[0]
 
 	require.Contains(t, admin.PubPermissions().Allow(), "foo")
 	require.Contains(t, admin.PubPermissions().Allow(), "bar")
@@ -625,7 +626,6 @@ func (suite *ProviderSuite) Test_AccountSigningKeys() {
 	}
 
 	roles := a.ScopedSigningKeys().ListRoles()
-	t.Log(roles)
 	require.NotNil(t, roles)
 	require.Len(t, roles, 1)
 	require.Contains(t, roles, "admin")

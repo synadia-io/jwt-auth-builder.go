@@ -31,17 +31,21 @@ func (as *accountSigningKeys) Add() (string, error) {
 }
 
 func (as *accountSigningKeys) ListRoles() []string {
-	var roles []string
+	m := make(map[string]string)
 	for _, k := range as.data.Claim.SigningKeys.Keys() {
 		scope, ok := as.data.Claim.SigningKeys.GetScope(k)
 		if ok && scope != nil {
 			us, uok := scope.(*jwt.UserScope)
 			if uok {
-				roles = append(roles, us.Role)
+				m[us.Role] = us.Role
 			}
 		}
 	}
-	return roles
+	var v []string
+	for k, _ := range m {
+		v = append(v, k)
+	}
+	return v
 }
 
 func (as *accountSigningKeys) AddScope(role string) (ScopeLimits, error) {
@@ -70,16 +74,17 @@ func (as *accountSigningKeys) GetScope(key string) (ScopeLimits, bool) {
 	return nil, ok
 }
 
-func (as *accountSigningKeys) GetScopeByRole(role string) ScopeLimits {
+func (as *accountSigningKeys) GetScopeByRole(role string) []ScopeLimits {
+	var buf []ScopeLimits
 	for _, v := range as.data.Claim.SigningKeys {
 		if v != nil {
 			scope, ok := v.(*jwt.UserScope)
 			if ok && scope.Role == role {
-				return toScopeLimits(as.data, scope)
+				buf = append(buf, toScopeLimits(as.data, scope))
 			}
 		}
 	}
-	return nil
+	return buf
 }
 
 func (as *accountSigningKeys) Delete(key string) (bool, error) {
