@@ -435,6 +435,46 @@ func (t *ProviderSuite) Test_ScopeRotation() {
 	t.Nil(scope2)
 }
 
+func (t *ProviderSuite) Test_ScopeDeletion() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+
+	scope, err := a.ScopedSigningKeys().AddScope("admin")
+	t.NoError(err)
+	t.NotNil(scope)
+	key := scope.Key()
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+	ok, err := a.ScopedSigningKeys().Delete(key)
+	t.NoError(err)
+	t.True(ok)
+
+	t.Empty(a.ScopedSigningKeys().ListRoles())
+	t.Empty(a.ScopedSigningKeys().List())
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+
+	t.Empty(a.ScopedSigningKeys().List())
+	t.Empty(a.ScopedSigningKeys().ListRoles())
+}
+
 func (t *ProviderSuite) Test_SigningKeyRotation() {
 	auth, err := authb.NewAuth(t.Provider)
 	t.NoError(err)

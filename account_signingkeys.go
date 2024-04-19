@@ -97,6 +97,10 @@ func (as *accountSigningKeys) Delete(key string) (bool, error) {
 	if ok {
 		delete(as.data.Claim.SigningKeys, key)
 		as.data.Operator.DeletedKeys = append(as.data.Operator.DeletedKeys, key)
+		err := as.data.update()
+		if err != nil {
+			return ok, err
+		}
 	}
 	err := as.data.Operator.update()
 	return ok, err
