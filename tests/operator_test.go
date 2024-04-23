@@ -304,7 +304,7 @@ func (t *ProviderSuite) Test_Export() {
 
 	data, err := json.MarshalIndent(auth, "", "  ")
 	t.NoError(err)
-	t.T().Log(string(data))
+	// t.T().Log(string(data))
 
 	sdir, err := os.MkdirTemp("/tmp", "stores")
 	t.NoError(err)
