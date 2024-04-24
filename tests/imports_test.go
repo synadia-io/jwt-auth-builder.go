@@ -340,7 +340,7 @@ func (t *ProviderSuite) Test_NewStreamImportToken() {
 	t.NoError(err)
 	t.NotNil(si)
 
-	token, err := export.GenerateActivation(a.Subject(), b.Subject())
+	token, err := export.GenerateActivation("s.123", a.Subject(), b.Subject())
 	t.NoError(err)
 	t.NotEmpty(token)
 	t.NoError(si.SetToken(token))
@@ -365,7 +365,7 @@ func (t *ProviderSuite) Test_NewStreamImportSkToken() {
 	t.NoError(err)
 	t.NotNil(si)
 
-	token, err := export.GenerateActivation(a.Subject(), sk)
+	token, err := export.GenerateActivation("", a.Subject(), sk)
 	t.NoError(err)
 	t.NotEmpty(token)
 	t.NoError(si.SetToken(token))
@@ -410,7 +410,7 @@ func (t *ProviderSuite) Test_NewServiceImportToken() {
 	t.NoError(err)
 	t.NotNil(si)
 
-	token, err := export.GenerateActivation(a.Subject(), b.Subject())
+	token, err := export.GenerateActivation("", a.Subject(), b.Subject())
 	t.NoError(err)
 	t.NotEmpty(token)
 	t.NoError(si.SetToken(token))
@@ -435,7 +435,7 @@ func (t *ProviderSuite) Test_NewServiceImportSkToken() {
 	t.NoError(err)
 	t.NotNil(si)
 
-	token, err := export.GenerateActivation(a.Subject(), sk)
+	token, err := export.GenerateActivation("", a.Subject(), sk)
 	t.NoError(err)
 	t.NotEmpty(token)
 	t.NoError(si.SetToken(token))

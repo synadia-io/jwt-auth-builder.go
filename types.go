@@ -591,7 +591,7 @@ type Export interface {
 	// the notion of Advertised may not be implemented by the operator
 	SetAdvertised(tf bool) error
 	// GenerateActivation an activation token for the specified account signed with the specified issuer
-	GenerateActivation(account string, issuer string) (string, error)
+	GenerateActivation(subject string, account string, issuer string) (string, error)
 }
 
 type SamplingRate int

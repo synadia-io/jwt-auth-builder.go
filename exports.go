@@ -201,7 +201,7 @@ func (b *baseExportImpl) SetAdvertised(tf bool) error {
 	return b.update()
 }
 
-func (b *baseExportImpl) GenerateActivation(account string, issuer string) (string, error) {
+func (b *baseExportImpl) GenerateActivation(subject string, account string, issuer string) (string, error) {
 	if !b.TokenRequired() {
 		return "", fmt.Errorf("export is public and doesn't require an activation")
 	}
@@ -210,7 +210,13 @@ func (b *baseExportImpl) GenerateActivation(account string, issuer string) (stri
 		return "", err
 	}
 	ac := jwt.NewActivationClaims(key.Public)
-	ac.ImportSubject = b.export.Subject
+
+	if subject == "" {
+		ac.ImportSubject = b.export.Subject
+	} else {
+		ac.ImportSubject = jwt.Subject(subject)
+	}
+
 	ac.ImportType = b.export.Type
 
 	k, signingKey, err := b.data.getKey(issuer)
