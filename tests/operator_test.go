@@ -3,7 +3,9 @@ package tests
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
@@ -327,4 +329,150 @@ func (t *ProviderSuite) Test_Export() {
 	t.NoError(err)
 	_, err = a.Users().Get("U")
 	t.NoError(err)
+}
+
+func (t *ProviderSuite) getEntity(auth *authb.AuthImpl, entity string) (authb.Tags, error) {
+	elements := strings.Split(entity, "/")
+	var err error
+	var o authb.Operator
+	var a authb.Account
+	var u authb.User
+
+	if len(elements) > 0 {
+		o, err = auth.Operators().Get(elements[0])
+		if err != nil && errors.Is(err, authb.ErrNotFound) {
+			o, err = auth.Operators().Add(elements[0])
+			t.NoError(err)
+		}
+	}
+	if o != nil && len(elements) > 1 {
+		a, err = o.Accounts().Get(elements[1])
+		if err != nil && errors.Is(err, authb.ErrNotFound) {
+			a, err = o.Accounts().Add(elements[1])
+			t.NoError(err)
+		}
+	}
+
+	if a != nil && len(elements) > 2 {
+		u, err = a.Users().Get(elements[2])
+		if err != nil && errors.Is(err, authb.ErrNotFound) {
+			u, err = a.Users().Add(elements[2], "")
+			t.NoError(err)
+		}
+	}
+
+	switch len(elements) {
+	case 1:
+		t.NotNil(o)
+		return o.Tags(), nil
+	case 2:
+		t.NotNil(a)
+		return a.Tags(), nil
+	case 3:
+		t.NotNil(u)
+		return u.Tags(), nil
+	}
+
+	return nil, fmt.Errorf("invalid entity: %s", entity)
+}
+
+func (t *ProviderSuite) Test_OperatorTags() {
+	t.TagsCrud("O")
+}
+
+func (t *ProviderSuite) Test_AccountTags() {
+	t.TagsCrud("O/A")
+}
+
+func (t *ProviderSuite) Test_UserTags() {
+	t.TagsCrud("O/A/U")
+}
+
+func (t *ProviderSuite) TagsCrud(element string) {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	e, err := t.getEntity(auth, element)
+	t.NoError(err)
+	tags, err := e.All()
+	t.NoError(err)
+	t.Empty(tags)
+
+	// cannot set empty or nil values
+	t.Error(e.Add())
+	t.Error(e.Add("  "))
+	t.Error(e.Set())
+	t.Error(e.Set("  "))
+
+	// a tag
+	t.NoError(e.Add("XxX"))
+	// tags are lower case - but should be able to match
+	t.True(e.Contains("xxx"))
+	t.True(e.Contains("XxX"))
+
+	// add preserves
+	t.NoError(e.Add("y", "z"))
+
+	t.True(e.Contains("xxx"))
+	t.True(e.Contains("y"))
+	t.True(e.Contains("z"))
+
+	// removing something that doesn't exist is not an error, but reported
+	ok, err := e.Remove("zz")
+	t.NoError(err)
+	t.False(ok)
+	ok, err = e.Remove("y")
+	t.NoError(err)
+	t.True(ok)
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	// should have values that were last set
+	e, err = t.getEntity(auth, element)
+	t.NoError(err)
+
+	tags, err = e.All()
+	t.NoError(err)
+	t.Contains(tags, "xxx")
+	t.Contains(tags, "z")
+	t.NotContains(tags, "y")
+
+	// replace all the tags
+	t.NoError(e.Set("a", "b", "c"))
+	tags, err = e.All()
+	t.NoError(err)
+	t.Len(tags, 3)
+	t.Contains(tags, "a")
+	t.Contains(tags, "b")
+	t.Contains(tags, "c")
+
+	// reload
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+	e, err = t.getEntity(auth, element)
+	t.NoError(err)
+
+	// check last values were saved
+	tags, err = e.All()
+	t.NoError(err)
+	t.Len(tags, 3)
+	t.Contains(tags, "a")
+	t.Contains(tags, "b")
+	t.Contains(tags, "c")
+
+	// setting an empty list should succeed - nil is rejected
+	t.NoError(e.Set([]string{}...))
+	tags, err = e.All()
+	t.NoError(err)
+	t.Len(tags, 0)
+
+	// reload
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+	e, err = t.getEntity(auth, element)
+	t.NoError(err)
+	tags, err = e.All()
+	t.NoError(err)
+	t.Len(tags, 0)
 }

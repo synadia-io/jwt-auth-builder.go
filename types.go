@@ -217,6 +217,14 @@ type Operators interface {
 	Import(jwt []byte, keys []string) (Operator, error)
 }
 
+type Tags interface {
+	Add(tag ...string) error
+	Remove(tag string) (bool, error)
+	Contains(tag string) bool
+	Set(tag ...string) error
+	All() ([]string, error)
+}
+
 // Operator is an interface for editing the operator
 type Operator interface {
 	// Name returns the name of the operator
@@ -250,6 +258,8 @@ type Operator interface {
 	Expiry() int64
 	// JWT returns the encoded token
 	JWT() string
+	// Tags returns an object that you can use to manage tags for the operator
+	Tags() Tags
 }
 
 // Accounts is an interface for managing accounts
@@ -308,6 +318,8 @@ type Account interface {
 	GetTracingContext() *TracingContext
 	// SetTracingContext sets the TracingContext - if null the tracing context is removed
 	SetTracingContext(opts *TracingContext) error
+	// Tags returns an object that you can use to manage tags for the account
+	Tags() Tags
 }
 
 // Users is an interface for managing users
@@ -350,6 +362,8 @@ type User interface {
 	IssuerAccount() string
 	// JWT returns the encoded token
 	JWT() string
+	// Tags returns an object that you can use to manage tags for the account
+	Tags() Tags
 
 	UserLimits
 }

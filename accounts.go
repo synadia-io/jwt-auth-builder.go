@@ -381,3 +381,47 @@ func (a *AccountData) deleteImport(subject string, service bool) (bool, error) {
 
 	return false, nil
 }
+
+func (a *AccountData) Tags() Tags {
+	return &AccountTags{
+		a: a,
+	}
+}
+
+type AccountTags struct {
+	a *AccountData
+}
+
+func (at *AccountTags) Add(tag ...string) error {
+	if err := NotEmpty(tag...); err != nil {
+		return err
+	}
+	at.a.Claim.Tags.Add(tag...)
+	return at.a.update()
+}
+
+func (at *AccountTags) Remove(tag string) (bool, error) {
+	ok := at.a.Claim.Tags.Contains(tag)
+	if ok {
+		at.a.Claim.Tags.Remove(tag)
+		err := at.a.update()
+		return ok, err
+	}
+	return false, nil
+}
+
+func (at *AccountTags) Contains(tag string) bool {
+	return at.a.Claim.Tags.Contains(tag)
+}
+
+func (at *AccountTags) Set(tag ...string) error {
+	if err := NotEmpty(tag...); err != nil {
+		return err
+	}
+	at.a.Claim.Tags = tag
+	return at.a.update()
+}
+
+func (at *AccountTags) All() ([]string, error) {
+	return at.a.Claim.Tags, nil
+}
