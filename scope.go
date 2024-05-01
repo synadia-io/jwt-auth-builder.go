@@ -21,8 +21,12 @@ func (u *UserPermissions) SetUserPermissionLimits(limits jwt.UserPermissionLimit
 	if u.rejectEdits {
 		return ErrUserIsScoped
 	}
-
 	u.limits = &limits
+	if u.scope != nil {
+		u.scope.Template = limits
+	} else {
+		u.userData.Claim.UserPermissionLimits = limits
+	}
 	return u.update()
 }
 
