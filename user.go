@@ -215,3 +215,47 @@ func (u *UserData) IssuerAccount() string {
 	}
 	return u.Claim.Issuer
 }
+
+func (u *UserData) Tags() Tags {
+	return &UserTags{
+		u: u,
+	}
+}
+
+type UserTags struct {
+	u *UserData
+}
+
+func (ut *UserTags) Add(tag ...string) error {
+	if err := NotEmpty(tag...); err != nil {
+		return err
+	}
+	ut.u.Claim.Tags.Add(tag...)
+	return ut.u.update()
+}
+
+func (ut *UserTags) Remove(tag string) (bool, error) {
+	ok := ut.u.Claim.Tags.Contains(tag)
+	if ok {
+		ut.u.Claim.Tags.Remove(tag)
+		err := ut.u.update()
+		return ok, err
+	}
+	return false, nil
+}
+
+func (ut *UserTags) Contains(tag string) bool {
+	return ut.u.Claim.Tags.Contains(tag)
+}
+
+func (ut *UserTags) Set(tag ...string) error {
+	if err := NotEmpty(tag...); err != nil {
+		return err
+	}
+	ut.u.Claim.Tags = tag
+	return ut.u.update()
+}
+
+func (ut *UserTags) All() ([]string, error) {
+	return ut.u.Claim.Tags, nil
+}

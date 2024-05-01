@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
@@ -178,4 +179,60 @@ func (o *OperatorData) MemResolver() ([]byte, error) {
 		}
 	}
 	return builder.Generate()
+}
+
+func (o *OperatorData) Tags() Tags {
+	return &OperatorTags{
+		o: o,
+	}
+}
+
+type OperatorTags struct {
+	o *OperatorData
+}
+
+func (ot *OperatorTags) Add(tag ...string) error {
+	if err := NotEmpty(tag...); err != nil {
+		return err
+	}
+	ot.o.Claim.Tags.Add(tag...)
+	return ot.o.update()
+}
+
+func (ot *OperatorTags) Remove(tag string) (bool, error) {
+	ok := ot.o.Claim.Tags.Contains(tag)
+	if ok {
+		ot.o.Claim.Tags.Remove(tag)
+		err := ot.o.update()
+		return ok, err
+	}
+	return false, nil
+}
+
+func (ot *OperatorTags) Contains(tag string) bool {
+	return ot.o.Claim.Tags.Contains(tag)
+}
+
+func (ot *OperatorTags) Set(tag ...string) error {
+	if err := NotEmpty(tag...); err != nil {
+		return err
+	}
+	ot.o.Claim.Tags = tag
+	return ot.o.update()
+}
+
+func (ot *OperatorTags) All() ([]string, error) {
+	return ot.o.Claim.Tags, nil
+}
+
+func NotEmpty(s ...string) error {
+	if s == nil {
+		return errors.New("string cannot be nil")
+	}
+	for _, t := range s {
+		if len(strings.TrimSpace(t)) == 0 {
+			return errors.New("string cannot be empty")
+		}
+	}
+	return nil
 }
