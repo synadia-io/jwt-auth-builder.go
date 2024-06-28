@@ -20,7 +20,7 @@ Here's an example usage, more examples as this gets further along. For additiona
 insight check the godoc and look at the tests.
 
 ```go
-auth, err := NewAuth(NewNscAuth(storeDirPath, keysDirPath))
+auth, err := NewAuth(NewNscProvider(storeDirPath, keysDirPath))
 // create an operator
 o, _ := auth.Operators().Add("O")
 // create an account for system purposes
