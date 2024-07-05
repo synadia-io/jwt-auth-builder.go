@@ -406,3 +406,75 @@ func (t *ProviderSuite) Test_UsersAddedPermsSave() {
 	t.Contains(uc.Permissions.Pub.Allow, "bar")
 	t.Contains(uc.Permissions.Sub.Allow, "_inbox.me")
 }
+
+func (t *ProviderSuite) Test_ScopedSetUserPermissionLimits() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+	t.NotNil(o)
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+	t.NotNil(a)
+
+	s, err := a.ScopedSigningKeys().AddScope("admin")
+	t.NoError(err)
+
+	si, ok := s.(*authb.ScopeImpl)
+	t.True(ok)
+
+	perms := si.UserPermissionLimits()
+	perms.BearerToken = true
+	perms.Sub.Allow = []string{"hello"}
+
+	t.NoError(si.SetUserPermissionLimits(perms))
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+	scopes, err := a.ScopedSigningKeys().GetScopeByRole("admin")
+	t.NoError(err)
+	t.NotNil(s)
+	t.Len(scopes, 1)
+	t.True(s.BearerToken())
+	t.Contains(s.SubPermissions().Allow(), "hello")
+}
+
+func (t *ProviderSuite) Test_SetUserPermissionLimits() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+	t.NotNil(o)
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+	t.NotNil(a)
+	u, err := a.Users().Add("U", "")
+	t.NoError(err)
+
+	ud, ok := u.(*authb.UserData)
+	t.True(ok)
+
+	perms := ud.UserPermissionLimits()
+	perms.BearerToken = true
+	perms.Sub.Allow = []string{"hello"}
+
+	t.NoError(ud.SetUserPermissionLimits(perms))
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+	u, err = a.Users().Get("U")
+	t.NoError(err)
+
+	t.True(u.BearerToken())
+	t.Contains(u.SubPermissions().Allow(), "hello")
+}
