@@ -18,7 +18,7 @@ func (a *UsersImpl) Add(name string, key string) (User, error) {
 		return nil, err
 	}
 	_, scoped := a.accountData.Claim.SigningKeys.GetScope(key)
-	uk, err := KeyFor(nkeys.PrefixByteUser)
+	uk, err := a.accountData.Operator.SigningService.NewKey(nkeys.PrefixByteUser)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func (a *UsersImpl) Add(name string, key string) (User, error) {
 		d.Claim.UserPermissionLimits = jwt.UserPermissionLimits{}
 	}
 
-	d.Token, err = d.Claim.Encode(k.Pair)
+	d.Token, err = a.accountData.Operator.SigningService.Sign(d.Claim, k)
 	if err != nil {
 		return nil, err
 	}

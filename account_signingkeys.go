@@ -54,7 +54,7 @@ func (as *accountSigningKeys) Contains(sk string) (bool, bool) {
 }
 
 func (as *accountSigningKeys) AddScope(role string) (ScopeLimits, error) {
-	k, err := KeyFor(nkeys.PrefixByteAccount)
+	k, err := as.data.Operator.SigningService.NewKey(nkeys.PrefixByteAccount)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (as *accountSigningKeys) Delete(key string) (bool, error) {
 func (as *accountSigningKeys) Rotate(key string) (string, error) {
 	v, ok := as.data.Claim.SigningKeys[key]
 	if ok {
-		k, err := KeyFor(nkeys.PrefixByteAccount)
+		k, err := as.data.Operator.SigningService.NewKey(nkeys.PrefixByteAccount)
 		if err != nil {
 			return "", err
 		}

@@ -227,5 +227,5 @@ func (b *baseExportImpl) GenerateActivationForSubject(account string, issuer str
 	if signingKey {
 		ac.IssuerAccount = b.data.Claim.Subject
 	}
-	return ac.Encode(k.Pair)
+	return b.data.Operator.SigningService.Sign(ac, k)
 }

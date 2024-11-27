@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/nats-io/jsm.go/natscontext"
-	"github.com/nats-io/jwt/v2"
-	"github.com/nats-io/nats.go"
+	jwt "github.com/nats-io/jwt/v2"
+	nats "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/nats-io/nkeys"
 	ab "github.com/synadia-io/jwt-auth-builder.go"

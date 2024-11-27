@@ -35,7 +35,7 @@ func (a *AccountData) issue(key *Key) error {
 	if key == nil {
 		key = a.Key
 	}
-	token, err := a.Claim.Encode(key.Pair)
+	token, err := a.Operator.SigningService.Sign(a.Claim, key)
 	if err != nil {
 		return err
 	}

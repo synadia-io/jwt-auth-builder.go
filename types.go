@@ -71,6 +71,8 @@ type OperatorData struct {
 	AddedKeys []*Key `json:"-"`
 	// List of deleted keys related to the operator entity tree
 	DeletedKeys []string `json:"-"`
+
+	SigningService IssuingService `json:"-"`
 }
 
 func (o *OperatorData) MarshalJSON() ([]byte, error) {
