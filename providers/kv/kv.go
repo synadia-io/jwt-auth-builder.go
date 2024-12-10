@@ -367,6 +367,9 @@ func (p *KvProvider) Store(operators []*ab.OperatorData) error {
 				return err
 			}
 			for _, u := range a.UserDatas {
+				if u.Ephemeral {
+					continue
+				}
 				if err := p.StoreUser(u); err != nil {
 					return err
 				}
