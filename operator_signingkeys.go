@@ -15,7 +15,7 @@ func (os *operatorSigningKeys) Add() (string, error) {
 }
 
 func (os *operatorSigningKeys) add() (*Key, error) {
-	key, err := KeyFor(nkeys.PrefixByteOperator)
+	key, err := os.data.SigningService.NewKey(nkeys.PrefixByteOperator)
 	if err != nil {
 		return nil, err
 	}

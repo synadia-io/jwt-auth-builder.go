@@ -21,7 +21,7 @@ func (u *UserData) IsScoped() bool {
 }
 
 func (u *UserData) issue(key *Key) error {
-	token, err := u.Claim.Encode(key.Pair)
+	token, err := u.AccountData.Operator.SigningService.Sign(u.Claim, key)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (u *UserData) update() error {
 	if err != nil {
 		return err
 	}
-	token, err := u.Claim.Encode(k.Pair)
+	token, err := u.AccountData.Operator.SigningService.Sign(u.Claim, k)
 	if err != nil {
 		return err
 	}

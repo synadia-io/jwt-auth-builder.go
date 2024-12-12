@@ -16,3 +16,6 @@ tasks:
   lint:
     cmds:
       - golangci-lint run
+  fmt:
+    cmds:
+      - gofumpt -l -w .

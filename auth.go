@@ -9,20 +9,68 @@ import (
 	"github.com/nats-io/nkeys"
 )
 
+type KeysFn func(p nkeys.PrefixByte) (*Key, error)
+
+type Options struct {
+	SignFn jwt.SignFn
+	KeysFn KeysFn
+}
+
+type IssuingService interface {
+	Sign(c jwt.Claims, key *Key) (string, error)
+	NewKey(prefixByte nkeys.PrefixByte) (*Key, error)
+}
+
 type AuthImpl struct {
 	provider  AuthProvider
 	operators []*OperatorData
+	opts      *Options
 }
 
 func NewAuth(provider AuthProvider) (*AuthImpl, error) {
-	auth := &AuthImpl{provider: provider}
+	return NewAuthWithOptions(provider, nil)
+}
+
+func NewAuthWithOptions(provider AuthProvider, opts *Options) (*AuthImpl, error) {
+	if opts == nil {
+		opts = &Options{}
+	}
+	// initialize default key provider
+	if opts.KeysFn == nil {
+		opts.KeysFn = KeyFor
+	}
+
+	auth := &AuthImpl{provider: provider, opts: opts}
 	auth.provider = provider
 	operators, err := auth.provider.Load()
 	if err != nil {
 		return nil, err
 	}
 	auth.operators = operators
+	auth.initSigningService()
 	return auth, nil
+}
+
+func (a *AuthImpl) initSigningService() {
+	for _, op := range a.operators {
+		op.SigningService = a
+	}
+}
+
+func (a *AuthImpl) Sign(c jwt.Claims, key *Key) (string, error) {
+	kp := key.Pair
+	if a.opts.SignFn != nil {
+		var err error
+		kp, err = nkeys.FromPublicKey(key.Public)
+		if err != nil {
+			return "", err
+		}
+	}
+	return c.EncodeWithSigner(kp, a.opts.SignFn)
+}
+
+func (a *AuthImpl) NewKey(prefixByte nkeys.PrefixByte) (*Key, error) {
+	return a.opts.KeysFn(prefixByte)
 }
 
 type OperatorsImpl struct {
@@ -71,9 +119,9 @@ func (a *OperatorsImpl) Get(name string) (Operator, error) {
 
 func (a *OperatorsImpl) Add(name string) (Operator, error) {
 	var err error
-	data := &OperatorData{}
+	data := &OperatorData{SigningService: a.auth}
 	data.EntityName = name
-	data.Key, err = KeyFor(nkeys.PrefixByteOperator)
+	data.Key, err = data.SigningService.NewKey(nkeys.PrefixByteOperator)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +174,7 @@ func (a *OperatorsImpl) Import(token []byte, keys []string) (Operator, error) {
 	}
 
 	var ok bool
-	data := &OperatorData{}
+	data := &OperatorData{SigningService: a.auth}
 	data.Claim = claim
 	data.EntityName = claim.Name
 	data.Key, ok = m[claim.Subject]
@@ -154,7 +202,11 @@ func (a *AuthImpl) Commit() error {
 func (a *AuthImpl) Reload() error {
 	var err error
 	a.operators, err = a.provider.Load()
-	return err
+	if err != nil {
+		return err
+	}
+	a.initSigningService()
+	return nil
 }
 
 func (b *BaseData) JWT() string {

@@ -81,7 +81,7 @@ func (o *OperatorData) SetSystemAccount(account Account) error {
 }
 
 func (o *OperatorData) Add(name string) (Account, error) {
-	sk, err := KeyFor(nkeys.PrefixByteAccount)
+	sk, err := o.SigningService.NewKey(nkeys.PrefixByteAccount)
 	if err != nil {
 		return nil, err
 	}
@@ -142,8 +142,7 @@ func (o *OperatorData) update() error {
 	if vr.IsBlocking(true) {
 		return vr.Errors()[0]
 	}
-
-	token, err := o.Claim.Encode(o.Key.Pair)
+	token, err := o.SigningService.Sign(o.Claim, o.Key)
 	if err != nil {
 		return err
 	}
