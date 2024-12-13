@@ -10,10 +10,6 @@ on:
 
 jobs:
   test:
-    strategy:
-      matrix:
-        go: [1.21.x, 1.22.x]
-
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -31,7 +27,8 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: ${{matrix.go}}
+          go-version: stable
+          check-latest: true
 
       - name: Install deps
         shell: bash --noprofile --norc -x -eo pipefail {0}
