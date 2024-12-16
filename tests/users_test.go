@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"github.com/nats-io/nkeys"
 	"time"
 
 	"github.com/nats-io/jwt/v2"
@@ -477,4 +478,81 @@ func (t *ProviderSuite) Test_SetUserPermissionLimits() {
 
 	t.True(u.BearerToken())
 	t.Contains(u.SubPermissions().Allow(), "hello")
+}
+
+func (t *ProviderSuite) Test_AddEphemeralUserWithIdentity() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+	t.NotNil(o)
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+	t.NotNil(a)
+
+	uk, err := authb.KeyFor(nkeys.PrefixByteUser)
+	t.NoError(err)
+
+	u, err := a.Users().AddWithIdentity("U", "", uk.Public)
+	t.NoError(err)
+	t.Equal(u.Subject(), uk.Public)
+	t.True(u.(*authb.UserData).Ephemeral)
+
+	// should fail creds
+	_, err = u.Creds(time.Second)
+	t.Error(err)
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+	_, err = a.Users().Get("U")
+	t.Error(err, authb.ErrNotFound)
+}
+
+func (t *ProviderSuite) Test_AddWithIdentity() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+	t.NotNil(o)
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+	t.NotNil(a)
+
+	uk, err := authb.KeyFor(nkeys.PrefixByteUser)
+	t.NoError(err)
+
+	u, err := a.Users().AddWithIdentity("U", "", string(uk.Seed))
+	t.NoError(err)
+	t.Equal(u.Subject(), uk.Public)
+	t.False(u.(*authb.UserData).Ephemeral)
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+	u, err = a.Users().Get("U")
+	t.NoError(err)
+	t.NotNil(u)
+}
+
+func (t *ProviderSuite) Test_AddWithIdentityRequiresUser() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+	t.NotNil(o)
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+	t.NotNil(a)
+
+	_, err = a.Users().AddWithIdentity("U", "", "")
+	t.Error(err)
 }

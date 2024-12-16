@@ -178,6 +178,7 @@ type UserData struct {
 	AccountData *AccountData
 	RejectEdits bool
 	Claim       *jwt.UserClaims
+	Ephemeral   bool
 }
 
 func (u *UserData) MarshalJSON() ([]byte, error) {
@@ -335,11 +336,16 @@ type Account interface {
 // Users is an interface for managing users
 type Users interface {
 	// Add creates a new User with the specified name and signed using
-	// the specified key. Note that you simply specify the public key
+	// the specified signer key. Note that you simply specify the public key
 	// you want to use for signing, and the key must be one of the account's
 	// signing keys. If the key is associated with a scope, the user will
 	// be a scoped user.
-	Add(name string, key string) (User, error)
+	Add(name string, signer string) (User, error)
+	// AddWithIdentity creates user with the specified name and signed using
+	// the specified signer key.
+	// If the provided ID is only a public key the user will be ephemeral and will not stored,
+	// other operations, as cred generation will fail
+	AddWithIdentity(name string, signer string, id string) (User, error)
 	// Delete the user by matching its name or subject
 	Delete(name string) error
 	// Get returns the user by matching its name or subject

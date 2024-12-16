@@ -262,6 +262,9 @@ func (a *NscProvider) Store(operators []*authb.OperatorData) error {
 			}
 
 			for _, u := range account.UserDatas {
+				if u.Ephemeral {
+					continue
+				}
 				if u.Modified {
 					if err := s.StoreRaw([]byte(u.Token)); err != nil {
 						return err

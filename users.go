@@ -10,6 +10,14 @@ type UsersImpl struct {
 }
 
 func (a *UsersImpl) Add(name string, key string) (User, error) {
+	uk, err := a.accountData.Operator.SigningService.NewKey(nkeys.PrefixByteUser)
+	if err != nil {
+		return nil, err
+	}
+	return a.add(name, key, uk)
+}
+
+func (a *UsersImpl) add(name string, key string, uk *Key) (User, error) {
 	if key == "" {
 		key = a.accountData.Key.Public
 	}
@@ -18,15 +26,13 @@ func (a *UsersImpl) Add(name string, key string) (User, error) {
 		return nil, err
 	}
 	_, scoped := a.accountData.Claim.SigningKeys.GetScope(key)
-	uk, err := a.accountData.Operator.SigningService.NewKey(nkeys.PrefixByteUser)
-	if err != nil {
-		return nil, err
-	}
+
 	d := &UserData{
 		BaseData:    BaseData{EntityName: name, Key: uk, Modified: true},
 		AccountData: a.accountData,
 		Claim:       jwt.NewUserClaims(uk.Public),
 		RejectEdits: scoped,
+		Ephemeral:   uk.Seed == nil,
 	}
 	d.Claim.Name = name
 	if signingKey {
@@ -41,8 +47,18 @@ func (a *UsersImpl) Add(name string, key string) (User, error) {
 		return nil, err
 	}
 	a.accountData.UserDatas = append(a.accountData.UserDatas, d)
-	a.accountData.Operator.AddedKeys = append(a.accountData.Operator.AddedKeys, uk)
+	if !d.Ephemeral {
+		a.accountData.Operator.AddedKeys = append(a.accountData.Operator.AddedKeys, uk)
+	}
 	return d, nil
+}
+
+func (a *UsersImpl) AddWithIdentity(name string, key string, id string) (User, error) {
+	uk, err := KeyFrom(id, nkeys.PrefixByteUser)
+	if err != nil {
+		return nil, err
+	}
+	return a.add(name, key, uk)
 }
 
 func (a *UsersImpl) Get(name string) (User, error) {
