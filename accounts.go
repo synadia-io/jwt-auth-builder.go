@@ -142,6 +142,43 @@ func (a *AccountData) Limits() AccountLimits {
 	return &accountLimits{data: a}
 }
 
+func (a *AccountData) SetExternalAuthorizationUser(users []User, accounts []Account, encryption string) error {
+	if users == nil {
+		// disable
+		a.Claim.Authorization.AuthUsers = nil
+		a.Claim.Authorization.AllowedAccounts = nil
+		a.Claim.Authorization.XKey = ""
+	} else {
+		var ukeys []string
+		for _, u := range users {
+			ukeys = append(ukeys, u.Subject())
+		}
+		a.Claim.Authorization.AuthUsers = ukeys
+
+		var akeys []string
+		for _, a := range accounts {
+			akeys = append(akeys, a.Subject())
+		}
+		a.Claim.Authorization.AllowedAccounts = akeys
+
+		if encryption != "" {
+			key, err := KeyFrom(encryption, nkeys.PrefixByteCurve)
+			if err != nil {
+				return err
+			}
+			a.Claim.Authorization.XKey = key.Public
+		} else {
+			a.Claim.Authorization.XKey = ""
+		}
+	}
+	return a.update()
+}
+
+func (a *AccountData) ExternalAuthorization() ([]string, []string, string) {
+	config := a.Claim.Authorization
+	return config.AuthUsers, config.AllowedAccounts, config.XKey
+}
+
 type exports struct {
 	*AccountData
 }
