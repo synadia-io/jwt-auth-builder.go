@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"github.com/nats-io/nkeys"
 	"time"
 
 	"github.com/nats-io/jwt/v2"
@@ -870,4 +871,54 @@ func (t *ProviderSuite) Test_TracingContext() {
 
 	t.NoError(a.SetTracingContext(nil))
 	t.Nil(a.GetTracingContext())
+}
+
+func (t *ProviderSuite) Test_ExternalAuthorization() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	a := t.MaybeCreate(auth, "O", "A")
+	t.NotNil(a)
+
+	external := t.MaybeCreate(auth, "O", "AUTH")
+	t.NotNil(external)
+	u, err := external.Users().Add("service", external.Subject())
+	t.NoError(err)
+
+	curve, err := authb.KeyFor(nkeys.PrefixByteCurve)
+	t.NoError(err)
+
+	users, accounts, key := external.ExternalAuthorization()
+	t.Empty(users)
+	t.Empty(accounts)
+	t.Empty(key)
+
+	t.NoError(external.SetExternalAuthorizationUser([]authb.User{u}, []authb.Account{a}, curve.Public))
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	external = t.GetAccount(auth, "O", "AUTH")
+	t.NotNil(external)
+
+	users, accounts, key = external.ExternalAuthorization()
+	t.Equal(users, []string{u.Subject()})
+	t.Equal(accounts, []string{a.Subject()})
+	t.Equal(key, curve.Public)
+
+	t.NoError(external.SetExternalAuthorizationUser(nil, nil, ""))
+	users, accounts, key = external.ExternalAuthorization()
+	t.Nil(users)
+	t.Nil(accounts)
+	t.Empty(key)
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	external = t.GetAccount(auth, "O", "AUTH")
+	t.NotNil(external)
+	users, accounts, key = external.ExternalAuthorization()
+	t.Nil(users)
+	t.Nil(accounts)
+	t.Empty(key)
 }

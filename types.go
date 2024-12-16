@@ -322,6 +322,14 @@ type Account interface {
 	SetTracingContext(opts *TracingContext) error
 	// Tags returns an object that you can use to manage tags for the account
 	Tags() Tags
+
+	// SetExternalAuthorizationUser updates external authorization by associating users public keys, account public keys, and an encryption key.
+	// ExternalAuthorization requires at the very list one user
+	SetExternalAuthorizationUser(users []User, accounts []Account, encryption string) error
+
+	// ExternalAuthorization retrieves a list of authorized users, associated accounts, and encryption key.
+	// if the users value is nil, ExternalAuthorization is not enabled
+	ExternalAuthorization() ([]string, []string, string)
 }
 
 // Users is an interface for managing users
