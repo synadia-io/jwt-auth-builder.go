@@ -179,6 +179,20 @@ func (a *AccountData) ExternalAuthorization() ([]string, []string, string) {
 	return config.AuthUsers, config.AllowedAccounts, config.XKey
 }
 
+func (a *AccountData) IssueAuthorizationResponse(claim *jwt.AuthorizationResponseClaims, key string) (string, error) {
+	if key == "" {
+		key = a.Key.Public
+	}
+	k, signingKey, err := a.getKey(key)
+	if err != nil {
+		return "", err
+	}
+	if signingKey {
+		claim.IssuerAccount = a.Key.Public
+	}
+	return a.Operator.SigningService.Sign(claim, k)
+}
+
 type exports struct {
 	*AccountData
 }

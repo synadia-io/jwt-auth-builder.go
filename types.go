@@ -331,6 +331,8 @@ type Account interface {
 	// ExternalAuthorization retrieves a list of authorized users, associated accounts, and encryption key.
 	// if the users value is nil, ExternalAuthorization is not enabled
 	ExternalAuthorization() ([]string, []string, string)
+
+	IssueAuthorizationResponse(claim *jwt.AuthorizationResponseClaims, key string) (string, error)
 }
 
 // Users is an interface for managing users
