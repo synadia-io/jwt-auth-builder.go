@@ -166,6 +166,34 @@ func (t *ProviderSuite) Test_ScopedUserPermissionLimitsSetter() {
 	t.Equal(scope.PubPermissions().Allow(), []string{"test.>"})
 }
 
+func (t *ProviderSuite) Test_ScopedOrNot() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+
+	scope, err := a.ScopedSigningKeys().AddScope("test")
+	t.NoError(err)
+
+	lim, err := a.ScopedSigningKeys().GetScope(scope.Key())
+	t.NoError(err)
+	t.NotNil(lim)
+
+	pk, err := a.ScopedSigningKeys().Add()
+	t.NoError(err)
+
+	lim, err = a.ScopedSigningKeys().GetScope(pk)
+	t.Error(err)
+	t.Nil(lim)
+
+	ok, scoped := a.ScopedSigningKeys().Contains(pk)
+	t.True(ok)
+	t.False(scoped)
+}
+
 func setupTestWithOperatorAndAccount(p *ProviderSuite) (authb.Auth, authb.Operator, authb.Account) {
 	auth, err := authb.NewAuth(p.Provider)
 	p.NoError(err)

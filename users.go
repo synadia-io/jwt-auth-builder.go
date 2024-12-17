@@ -25,13 +25,14 @@ func (a *UsersImpl) add(name string, key string, uk *Key) (User, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, scoped := a.accountData.Claim.SigningKeys.GetScope(key)
+	// scope will be nil if just a signing key
+	ok, scoped := a.accountData.ScopedSigningKeys().Contains(key)
 
 	d := &UserData{
 		BaseData:    BaseData{EntityName: name, Key: uk, Modified: true},
 		AccountData: a.accountData,
 		Claim:       jwt.NewUserClaims(uk.Public),
-		RejectEdits: scoped,
+		RejectEdits: ok && scoped,
 		Ephemeral:   uk.Seed == nil,
 	}
 	d.Claim.Name = name
