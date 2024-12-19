@@ -2,11 +2,12 @@ package tests
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/nats-io/nkeys"
 	"github.com/stretchr/testify/assert"
 	authb "github.com/synadia-io/jwt-auth-builder.go"
 	nsc "github.com/synadia-io/jwt-auth-builder.go/providers/nsc"
-	"testing"
 )
 
 func TestExternal(v *testing.T) {
