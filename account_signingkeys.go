@@ -16,7 +16,7 @@ func (as *accountSigningKeys) List() []string {
 }
 
 func (as *accountSigningKeys) Add() (string, error) {
-	k, err := KeyFor(nkeys.PrefixByteAccount)
+	k, err := as.data.Operator.SigningService.NewKey(nkeys.PrefixByteAccount)
 	if err != nil {
 		return "", err
 	}
