@@ -1,8 +1,9 @@
 package tests
 
 import (
-	"github.com/nats-io/nkeys"
 	"time"
+
+	"github.com/nats-io/nkeys"
 
 	"github.com/nats-io/jwt/v2"
 	authb "github.com/synadia-io/jwt-auth-builder.go"

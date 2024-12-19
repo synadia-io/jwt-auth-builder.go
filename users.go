@@ -17,6 +17,43 @@ func (a *UsersImpl) Add(name string, key string) (User, error) {
 	return a.add(name, key, uk)
 }
 
+func (a *UsersImpl) ImportEphemeral(c *jwt.UserClaims, key string) (User, error) {
+	if key == "" {
+		key = a.accountData.Key.Public
+	}
+	k, signingKey, err := a.accountData.getKey(key)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := KeyFrom(c.Subject, nkeys.PrefixByteUser)
+	if err != nil {
+		return nil, err
+	}
+	ok, scoped := a.accountData.ScopedSigningKeys().Contains(key)
+
+	d := &UserData{
+		BaseData:    BaseData{EntityName: c.Name, Key: id, Modified: true},
+		AccountData: a.accountData,
+		Claim:       c,
+		RejectEdits: ok && scoped,
+		Ephemeral:   true,
+	}
+	d.Claim.Name = c.Name
+	if signingKey {
+		d.Claim.IssuerAccount = a.accountData.Key.Public
+	}
+	if scoped {
+		d.Claim.UserPermissionLimits = jwt.UserPermissionLimits{}
+	}
+	d.Token, err = a.accountData.Operator.SigningService.Sign(d.Claim, k)
+	if err != nil {
+		return nil, err
+	}
+	a.accountData.UserDatas = append(a.accountData.UserDatas, d)
+	return d, nil
+}
+
 func (a *UsersImpl) add(name string, key string, uk *Key) (User, error) {
 	if key == "" {
 		key = a.accountData.Key.Public

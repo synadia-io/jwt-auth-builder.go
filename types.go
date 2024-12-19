@@ -348,6 +348,8 @@ type Users interface {
 	// If the provided ID is only a public key the user will be ephemeral and will not stored,
 	// other operations, as cred generation will fail
 	AddWithIdentity(name string, signer string, id string) (User, error)
+	// ImportEphemeral imports an ephemeral user from a claim
+	ImportEphemeral(c *jwt.UserClaims, key string) (User, error)
 	// Delete the user by matching its name or subject
 	Delete(name string) error
 	// Get returns the user by matching its name or subject
