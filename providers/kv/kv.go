@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nats-io/jsm.go/natscontext"
 	jwt "github.com/nats-io/jwt/v2"
 	nats "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/nats-io/nkeys"
 	ab "github.com/synadia-io/jwt-auth-builder.go"
+	"github.com/synadia-io/orbit.go/natscontext"
 )
 
 // KvProvider is an AuthProvider that stores data in a JetStream KeyValue store
@@ -95,7 +95,7 @@ func NewKvProvider(opts ...KvProviderOption) (*KvProvider, error) {
 	var nc *nats.Conn
 	name := config.NatsContext
 	if name != "" {
-		nc, err = natscontext.Connect(name, config.NatsOptions...)
+		nc, _, err = natscontext.Connect(name, config.NatsOptions...)
 		if err != nil {
 			return nil, err
 		}
