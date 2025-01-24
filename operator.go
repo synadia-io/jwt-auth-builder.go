@@ -157,6 +157,33 @@ func (o *OperatorData) update() error {
 	return nil
 }
 
+func (o *OperatorData) IssueClaim(claim jwt.Claims, key string) (string, error) {
+	switch claim.(type) {
+	case *jwt.UserClaims:
+		return "", errors.New("operators cannot issue user claims")
+	case *jwt.AuthorizationResponseClaims:
+		return "", errors.New("operators cannot issue authorization response claims")
+	case *jwt.AuthorizationRequestClaims:
+		return "", errors.New("operators cannot issue authorization request claims")
+	}
+
+	var k *Key
+	if key == "" {
+		k = o.Key
+	} else {
+		for _, sk := range o.OperatorSigningKeys {
+			if sk.Public == key {
+				k = sk
+				break
+			}
+		}
+	}
+	if k == nil {
+		return "", fmt.Errorf("invalid signing key %w", ErrNotFound)
+	}
+	return o.SigningService.Sign(claim, k)
+}
+
 func (o *OperatorData) MemResolver() ([]byte, error) {
 	builder := NewMemResolverConfigBuilder()
 	if err := builder.Add([]byte(o.Token)); err != nil {
