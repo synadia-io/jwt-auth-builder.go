@@ -263,6 +263,8 @@ type Operator interface {
 	JWT() string
 	// Tags returns an object that you can use to manage tags for the operator
 	Tags() Tags
+	// IssueClaim issues the specified jwt.Claim using the specified operator key
+	IssueClaim(claim jwt.Claims, key string) (string, error)
 }
 
 // Accounts is an interface for managing accounts
@@ -332,7 +334,10 @@ type Account interface {
 	// if the users value is nil, ExternalAuthorization is not enabled
 	ExternalAuthorization() ([]string, []string, string)
 
+	// IssueAuthorizationResponse generates a signed JWT token for an AuthorizationResponseClaims using the specified key.
 	IssueAuthorizationResponse(claim *jwt.AuthorizationResponseClaims, key string) (string, error)
+	// IssueClaim issues the specified jwt.Claim using the specified account key
+	IssueClaim(claim jwt.Claims, key string) (string, error)
 }
 
 // Users is an interface for managing users

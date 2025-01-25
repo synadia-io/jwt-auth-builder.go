@@ -246,6 +246,44 @@ func (t *ProviderSuite) Test_OperatorSystemAccount() {
 	t.NoError(o.Accounts().Delete("SYS"))
 }
 
+func (t *ProviderSuite) Test_OperatorSignClaim() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+	sk, err := o.SigningKeys().Add()
+	t.NoError(err)
+
+	gc := jwt.NewGenericClaims(o.Subject())
+	gc.Name = "t"
+	gc.Data["testing"] = "foo"
+	token, err := o.IssueClaim(gc, "")
+	t.NoError(err)
+	gc, err = jwt.DecodeGeneric(token)
+	t.NoError(err)
+	t.Equal(gc.Issuer, o.Subject())
+
+	token, err = o.IssueClaim(gc, sk)
+	t.NoError(err)
+	gc, err = jwt.DecodeGeneric(token)
+	t.NoError(err)
+	t.Equal(gc.Issuer, sk)
+
+	k, err := auth.NewKey(nkeys.PrefixByteUser)
+	t.NoError(err)
+	_, err = o.IssueClaim(jwt.NewUserClaims(k.Public), "")
+	t.Error(err)
+	t.Contains(err.Error(), "operators cannot issue")
+
+	_, err = o.IssueClaim(jwt.NewAuthorizationRequestClaims(k.Public), "")
+	t.Error(err)
+	t.Contains(err.Error(), "operators cannot issue")
+
+	_, err = o.IssueClaim(jwt.NewAuthorizationResponseClaims(k.Public), "")
+	t.Error(err)
+	t.Contains(err.Error(), "operators cannot issue")
+}
+
 func (t *ProviderSuite) Test_MemResolver() {
 	auth, err := authb.NewAuth(t.Provider)
 	t.NoError(err)

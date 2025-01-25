@@ -180,15 +180,45 @@ func (a *AccountData) ExternalAuthorization() ([]string, []string, string) {
 }
 
 func (a *AccountData) IssueAuthorizationResponse(claim *jwt.AuthorizationResponseClaims, key string) (string, error) {
+	return a.IssueClaim(claim, key)
+}
+
+func (a *AccountData) IssueClaim(claim jwt.Claims, key string) (string, error) {
 	if key == "" {
 		key = a.Key.Public
 	}
-	k, signingKey, err := a.getKey(key)
+	k, _, err := a.getKey(key)
 	if err != nil {
 		return "", err
 	}
-	if signingKey {
-		claim.IssuerAccount = a.Key.Public
+	_, scoped := a.ScopedSigningKeys().Contains(key)
+
+	switch c := claim.(type) {
+	case *jwt.OperatorClaims:
+		return "", errors.New("accounts cannot issue operator claims")
+	case *jwt.AccountClaims:
+		if c.Subject != k.Public {
+			return "", errors.New("accounts can only self-sign")
+		}
+	case *jwt.UserClaims:
+		if scoped {
+			// cannot have any sort of permission
+			c.UserPermissionLimits = jwt.UserPermissionLimits{}
+		}
+		c.IssuerAccount = a.Key.Public
+	case *jwt.AuthorizationResponseClaims:
+		if scoped {
+			return "", fmt.Errorf("scoped keys can only issue user claims")
+		}
+		if key != a.Key.Public {
+			c.IssuerAccount = a.Key.Public
+		}
+	case *jwt.AuthorizationRequestClaims:
+		return "", errors.New("accounts cannot issue authorization request claims")
+	case *jwt.GenericClaims:
+		if scoped {
+			return "", fmt.Errorf("scoped keys can only issue user claims")
+		}
 	}
 	return a.Operator.SigningService.Sign(claim, k)
 }

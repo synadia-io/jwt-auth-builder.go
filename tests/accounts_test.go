@@ -951,3 +951,81 @@ func (t *ProviderSuite) Test_ExternalAuthorization() {
 	t.Nil(accounts)
 	t.Empty(key)
 }
+
+func (t *ProviderSuite) Test_AccountSignClaim() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+	sk, err := a.ScopedSigningKeys().Add()
+	t.NoError(err)
+	scope, err := a.ScopedSigningKeys().AddScope("sentinel")
+	t.NoError(err)
+	t.NoError(scope.SubPermissions().SetDeny(">"))
+	t.NoError(scope.PubPermissions().SetDeny(">"))
+
+	gc := jwt.NewGenericClaims(a.Subject())
+	gc.Name = "t"
+	gc.Data["testing"] = "foo"
+	token, err := a.IssueClaim(gc, "")
+	t.NoError(err)
+	gc, err = jwt.DecodeGeneric(token)
+	t.NoError(err)
+	t.Equal(gc.Issuer, a.Subject())
+	_, err = a.IssueClaim(gc, scope.Key())
+	t.Error(err)
+	t.Contains(err.Error(), "scoped keys can only issue user claims")
+
+	ukey, err := auth.NewKey(nkeys.PrefixByteUser)
+	t.NoError(err)
+	token, err = a.IssueClaim(jwt.NewUserClaims(ukey.Public), "")
+	t.NoError(err)
+	u, err := jwt.DecodeUserClaims(token)
+	t.NoError(err)
+	t.Equal(u.Issuer, a.Subject())
+
+	// signing key keeps perms
+	uc := jwt.NewUserClaims(ukey.Public)
+	uc.UserPermissionLimits = jwt.UserPermissionLimits{}
+	uc.UserPermissionLimits.Permissions.Pub.Allow.Add("foo")
+	token, err = a.IssueClaim(uc, sk)
+	t.NoError(err)
+	u, err = jwt.DecodeUserClaims(token)
+	t.NoError(err)
+	t.Equal(u.Issuer, sk)
+	t.Equal(u.IssuerAccount, a.Subject())
+	t.True(u.UserPermissionLimits.Permissions.Pub.Allow.Contains("foo"))
+
+	// scoped deletes pub perms
+	token, err = a.IssueClaim(jwt.NewUserClaims(ukey.Public), scope.Key())
+	t.NoError(err)
+	u, err = jwt.DecodeUserClaims(token)
+	t.NoError(err)
+	t.False(u.UserPermissionLimits.Permissions.Pub.Allow.Contains("foo"))
+
+	ar := jwt.NewAuthorizationRequestClaims(ukey.Public)
+	_, err = a.IssueClaim(ar, "")
+	t.Error(err)
+	t.Contains(err.Error(), "accounts cannot issue authorization")
+
+	_, err = a.IssueClaim(jwt.NewGenericClaims(ukey.Public), "")
+	t.NoError(err)
+
+	_, err = a.IssueClaim(jwt.NewGenericClaims(ukey.Public), scope.Key())
+	t.Error(err)
+	t.Contains(err.Error(), "scoped keys can only issue user claims")
+
+	_, err = a.IssueClaim(jwt.NewOperatorClaims(o.Subject()), "")
+	t.Error(err)
+	t.Contains(err.Error(), "accounts cannot issue operator claims")
+
+	ac, err := jwt.DecodeAccountClaims(a.JWT())
+	t.NoError(err)
+	_, err = a.IssueClaim(ac, "")
+	t.NoError(err)
+	_, err = a.IssueClaim(ac, scope.Key())
+	t.Error(err)
+	t.Contains(err.Error(), "accounts can only self-sign")
+}
