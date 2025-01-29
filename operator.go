@@ -168,7 +168,7 @@ func (o *OperatorData) IssueClaim(claim jwt.Claims, key string) (string, error) 
 	}
 
 	var k *Key
-	if key == "" {
+	if key == "" || key == o.Key.Public {
 		k = o.Key
 	} else {
 		for _, sk := range o.OperatorSigningKeys {
