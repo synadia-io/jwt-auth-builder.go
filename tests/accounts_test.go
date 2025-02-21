@@ -922,7 +922,7 @@ func (t *ProviderSuite) Test_ExternalAuthorization() {
 	t.Empty(accounts)
 	t.Empty(key)
 
-	t.NoError(external.SetExternalAuthorizationUser([]authb.User{u}, []authb.Account{a}, curve.Public))
+	t.NoError(external.SetExternalAuthorizationUser([]interface{}{u}, []interface{}{a}, curve.Public))
 
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())

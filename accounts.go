@@ -142,7 +142,7 @@ func (a *AccountData) Limits() AccountLimits {
 	return &accountLimits{data: a}
 }
 
-func (a *AccountData) SetExternalAuthorizationUser(users []User, accounts []Account, encryption string) error {
+func (a *AccountData) SetExternalAuthorizationUser(users []interface{}, accounts []interface{}, encryption string) error {
 	if users == nil {
 		// disable
 		a.Claim.Authorization.AuthUsers = nil
@@ -151,13 +151,39 @@ func (a *AccountData) SetExternalAuthorizationUser(users []User, accounts []Acco
 	} else {
 		var ukeys []string
 		for _, u := range users {
-			ukeys = append(ukeys, u.Subject())
+			switch v := u.(type) {
+			case string:
+				k, err := KeyFrom(v, nkeys.PrefixByteUser)
+				if err != nil {
+					return err
+				}
+				ukeys = append(ukeys, k.Public)
+			case User:
+				ukeys = append(ukeys, v.Subject())
+			default:
+				return errors.New("not a string or user")
+			}
 		}
 		a.Claim.Authorization.AuthUsers = ukeys
 
 		var akeys []string
 		for _, a := range accounts {
-			akeys = append(akeys, a.Subject())
+			switch v := a.(type) {
+			case string:
+				if v != "*" {
+					var err error
+					k, err := KeyFrom(v, nkeys.PrefixByteAccount)
+					if err != nil {
+						return err
+					}
+					v = k.Public
+				}
+				akeys = append(akeys, v)
+			case Account:
+				akeys = append(akeys, v.Subject())
+			default:
+				return errors.New("not a string or account")
+			}
 		}
 		a.Claim.Authorization.AllowedAccounts = akeys
 
