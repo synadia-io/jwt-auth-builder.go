@@ -78,11 +78,11 @@ type OperatorsImpl struct {
 }
 
 func (a *AuthImpl) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&struct {
+	return json.MarshalIndent(&struct {
 		Operators []*OperatorData `json:"operators"`
 	}{
 		Operators: a.operators,
-	})
+	}, "", "  ")
 }
 
 func (a *AuthImpl) UnmarshalJSON(data []byte) error {

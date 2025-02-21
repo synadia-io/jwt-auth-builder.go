@@ -328,7 +328,9 @@ type Account interface {
 
 	// SetExternalAuthorizationUser updates external authorization by associating users public keys, account public keys, and an encryption key.
 	// ExternalAuthorization requires at the very list one user
-	SetExternalAuthorizationUser(users []User, accounts []Account, encryption string) error
+	// users can pass reference to User or the public key of the user
+	// accounts can pass references to Account or the public key of the account
+	SetExternalAuthorizationUser(users []interface{}, accounts []interface{}, encryption string) error
 
 	// ExternalAuthorization retrieves a list of authorized users, associated accounts, and encryption key.
 	// if the users value is nil, ExternalAuthorization is not enabled
