@@ -142,7 +142,7 @@ func (a *AccountData) Limits() AccountLimits {
 	return &accountLimits{data: a}
 }
 
-func (a *AccountData) SetExternalAuthorizationUser(users []User, accounts []Account, encryption string) error {
+func (a *AccountData) SetExternalAuthorizationUser(users []interface{}, accounts []interface{}, encryption string) error {
 	if users == nil {
 		// disable
 		a.Claim.Authorization.AuthUsers = nil
@@ -151,13 +151,39 @@ func (a *AccountData) SetExternalAuthorizationUser(users []User, accounts []Acco
 	} else {
 		var ukeys []string
 		for _, u := range users {
-			ukeys = append(ukeys, u.Subject())
+			switch v := u.(type) {
+			case string:
+				k, err := KeyFrom(v, nkeys.PrefixByteUser)
+				if err != nil {
+					return err
+				}
+				ukeys = append(ukeys, k.Public)
+			case User:
+				ukeys = append(ukeys, v.Subject())
+			default:
+				return errors.New("not a string or user")
+			}
 		}
 		a.Claim.Authorization.AuthUsers = ukeys
 
 		var akeys []string
 		for _, a := range accounts {
-			akeys = append(akeys, a.Subject())
+			switch v := a.(type) {
+			case string:
+				if v != "*" {
+					var err error
+					k, err := KeyFrom(v, nkeys.PrefixByteAccount)
+					if err != nil {
+						return err
+					}
+					v = k.Public
+				}
+				akeys = append(akeys, v)
+			case Account:
+				akeys = append(akeys, v.Subject())
+			default:
+				return errors.New("not a string or account")
+			}
 		}
 		a.Claim.Authorization.AllowedAccounts = akeys
 
@@ -505,4 +531,74 @@ func (at *AccountTags) Set(tag ...string) error {
 
 func (at *AccountTags) All() ([]string, error) {
 	return at.a.Claim.Tags, nil
+}
+
+func (a *AccountData) SubjectMappings() SubjectMappings {
+	return &SubjectMappingsImpl{a}
+}
+
+type SubjectMappingsImpl struct {
+	data *AccountData
+}
+
+func (m *SubjectMappingsImpl) Get(subject string) Mappings {
+	if m.data.Claim.Mappings == nil {
+		return nil
+	}
+	wm := m.data.Claim.Mappings[jwt.Subject(subject)]
+	if wm == nil {
+		return nil
+	}
+	var mm Mappings
+	for _, e := range wm {
+		var me Mapping
+		me.Subject = string(e.Subject)
+		me.Weight = e.Weight
+		me.Cluster = e.Cluster
+		mm = append(mm, me)
+	}
+	return mm
+}
+
+func (m *SubjectMappingsImpl) Set(subject string, me ...Mapping) error {
+	var wm []jwt.WeightedMapping
+	for _, e := range me {
+		var w jwt.WeightedMapping
+		w.Subject = jwt.Subject(e.Subject)
+		w.Weight = e.Weight
+		w.Cluster = e.Cluster
+		wm = append(wm, w)
+	}
+
+	// FIXME: validation issues here need to be addressed by possibly
+	//  reverting the changes and reloading from the JWT...
+	mappings := jwt.Mapping(make(map[jwt.Subject][]jwt.WeightedMapping))
+	mappings[jwt.Subject(subject)] = wm
+	var vr jwt.ValidationResults
+	mappings.Validate(&vr)
+	if vr.IsBlocking(true) {
+		return vr.Errors()[0]
+	}
+
+	if m.data.Claim.Mappings == nil {
+		m.data.Claim.Mappings = make(map[jwt.Subject][]jwt.WeightedMapping)
+	}
+	m.data.Claim.AddMapping(jwt.Subject(subject), wm...)
+	return m.data.update()
+}
+
+func (m *SubjectMappingsImpl) Delete(subject string) error {
+	if m.data.Claim.Mappings != nil {
+		m.data.Claim.Mappings[jwt.Subject(subject)] = nil
+		return m.data.update()
+	}
+	return nil
+}
+
+func (m *SubjectMappingsImpl) List() []string {
+	var buf []string
+	for k := range m.data.Claim.Mappings {
+		buf = append(buf, string(k))
+	}
+	return buf
 }

@@ -328,7 +328,9 @@ type Account interface {
 
 	// SetExternalAuthorizationUser updates external authorization by associating users public keys, account public keys, and an encryption key.
 	// ExternalAuthorization requires at the very list one user
-	SetExternalAuthorizationUser(users []User, accounts []Account, encryption string) error
+	// users can pass reference to User or the public key of the user
+	// accounts can pass references to Account or the public key of the account
+	SetExternalAuthorizationUser(users []interface{}, accounts []interface{}, encryption string) error
 
 	// ExternalAuthorization retrieves a list of authorized users, associated accounts, and encryption key.
 	// if the users value is nil, ExternalAuthorization is not enabled
@@ -338,6 +340,29 @@ type Account interface {
 	IssueAuthorizationResponse(claim *jwt.AuthorizationResponseClaims, key string) (string, error)
 	// IssueClaim issues the specified jwt.Claim using the specified account key
 	IssueClaim(claim jwt.Claims, key string) (string, error)
+
+	SubjectMappings() SubjectMappings
+}
+
+type SubjectMappings interface {
+	Get(subject string) Mappings
+	Set(subject string, m ...Mapping) error
+	Delete(subject string) error
+	List() []string
+}
+
+type Mappings = []Mapping
+
+type Mapping struct {
+	// Destination subject
+	Subject string
+	// Weight of the mapping from 0 to 100 (representing 100%)
+	// Note that the sum of all the mappings must not have a weight greater than 100
+	// If Cluster is specified, the total of each cluster grouping must not exceed 100
+	Weight uint8
+	// Optional cluster name, if specified the weight for the cluster is independent
+	// of the other Cluster or non-clustered mappings
+	Cluster string
 }
 
 // Users is an interface for managing users
