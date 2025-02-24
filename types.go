@@ -340,6 +340,29 @@ type Account interface {
 	IssueAuthorizationResponse(claim *jwt.AuthorizationResponseClaims, key string) (string, error)
 	// IssueClaim issues the specified jwt.Claim using the specified account key
 	IssueClaim(claim jwt.Claims, key string) (string, error)
+
+	SubjectMappings() SubjectMappings
+}
+
+type SubjectMappings interface {
+	Get(subject string) Mappings
+	Set(subject string, m ...Mapping) error
+	Delete(subject string) error
+	List() []string
+}
+
+type Mappings = []Mapping
+
+type Mapping struct {
+	// Destination subject
+	Subject string
+	// Weight of the mapping from 0 to 100 (representing 100%)
+	// Note that the sum of all the mappings must not have a weight greater than 100
+	// If Cluster is specified, the total of each cluster grouping must not exceed 100
+	Weight uint8
+	// Optional cluster name, if specified the weight for the cluster is independent
+	// of the other Cluster or non-clustered mappings
+	Cluster string
 }
 
 // Users is an interface for managing users
