@@ -61,6 +61,31 @@ func (a *AccountData) Issuer() string {
 	return a.Claim.Issuer
 }
 
+func (a *AccountData) SetIssuer(issuer string) error {
+	if issuer != "" {
+		_, err := KeyFrom(issuer, nkeys.PrefixByteOperator)
+		if err != nil {
+			return err
+		}
+	}
+
+	found := issuer == "" || a.Operator.Key.Public == issuer
+	if !found {
+		for i := 0; i < len(a.Operator.OperatorSigningKeys); i++ {
+			if a.Operator.OperatorSigningKeys[i].Public == issuer {
+				found = true
+				break
+			}
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("issuer is not a registered operator key")
+	}
+	a.Claim.Issuer = issuer
+	return a.update()
+}
+
 func (a *AccountData) update() error {
 	if a.BaseData.readOnly {
 		return fmt.Errorf("account is read-only")
@@ -71,12 +96,19 @@ func (a *AccountData) update() error {
 	if vr.IsBlocking(true) {
 		return vr.Errors()[0]
 	}
-	// FIXME: the account possibly needs a way to select the key...
-	key := a.Operator.Key
-	if len(a.Operator.OperatorSigningKeys) > 0 {
-		key = a.Operator.OperatorSigningKeys[0]
+	if a.Claim.Issuer == "" {
+		a.Claim.Issuer = a.Operator.Key.Public
 	}
-	return a.issue(key)
+
+	if a.Claim.Issuer == a.Operator.Key.Public {
+		return a.issue(a.Operator.Key)
+	}
+	for i := 0; i < len(a.Operator.OperatorSigningKeys); i++ {
+		if a.Claim.Issuer == a.Operator.OperatorSigningKeys[0].Public {
+			return a.issue(a.Operator.OperatorSigningKeys[i])
+		}
+	}
+	return fmt.Errorf("operator signing key %q is was not found", a.Claim.Issuer)
 }
 
 func (a *AccountData) getRevocations() jwt.RevocationList {
@@ -531,4 +563,74 @@ func (at *AccountTags) Set(tag ...string) error {
 
 func (at *AccountTags) All() ([]string, error) {
 	return at.a.Claim.Tags, nil
+}
+
+func (a *AccountData) SubjectMappings() SubjectMappings {
+	return &SubjectMappingsImpl{a}
+}
+
+type SubjectMappingsImpl struct {
+	data *AccountData
+}
+
+func (m *SubjectMappingsImpl) Get(subject string) Mappings {
+	if m.data.Claim.Mappings == nil {
+		return nil
+	}
+	wm := m.data.Claim.Mappings[jwt.Subject(subject)]
+	if wm == nil {
+		return nil
+	}
+	var mm Mappings
+	for _, e := range wm {
+		var me Mapping
+		me.Subject = string(e.Subject)
+		me.Weight = e.Weight
+		me.Cluster = e.Cluster
+		mm = append(mm, me)
+	}
+	return mm
+}
+
+func (m *SubjectMappingsImpl) Set(subject string, me ...Mapping) error {
+	var wm []jwt.WeightedMapping
+	for _, e := range me {
+		var w jwt.WeightedMapping
+		w.Subject = jwt.Subject(e.Subject)
+		w.Weight = e.Weight
+		w.Cluster = e.Cluster
+		wm = append(wm, w)
+	}
+
+	// FIXME: validation issues here need to be addressed by possibly
+	//  reverting the changes and reloading from the JWT...
+	mappings := jwt.Mapping(make(map[jwt.Subject][]jwt.WeightedMapping))
+	mappings[jwt.Subject(subject)] = wm
+	var vr jwt.ValidationResults
+	mappings.Validate(&vr)
+	if vr.IsBlocking(true) {
+		return vr.Errors()[0]
+	}
+
+	if m.data.Claim.Mappings == nil {
+		m.data.Claim.Mappings = make(map[jwt.Subject][]jwt.WeightedMapping)
+	}
+	m.data.Claim.AddMapping(jwt.Subject(subject), wm...)
+	return m.data.update()
+}
+
+func (m *SubjectMappingsImpl) Delete(subject string) error {
+	if m.data.Claim.Mappings != nil {
+		m.data.Claim.Mappings[jwt.Subject(subject)] = nil
+		return m.data.update()
+	}
+	return nil
+}
+
+func (m *SubjectMappingsImpl) List() []string {
+	var buf []string
+	for k := range m.data.Claim.Mappings {
+		buf = append(buf, string(k))
+	}
+	return buf
 }

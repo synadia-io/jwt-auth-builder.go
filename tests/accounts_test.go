@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/nats-io/nkeys"
 
 	"github.com/nats-io/jwt/v2"
@@ -1028,4 +1030,77 @@ func (t *ProviderSuite) Test_AccountSignClaim() {
 	_, err = a.IssueClaim(ac, scope.Key())
 	t.Error(err)
 	t.Contains(err.Error(), "accounts can only self-sign")
+}
+
+func (t *ProviderSuite) Test_SubjectMapping() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+
+	sm := a.SubjectMappings()
+	t.Empty(sm.List())
+
+	err = sm.Set("foo", authb.Mapping{
+		Subject: "bar",
+		Weight:  10,
+	}, authb.Mapping{
+		Subject: "baz",
+		Weight:  20,
+	})
+	require.NoError(t.T(), err)
+	mappings := sm.List()
+	t.Len(mappings, 1)
+	t.Contains(mappings, "foo")
+
+	entries := sm.Get("foo")
+	t.Len(entries, 2)
+	t.Equal(entries[0].Subject, "bar")
+	t.Equal(entries[1].Subject, "baz")
+
+	err = sm.Set("bar", authb.Mapping{
+		Subject: "baz",
+		Weight:  110,
+	})
+	t.Error(err)
+	t.Nil(sm.Get("bar"))
+
+	t.NoError(sm.Delete("foo"))
+	t.NoError(sm.Delete("foo"))
+}
+
+func (t *ProviderSuite) Test_AccountIssuer() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	operators := auth.Operators()
+	t.Empty(operators.List())
+
+	o, err := operators.Add("O")
+	t.NoError(err)
+	t.NotNil(o)
+
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+	t.NotNil(a)
+
+	t.Equal(a.Issuer(), o.Subject())
+
+	bad, err := authb.KeyFor(nkeys.PrefixByteAccount)
+	err = a.SetIssuer(bad.Public)
+	t.Error(err)
+	t.Equal(err.Error(), "nkeys: incompatible key")
+
+	unknown, err := authb.KeyFor(nkeys.PrefixByteOperator)
+	err = a.SetIssuer(unknown.Public)
+	t.Error(err)
+	t.Equal(err.Error(), "issuer is not a registered operator key")
+
+	sk, err := o.SigningKeys().Add()
+	t.NoError(err)
+	t.NotEmpty(sk)
+	t.NoError(a.SetIssuer(sk))
+	t.Equal(a.Issuer(), sk)
 }

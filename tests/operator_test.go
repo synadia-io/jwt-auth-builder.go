@@ -184,23 +184,6 @@ func (t *ProviderSuite) Test_OperatorUsesMainKeyToSignAccount() {
 	t.NoError(auth.Commit())
 }
 
-func (t *ProviderSuite) Test_OperatorUsesSigningKeyToSignAccount() {
-	auth, err := authb.NewAuth(t.Provider)
-	t.NoError(err)
-	o, err := auth.Operators().Add("O")
-	t.NoError(err)
-	sk, err := o.SigningKeys().Add()
-	t.NoError(err)
-	t.NotEmpty(sk)
-	a, err := o.Accounts().Add("A")
-	t.NoError(err)
-	t.NotNil(sk, a.Issuer())
-	t.NoError(auth.Commit())
-
-	ac := t.Store.GetAccount("O", "A")
-	t.Equal(sk, ac.ClaimsData.Issuer)
-}
-
 func (t *ProviderSuite) Test_OperatorRotate() {
 	auth, err := authb.NewAuth(t.Provider)
 	t.NoError(err)
@@ -211,6 +194,9 @@ func (t *ProviderSuite) Test_OperatorRotate() {
 	t.NotEmpty(sk)
 	a, err := o.Accounts().Add("A")
 	t.NoError(err)
+	t.Equal(o.Subject(), a.Issuer())
+
+	t.NoError(a.SetIssuer(sk))
 	t.Equal(sk, a.Issuer())
 	t.NoError(auth.Commit())
 
