@@ -1068,7 +1068,7 @@ func (t *ProviderSuite) Test_SubjectMapping() {
 	t.Nil(sm.Get("bar"))
 
 	t.NoError(sm.Delete("foo"))
-	t.NoError(sm.Delete("foo"))
+	t.NotContains(mappings, "foo")
 }
 
 func (t *ProviderSuite) Test_AccountIssuer() {
