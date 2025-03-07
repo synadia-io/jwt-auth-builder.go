@@ -1103,4 +1103,7 @@ func (t *ProviderSuite) Test_AccountIssuer() {
 	t.NotEmpty(sk)
 	t.NoError(a.SetIssuer(sk))
 	t.Equal(a.Issuer(), sk)
+
+	t.NoError(a.SetIssuer(""))
+	t.Equal(a.Issuer(), o.Subject())
 }
