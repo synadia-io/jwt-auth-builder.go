@@ -1089,11 +1089,13 @@ func (t *ProviderSuite) Test_AccountIssuer() {
 	t.Equal(a.Issuer(), o.Subject())
 
 	bad, err := authb.KeyFor(nkeys.PrefixByteAccount)
+	t.NoError(err)
 	err = a.SetIssuer(bad.Public)
 	t.Error(err)
 	t.Equal(err.Error(), "nkeys: incompatible key")
 
 	unknown, err := authb.KeyFor(nkeys.PrefixByteOperator)
+	t.NoError(err)
 	err = a.SetIssuer(unknown.Public)
 	t.Error(err)
 	t.Equal(err.Error(), "issuer is not a registered operator key")
