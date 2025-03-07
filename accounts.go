@@ -61,6 +61,31 @@ func (a *AccountData) Issuer() string {
 	return a.Claim.Issuer
 }
 
+func (a *AccountData) SetIssuer(issuer string) error {
+	if issuer != "" {
+		_, err := KeyFrom(issuer, nkeys.PrefixByteOperator)
+		if err != nil {
+			return err
+		}
+	}
+
+	found := issuer == "" || a.Operator.Key.Public == issuer
+	if !found {
+		for i := 0; i < len(a.Operator.OperatorSigningKeys); i++ {
+			if a.Operator.OperatorSigningKeys[i].Public == issuer {
+				found = true
+				break
+			}
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("issuer is not a registered operator key")
+	}
+	a.Claim.Issuer = issuer
+	return a.update()
+}
+
 func (a *AccountData) update() error {
 	if a.BaseData.readOnly {
 		return fmt.Errorf("account is read-only")
@@ -71,12 +96,19 @@ func (a *AccountData) update() error {
 	if vr.IsBlocking(true) {
 		return vr.Errors()[0]
 	}
-	// FIXME: the account possibly needs a way to select the key...
-	key := a.Operator.Key
-	if len(a.Operator.OperatorSigningKeys) > 0 {
-		key = a.Operator.OperatorSigningKeys[0]
+	if a.Claim.Issuer == "" {
+		a.Claim.Issuer = a.Operator.Key.Public
 	}
-	return a.issue(key)
+
+	if a.Claim.Issuer == a.Operator.Key.Public {
+		return a.issue(a.Operator.Key)
+	}
+	for i := 0; i < len(a.Operator.OperatorSigningKeys); i++ {
+		if a.Claim.Issuer == a.Operator.OperatorSigningKeys[0].Public {
+			return a.issue(a.Operator.OperatorSigningKeys[i])
+		}
+	}
+	return fmt.Errorf("operator signing key %q is was not found", a.Claim.Issuer)
 }
 
 func (a *AccountData) getRevocations() jwt.RevocationList {

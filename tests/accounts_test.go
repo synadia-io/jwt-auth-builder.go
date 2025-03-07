@@ -1070,3 +1070,42 @@ func (t *ProviderSuite) Test_SubjectMapping() {
 	t.NoError(sm.Delete("foo"))
 	t.NoError(sm.Delete("foo"))
 }
+
+func (t *ProviderSuite) Test_AccountIssuer() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	operators := auth.Operators()
+	t.Empty(operators.List())
+
+	o, err := operators.Add("O")
+	t.NoError(err)
+	t.NotNil(o)
+
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+	t.NotNil(a)
+
+	t.Equal(a.Issuer(), o.Subject())
+
+	bad, err := authb.KeyFor(nkeys.PrefixByteAccount)
+	t.NoError(err)
+	err = a.SetIssuer(bad.Public)
+	t.Error(err)
+	t.Equal(err.Error(), "nkeys: incompatible key")
+
+	unknown, err := authb.KeyFor(nkeys.PrefixByteOperator)
+	t.NoError(err)
+	err = a.SetIssuer(unknown.Public)
+	t.Error(err)
+	t.Equal(err.Error(), "issuer is not a registered operator key")
+
+	sk, err := o.SigningKeys().Add()
+	t.NoError(err)
+	t.NotEmpty(sk)
+	t.NoError(a.SetIssuer(sk))
+	t.Equal(a.Issuer(), sk)
+
+	t.NoError(a.SetIssuer(""))
+	t.Equal(a.Issuer(), o.Subject())
+}

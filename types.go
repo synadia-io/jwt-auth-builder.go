@@ -312,6 +312,9 @@ type Account interface {
 	// SetExpiry sets the expiry for the account in Unix Time Seconds.
 	// 0 never expires.
 	SetExpiry(exp int64) error
+	// SetIssuer sets the operator key to use (default is operator). If
+	// set to empty string, it will use the operator identity key
+	SetIssuer(issuer string) error
 	// Expiry returns the expiry for the account in Unix Time Seconds.
 	// 0 never expires
 	Expiry() int64
