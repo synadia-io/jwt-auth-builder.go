@@ -621,7 +621,7 @@ func (m *SubjectMappingsImpl) Set(subject string, me ...Mapping) error {
 
 func (m *SubjectMappingsImpl) Delete(subject string) error {
 	if m.data.Claim.Mappings != nil {
-		m.data.Claim.Mappings[jwt.Subject(subject)] = nil
+		delete(m.data.Claim.Mappings, jwt.Subject(subject))
 		return m.data.update()
 	}
 	return nil
