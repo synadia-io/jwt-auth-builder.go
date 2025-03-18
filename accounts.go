@@ -565,6 +565,19 @@ func (at *AccountTags) All() ([]string, error) {
 	return at.a.Claim.Tags, nil
 }
 
+func (a *AccountData) SetClusterTraffic(traffic string) error {
+	ct := jwt.ClusterTraffic(traffic)
+	if err := ct.Valid(); err != nil {
+		return err
+	}
+	a.Claim.ClusterTraffic = ct
+	return a.update()
+}
+
+func (a *AccountData) ClusterTraffic() string {
+	return string(a.Claim.ClusterTraffic)
+}
+
 func (a *AccountData) SubjectMappings() SubjectMappings {
 	return &SubjectMappingsImpl{a}
 }
