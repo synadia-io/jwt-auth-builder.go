@@ -1109,3 +1109,39 @@ func (t *ProviderSuite) Test_AccountIssuer() {
 	t.NoError(a.SetIssuer(""))
 	t.Equal(a.Issuer(), o.Subject())
 }
+
+func (t *ProviderSuite) Test_ClusterTraffic() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+	t.Equal("", a.ClusterTraffic())
+	t.NoError(a.SetClusterTraffic("system"))
+	t.Equal("system", a.ClusterTraffic())
+	t.NoError(a.SetClusterTraffic("owner"))
+	t.Equal("owner", a.ClusterTraffic())
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+	t.Equal("owner", a.ClusterTraffic())
+
+	// anything else is an error
+	t.Error(a.SetClusterTraffic("foo"))
+	t.Equal("owner", a.ClusterTraffic())
+	t.NoError(a.SetClusterTraffic(""))
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+	t.Equal("", a.ClusterTraffic())
+}

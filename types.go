@@ -343,8 +343,17 @@ type Account interface {
 	IssueAuthorizationResponse(claim *jwt.AuthorizationResponseClaims, key string) (string, error)
 	// IssueClaim issues the specified jwt.Claim using the specified account key
 	IssueClaim(claim jwt.Claims, key string) (string, error)
-
+	// SubjectMappings returns the interface for interacting with SubjectMappings
 	SubjectMappings() SubjectMappings
+	// SetClusterTraffic configures the JetStream traffic to go through the system account (default)
+	// or through this account. Possible values to this option are "" (empty string, default), routing
+	// via the system account, "system" route through the system account, "owner" routing through this
+	// account.
+	SetClusterTraffic(traffic string) error
+	// ClusterTraffic returns how JetStream traffic is configured for the account.
+	// An empty string or "system" denotes traffic through the system account (the default).
+	// "owner" denotes traffic through this account.
+	ClusterTraffic() string
 }
 
 type SubjectMappings interface {
