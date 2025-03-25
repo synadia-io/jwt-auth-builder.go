@@ -104,7 +104,7 @@ func (a *AccountData) update() error {
 		return a.issue(a.Operator.Key)
 	}
 	for i := 0; i < len(a.Operator.OperatorSigningKeys); i++ {
-		if a.Claim.Issuer == a.Operator.OperatorSigningKeys[0].Public {
+		if a.Claim.Issuer == a.Operator.OperatorSigningKeys[i].Public {
 			return a.issue(a.Operator.OperatorSigningKeys[i])
 		}
 	}

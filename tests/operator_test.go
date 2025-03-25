@@ -500,3 +500,52 @@ func (t *ProviderSuite) TagsCrud(element string) {
 	t.NoError(err)
 	t.Len(tags, 0)
 }
+
+func (t *ProviderSuite) Test_OperatorAccountIssue() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+	sk, err := o.SigningKeys().Add()
+	t.NoError(err)
+
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+	t.NoError(a.SetIssuer(sk))
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	t.Len(o.SigningKeys().List(), 1)
+	t.Equal(sk, o.SigningKeys().List()[0])
+
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+	t.Equal(sk, a.Issuer())
+
+	t.NoError(a.Tags().Add("foo"))
+	t.Equal(sk, a.Issuer())
+
+	t.NoError(a.SubjectMappings().Set("foo", authb.Mapping{Subject: "bar", Weight: 50}))
+	t.Equal(sk, a.Issuer())
+
+	role, err := a.ScopedSigningKeys().AddScope("admin")
+	t.NoError(err)
+	t.NoError(role.SubPermissions().SetAllow("foo"))
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+
+	u, err := a.Users().Add("U", role.Key())
+	t.NoError(err)
+	t.Equal(role.Key(), u.Issuer())
+	t.Equal(a.Subject(), u.IssuerAccount())
+}
