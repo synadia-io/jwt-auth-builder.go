@@ -64,12 +64,15 @@ func (c *ConnectionTypesImpl) Types() []string {
 }
 
 type PermissionsImpl struct {
-	pub bool
+	semantic bool
+	pub      bool
 	UserPermissions
 }
 
 func (p *PermissionsImpl) Allow() []string {
-	if p.pub {
+	if p.semantic {
+		return p.limits.Semantic.Allow
+	} else if p.pub {
 		return p.limits.Pub.Allow
 	} else {
 		return p.limits.Sub.Allow
@@ -80,7 +83,9 @@ func (p *PermissionsImpl) SetAllow(subjects ...string) error {
 	if p.rejectEdits {
 		return ErrUserIsScoped
 	}
-	if p.pub {
+	if p.semantic {
+		p.limits.Semantic.Allow = subjects
+	} else if p.pub {
 		p.limits.Pub.Allow = subjects
 	} else {
 		p.limits.Sub.Allow = subjects
@@ -89,7 +94,9 @@ func (p *PermissionsImpl) SetAllow(subjects ...string) error {
 }
 
 func (p *PermissionsImpl) Deny() []string {
-	if p.pub {
+	if p.semantic {
+		return p.limits.Semantic.Deny
+	} else if p.pub {
 		return p.limits.Pub.Deny
 	} else {
 		return p.limits.Sub.Deny
@@ -100,7 +107,9 @@ func (p *PermissionsImpl) SetDeny(subjects ...string) error {
 	if p.rejectEdits {
 		return ErrUserIsScoped
 	}
-	if p.pub {
+	if p.semantic {
+		p.limits.Semantic.Deny = subjects
+	} else if p.pub {
 		p.limits.Pub.Deny = subjects
 	} else {
 		p.limits.Sub.Deny = subjects
@@ -274,6 +283,14 @@ func (u *UserPermissions) BearerToken() bool {
 
 func (u *UserPermissions) ConnectionTypes() ConnectionTypes {
 	v := &ConnectionTypesImpl{}
+	v.scope = u.scope
+	v.limits = u.limits
+	v.accountData = u.accountData
+	return v
+}
+
+func (u *UserPermissions) SemanticPermissions() Permissions {
+	v := &PermissionsImpl{semantic: true}
 	v.scope = u.scope
 	v.limits = u.limits
 	v.accountData = u.accountData

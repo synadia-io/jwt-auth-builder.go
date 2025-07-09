@@ -876,6 +876,8 @@ type UserLimits interface {
 	ConnectionSources() ConnectionSources
 	// ConnectionTimes returns an interface for maintaining connection times
 	ConnectionTimes() ConnectionTimes
+	// SemanticPermissions returns an interface for managing semantic permissions that get expanded into NATS subjects.
+	SemanticPermissions() Permissions
 	// PubPermissions returns an interface for managing NATS subjects that the client can publish.
 	PubPermissions() Permissions
 	// SubPermissions returns an interface for managing NATS subjects that a client can create subscriptions on.

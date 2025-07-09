@@ -116,6 +116,16 @@ func (u *UserData) ConnectionTypes() ConnectionTypes {
 	return v
 }
 
+func (u *UserData) SemanticPermissions() Permissions {
+	v := &PermissionsImpl{}
+	v.rejectEdits = u.RejectEdits
+	v.semantic = true
+	v.limits = &u.Claim.UserPermissionLimits
+	v.accountData = u.AccountData
+	v.userData = u
+	return v
+}
+
 func (u *UserData) PubPermissions() Permissions {
 	v := &PermissionsImpl{}
 	v.rejectEdits = u.RejectEdits
