@@ -229,3 +229,12 @@ func (b *baseExportImpl) GenerateActivationForSubject(account string, issuer str
 	}
 	return b.data.Operator.SigningService.Sign(ac, k)
 }
+
+func (b *ServiceExportImpl) SetResponseType(tf string) error {
+	b.export.ResponseType = jwt.ResponseType(tf)
+	return b.update()
+}
+
+func (b *ServiceExportImpl) ResponseType() string {
+	return string(b.export.ResponseType)
+}
