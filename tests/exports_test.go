@@ -434,3 +434,21 @@ func (t *ProviderSuite) Test_StreamExportAdvertised() {
 	t.NoError(stream.SetAdvertised(true))
 	t.True(stream.IsAdvertised())
 }
+
+func (t *ProviderSuite) Test_ResponseType() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	a := t.MaybeCreate(auth, "O", "A")
+	service, err := a.Exports().Services().Add("q", "q.>")
+	t.NoError(err)
+
+	responseType := "Stream"
+	t.NoError(service.SetResponseType(responseType))
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	service, err = a.Exports().Services().Get("q.>")
+	t.NoError(err)
+	t.Equal(responseType, service.ResponseType())
+}

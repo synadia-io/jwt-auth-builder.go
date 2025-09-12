@@ -689,6 +689,10 @@ type ServiceExport interface {
 	AllowTracing() bool
 	// SetAllowTracing enables tracing messages to follow the service implementation
 	SetAllowTracing(tf bool) error
+	// SetResponseType sets the response type for the export
+	SetResponseType(string) error
+	// ResponseType returns the response type for the export
+	ResponseType() string
 }
 
 type StreamExport interface {
