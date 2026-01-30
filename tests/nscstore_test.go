@@ -94,5 +94,10 @@ func (ts *NscStore) GetUser(operator string, account string, name string) *jwt.U
 	return uc
 }
 
+func (ts *NscStore) DeleteKey(k string) {
+	fp := filepath.Join(ts.KeysDir(), store.KeysDir, k[:1], k[1:3], fmt.Sprintf("%s%s", k, store.NKeyExtension))
+	require.NoError(ts.t, os.Remove(fp))
+}
+
 func (ts *NscStore) Cleanup() {
 }

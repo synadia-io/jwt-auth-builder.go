@@ -188,6 +188,9 @@ func (u *UserData) UserPermissionLimits() jwt.UserPermissionLimits {
 }
 
 func (u *UserData) Creds(expiry time.Duration) ([]byte, error) {
+	if u.Key.Seed == nil {
+		return nil, fmt.Errorf("user private key is not available")
+	}
 	// remember the current configuration
 	token := u.Token
 	if expiry > 0 {

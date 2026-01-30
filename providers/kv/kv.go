@@ -111,9 +111,6 @@ func NewKvProvider(opts ...KvProviderOption) (*KvProvider, error) {
 			return nil, err
 		}
 	}
-	if err != nil {
-		return nil, err
-	}
 	return NewKvProviderWithConnection(nc, config.Bucket, config.EncryptKey)
 }
 
@@ -156,7 +153,7 @@ func (p *KvProvider) init() error {
 				p.Disconnect()
 				return err
 			}
-		} else if err != nil {
+		} else {
 			p.Disconnect()
 			return err
 		}

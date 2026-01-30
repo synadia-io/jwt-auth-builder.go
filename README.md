@@ -1,8 +1,5 @@
 # JWT Auth Builder (Work in Progress)
 
-IMPORTANT NOTICE: This is a work in progress - it is *NOT A SUPPORTED PRODUCT*. 
-You are free to try and experiment and provide feedback.
-
 The jwt-auth-builder library is an opinionated wrapper on the NATS JWT library.
 It provides an API for building entities (JWTs) that is self-documenting.
 The configurations (JWTs) and secrets (nkeys) are persisted using an AuthProvider.
