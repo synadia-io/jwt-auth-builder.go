@@ -49,18 +49,16 @@ func (ts *KvStore) OperatorExists(name string) bool {
 }
 
 func (ts *KvStore) GetOperator(name string) *jwt.OperatorClaims {
-	var v *authb.OperatorData
 	operators, err := ts.provider.LoadOperators()
 	require.NoError(ts.t, err)
 	for _, o := range operators {
 		if o.Name() == name || o.Subject() == name {
-			v = o
-			break
+			oc, err := jwt.DecodeOperatorClaims(o.Token)
+			require.NoError(ts.t, err)
+			return oc
 		}
 	}
-	oc, err := jwt.DecodeOperatorClaims(v.Token)
-	require.NoError(ts.t, err)
-	return oc
+	return nil
 }
 
 func (ts *KvStore) AccountExists(operator string, name string) bool {
@@ -129,6 +127,10 @@ func (ts *KvStore) GetUser(operator string, account string, name string) *jwt.Us
 		}
 	}
 	return nil
+}
+
+func (ts *KvStore) DeleteKey(k string) {
+	require.NoError(ts.t, ts.provider.DeleteKey(k))
 }
 
 func (ts *KvStore) Cleanup() {

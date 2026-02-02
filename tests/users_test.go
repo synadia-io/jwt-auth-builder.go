@@ -557,3 +557,101 @@ func (t *ProviderSuite) Test_AddWithIdentityRequiresUser() {
 	_, err = a.Users().AddWithIdentity("U", "", "")
 	t.Error(err)
 }
+
+func (t *ProviderSuite) Test_LoadWithMissingKeys() {
+	if t.Kind != NscProvider {
+		t.T().Skip("nsc provider only")
+	}
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+	u, err := a.Users().Add("U", "")
+	t.NoError(err)
+	operatorSubject := o.Subject()
+	accountSubject := a.Subject()
+	userSubject := u.Subject()
+
+	t.NoError(auth.Commit())
+
+	// delete the user key
+	t.Store.DeleteKey(userSubject)
+	t.False(t.Store.KeyExists(userSubject))
+
+	// reload should not panic
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+	u, err = a.Users().Get("U")
+	t.NoError(err)
+	t.NotNil(u)
+
+	// user key should have no seed
+	ud := u.(*authb.UserData)
+	t.NotNil(ud.Key)
+	t.Nil(ud.Key.Seed)
+
+	// creds should fail
+	_, err = u.Creds(time.Second)
+	t.Error(err)
+	t.Contains(err.Error(), "user private key is not available")
+
+	// modify user should still work
+	t.NoError(u.SetMaxSubscriptions(100))
+	t.Equal(int64(100), u.MaxSubscriptions())
+
+	t.NoError(auth.Commit())
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+	u, err = a.Users().Get("U")
+	t.NoError(err)
+	t.Equal(int64(100), u.MaxSubscriptions())
+
+	// delete the account key
+	t.Store.DeleteKey(accountSubject)
+	t.False(t.Store.KeyExists(accountSubject))
+
+	// reload should not panic
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	a, err = o.Accounts().Get("A")
+	t.NoError(err)
+	t.NotNil(a)
+
+	// account key should have no seed
+	ad := a.(*authb.AccountData)
+	t.NotNil(ad.Key)
+	t.Nil(ad.Key.Seed)
+
+	// delete the operator key
+	t.Store.DeleteKey(operatorSubject)
+	t.False(t.Store.KeyExists(operatorSubject))
+
+	// reload should not panic
+	t.NoError(auth.Reload())
+
+	o, err = auth.Operators().Get("O")
+	t.NoError(err)
+	t.NotNil(o)
+
+	// operator key should have no seed
+	od := o.(*authb.OperatorData)
+	t.NotNil(od.Key)
+	t.Nil(od.Key.Seed)
+
+	// adding account should fail
+	_, err = o.Accounts().Add("B")
+	t.Error(err)
+	t.Contains(err.Error(), "no private key available")
+}

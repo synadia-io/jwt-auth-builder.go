@@ -91,6 +91,8 @@ func (a *NscProvider) loadOperator(si store.IStore) (*authb.OperatorData, error)
 	}
 	if kp != nil {
 		od.Key, _ = authb.KeyFromNkey(kp, nkeys.PrefixByteOperator)
+	} else {
+		od.Key, _ = authb.KeyFrom(oc.Subject, nkeys.PrefixByteOperator)
 	}
 	if len(oc.SigningKeys) > 0 {
 		for _, sk := range oc.SigningKeys {
@@ -144,6 +146,8 @@ func (a *NscProvider) loadAccount(si store.IStore, ks store.KeyStore, name strin
 	k, _ := ks.GetKeyPair(ad.Claim.Subject)
 	if k != nil {
 		ad.Key, _ = authb.KeyFromNkey(k, nkeys.PrefixByteAccount)
+	} else {
+		ad.Key, _ = authb.KeyFrom(ad.Claim.Subject, nkeys.PrefixByteAccount)
 	}
 	keys := ad.Claim.SigningKeys.Keys()
 	for _, k := range keys {
@@ -201,7 +205,11 @@ func (a *NscProvider) loadUser(si store.IStore, ks store.KeyStore, account strin
 	if err != nil {
 		return nil, err
 	}
-	ud.Key, err = authb.KeyFromNkey(kp, nkeys.PrefixByteUser)
+	if kp != nil {
+		ud.Key, err = authb.KeyFromNkey(kp, nkeys.PrefixByteUser)
+	} else {
+		ud.Key, err = authb.KeyFrom(ud.Claim.Subject, nkeys.PrefixByteUser)
+	}
 	if err != nil {
 		return nil, err
 	}

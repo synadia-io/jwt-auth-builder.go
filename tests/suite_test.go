@@ -22,6 +22,7 @@ const (
 type TestStore interface {
 	KeyExists(k string) bool
 	GetKey(k string) *nats_auth.Key
+	DeleteKey(k string)
 	OperatorExists(name string) bool
 	GetOperator(name string) *jwt.OperatorClaims
 	AccountExists(operator string, name string) bool
