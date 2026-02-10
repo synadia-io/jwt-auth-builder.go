@@ -1,6 +1,9 @@
 package tests
 
-import authb "github.com/synadia-io/jwt-auth-builder.go"
+import (
+	"github.com/nats-io/jwt/v2"
+	authb "github.com/synadia-io/jwt-auth-builder.go"
+)
 
 func (t *ProviderSuite) Test_ServiceRequiresName() {
 	auth, err := authb.NewAuth(t.Provider)
@@ -443,12 +446,28 @@ func (t *ProviderSuite) Test_ResponseType() {
 	service, err := a.Exports().Services().Add("q", "q.>")
 	t.NoError(err)
 
-	responseType := "Stream"
-	t.NoError(service.SetResponseType(responseType))
+	responseTypes := []string{
+		jwt.ResponseTypeSingleton,
+		jwt.ResponseTypeStream,
+		jwt.ResponseTypeChunked,
+	}
+
+	for _, responseType := range responseTypes {
+		t.NoError(service.SetResponseType(responseType))
+		t.NoError(auth.Commit())
+		t.NoError(auth.Reload())
+
+		a = t.GetAccount(auth, "O", "A")
+		service, err = a.Exports().Services().Get("q.>")
+		t.NoError(err)
+		t.Equal(responseType, service.ResponseType())
+	}
+
+	t.Error(service.SetResponseType("invalid"))
 	t.NoError(auth.Commit())
 	t.NoError(auth.Reload())
-
+	a = t.GetAccount(auth, "O", "A")
 	service, err = a.Exports().Services().Get("q.>")
 	t.NoError(err)
-	t.Equal(responseType, service.ResponseType())
+	t.Equal(responseTypes[len(responseTypes)-1], service.ResponseType())
 }
