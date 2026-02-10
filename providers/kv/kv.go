@@ -393,8 +393,19 @@ func (p *KvProvider) Store(operators []*ab.OperatorData) error {
 			if err := p.DeleteAccount(a); err != nil {
 				return err
 			}
+			if err := p.DeleteKey(a.Key.Public); err != nil {
+				return err
+			}
+			for _, sk := range a.AccountSigningKeys {
+				if err := p.DeleteKey(sk.Public); err != nil {
+					return err
+				}
+			}
 			for _, u := range a.UserDatas {
 				if err := p.DeleteUser(u); err != nil {
+					return err
+				}
+				if err := p.DeleteKey(u.Key.Public); err != nil {
 					return err
 				}
 			}

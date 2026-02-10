@@ -1071,6 +1071,48 @@ func (t *ProviderSuite) Test_SubjectMapping() {
 	t.Nil(sm.List())
 }
 
+func (t *ProviderSuite) Test_DeleteAccountAndDependencies() {
+	auth, err := authb.NewAuth(t.Provider)
+	t.NoError(err)
+
+	o, err := auth.Operators().Add("O")
+	t.NoError(err)
+
+	a, err := o.Accounts().Add("A")
+	t.NoError(err)
+
+	scope, err := a.ScopedSigningKeys().Add()
+	t.NoError(err)
+
+	u, err := a.Users().Add("U", scope)
+	t.NoError(err)
+
+	ak := a.Subject()
+	uk := u.Subject()
+
+	t.NoError(auth.Commit())
+
+	// verify everything exists
+	t.True(t.Store.UserExists("O", "A", "U"))
+	t.True(t.Store.KeyExists(uk))
+	t.True(t.Store.AccountExists("O", "A"))
+	t.True(t.Store.KeyExists(ak))
+	t.True(t.Store.KeyExists(scope))
+
+	// delete the account
+	t.NoError(o.Accounts().Delete("A"))
+	t.NoError(auth.Commit())
+
+	// user and its key should be gone
+	t.False(t.Store.UserExists("O", "A", "U"))
+	t.False(t.Store.KeyExists(uk))
+
+	// account, its key, and signing keys should be gone
+	t.False(t.Store.AccountExists("O", "A"))
+	t.False(t.Store.KeyExists(ak))
+	t.False(t.Store.KeyExists(scope))
+}
+
 func (t *ProviderSuite) Test_AccountIssuer() {
 	auth, err := authb.NewAuth(t.Provider)
 	t.NoError(err)
