@@ -1,6 +1,7 @@
 package nsc
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -287,6 +288,56 @@ func (a *NscProvider) Store(operators []*authb.OperatorData) error {
 				}
 			}
 		}
+		for _, account := range o.DeletedAccounts {
+			if !s.Has(store.Accounts, account.EntityName) {
+				continue
+			}
+			// check for users on disk that aren't in the model
+			known := make(map[string]bool)
+			for _, u := range account.UserDatas {
+				known[u.EntityName] = true
+			}
+			diskUsers, err := s.ListEntries(store.Accounts, account.EntityName, store.Users)
+			if err != nil {
+				return err
+			}
+			for _, du := range diskUsers {
+				if !known[du] {
+					return fmt.Errorf("account %s has unknown user %s on disk", account.EntityName, du)
+				}
+			}
+			// delete users
+			for _, u := range account.UserDatas {
+				if err := s.Delete(store.Accounts, account.EntityName, store.Users, store.JwtName(u.EntityName)); err != nil {
+					return err
+				}
+				if err := ks.Remove(u.Key.Public); err != nil {
+					return err
+				}
+			}
+			// remove empty users dir, account jwt, account dir
+			if s.Has(store.Accounts, account.EntityName, store.Users) {
+				if err := s.Delete(store.Accounts, account.EntityName, store.Users); err != nil {
+					return err
+				}
+			}
+			if err := s.Delete(store.Accounts, account.EntityName, store.JwtName(account.EntityName)); err != nil {
+				return err
+			}
+			if err := s.Delete(store.Accounts, account.EntityName); err != nil {
+				return err
+			}
+			if err := ks.Remove(account.Key.Public); err != nil {
+				return err
+			}
+			for _, sk := range account.AccountSigningKeys {
+				if err := ks.Remove(sk.Public); err != nil {
+					return err
+				}
+			}
+		}
+		o.DeletedAccounts = nil
+
 		// update the loaded so that other mods can be detected
 		o.Loaded = o.Claim.IssuedAt
 	}
