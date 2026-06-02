@@ -47,12 +47,18 @@ func (t *ProviderSuite) Test_ImportServiceOverlappingSubject() {
 	a := t.MaybeCreate(auth, "O", "A")
 	t.NotNil(a)
 
+	// overlap only rejected within the same account (nats-io/jwt#243)
 	ak := t.AccountKey()
 	_, err = a.Imports().Services().Add("x", ak.Public, "q")
 	t.NoError(err)
 
-	ak = t.AccountKey()
-	_, err = a.Imports().Services().Add("y", ak.Public, "q")
+	// same subject, different account: allowed
+	ak2 := t.AccountKey()
+	_, err = a.Imports().Services().Add("y", ak2.Public, "q")
+	t.NoError(err)
+
+	// same subject, same account: overlap error
+	_, err = a.Imports().Services().Add("z", ak.Public, "q")
 	t.Error(err)
 }
 
