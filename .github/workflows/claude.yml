@@ -1,0 +1,33 @@
+name: Claude Code
+
+# GITHUB_TOKEN needs contents:read and actions:read — required by
+# claude-code-action for restoring trusted config files from the base branch.
+# All other GitHub API access uses the App token.
+permissions:
+  contents: read
+  actions: read
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, reopened]
+
+jobs:
+  claude:
+    uses: synadia-io/ai-workflows/.github/workflows/claude.yml@v2
+    with:
+      gh_app_id: ${{ vars.CLAUDE_GH_APP_ID }}
+      checkout_mode: "base"
+      review_focus: |
+        Additionally focus on:
+        - JWT claim correctness (permissions, limits, imports/exports, revocations)
+        - Key handling (seeds never logged or leaked, signing key selection)
+        - Provider consistency (nsc and kv providers behave the same)
+        - Error handling patterns (wrapping, sentinel errors)
+        - API compatibility with existing public interfaces
+    secrets:
+      claude_oauth_token: ${{ secrets.CLAUDE_OAUTH_TOKEN }}
+      gh_app_private_key: ${{ secrets.CLAUDE_GH_APP_PRIVATE_KEY }}
